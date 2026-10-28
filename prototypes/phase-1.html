@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clue Board, phase 1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Roboto+Condensed:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --ground:#15171b; --canvas:#1e2126; --panel:#24272d; --panel-2:#2b2f36; --line:#3a3f48;
+    --ink:#e8e3d6; --ink-2:#b5b0a4; --ink-3:#7d7a72; --gold:#9f9275; --gold-soft:rgba(159,146,117,.18);
+    --info:rgb(70,120,170); --warn:rgb(222,120,40); --bad:rgb(180,70,60); --good:rgb(70,150,95);
+    --clue:#c9a24a;
+    --font:"Signika",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --cond:"Roboto Condensed","Signika",sans-serif;
+    --hand:"IM Fell English",Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;color-scheme:dark}
+  .wrap{max-width:1380px;margin:0 auto;padding:22px 20px 40px}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  header.top h1{margin:0;font-size:22px;font-weight:600}
+  header.top p{margin:0;color:var(--ink-2);max-width:78ch}
+  b{font-weight:600}
+  button{font:inherit}
+
+  .bar{display:flex;flex-wrap:wrap;gap:10px 22px;margin:12px 0 14px;align-items:center}
+  .grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .grp>span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-right:4px}
+  .grp button{font-size:12px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+  .grp button[aria-pressed="true"]{color:var(--ink);background:var(--panel-2);border-color:var(--gold)}
+  .grp button.reset{margin-left:6px;border-style:dashed}
+
+  .studio{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+  @media (max-width:980px){.studio{grid-template-columns:1fr}}
+  .screen{position:relative;min-height:640px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--canvas)}
+  .map{position:absolute;inset:0;
+    background-image:
+      radial-gradient(ellipse at 30% 40%,rgba(90,110,80,.22),transparent 55%),
+      radial-gradient(ellipse at 70% 70%,rgba(120,90,60,.18),transparent 50%),
+      linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:auto,auto,50px 50px,50px 50px}
+  .sidebar{position:absolute;right:0;top:0;bottom:0;width:250px;background:#1a1c20;border-left:1px solid var(--line);display:flex;flex-direction:column}
+  .sidebar .tabs{display:flex;gap:2px;padding:6px;border-bottom:1px solid var(--line)}
+  .sidebar .tabs i{flex:1;height:22px;border-radius:3px;background:rgba(255,255,255,.06)}
+  .sidebar .tabs i:first-child{background:rgba(255,255,255,.14)}
+  .chat{flex:1;padding:8px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+  .chat .ey{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .msg{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 10px;font-size:12px;color:var(--ink-2)}
+  .msg .spk{font-weight:600;color:var(--ink);font-size:11px;margin-bottom:2px;display:flex;justify-content:space-between}
+  .msg .spk small{font-weight:400;color:var(--ink-3)}
+  .msg b{color:var(--ink)}
+  .msg.quiet{border-style:dashed;color:var(--ink-3);font-style:italic}
+
+  .toasts{position:absolute;left:0;right:250px;top:8px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:30}
+  .toast{max-width:520px;padding:6px 14px;border-radius:3px;font-size:13px;color:#fff;border-left:5px solid rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.5);animation:in .15s ease-out}
+  .toast.info{background:var(--info)} .toast.warn{background:var(--warn)}
+  @keyframes in{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+
+  /* windows: the dnd5e2 dark sheet */
+  .win{position:absolute;left:22px;top:30px;width:min(800px,calc(100% - 272px));background:#2a2622;border:1px solid var(--gold);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.6);color:var(--ink);overflow:hidden}
+  .win .ttl{display:flex;align-items:center;gap:8px;padding:4px 10px;background:#1d1a17;border-bottom:1px solid var(--gold);font-size:12px}
+  .win .ttl .x{margin-left:auto;color:var(--ink-3)}
+  .win .ttl .hb{color:var(--ink-3);font-size:11px;display:flex;align-items:center;gap:4px;margin-left:12px}
+  .win .ttl .hb.on{color:var(--clue)}
+  .hdr{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(90deg,rgba(159,146,117,.18),transparent)}
+  .hdr .pic{width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7a6b4e,#2a2622);border:2px solid var(--gold);flex:none}
+  .hdr .pic.grp{border-radius:8px;background:radial-gradient(circle at 35% 35%,#4e6a7a,#2a2622)}
+  .hdr h2{margin:0;font-size:18px;font-weight:600}
+  .hdr .sub{font-size:12px;color:var(--ink-2)}
+  .stabs{display:flex;gap:14px;padding:0 14px;border-bottom:1px solid var(--line);font-family:var(--cond);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+  .stabs span{padding:6px 0}
+  .stabs span.on{color:var(--ink);border-bottom:2px solid var(--gold)}
+  .inv{padding:8px 10px 12px}
+  .section{margin-bottom:8px}
+  .sh{display:flex;align-items:center;padding:4px 6px;font-family:var(--cond);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);border-bottom:1px solid var(--line)}
+  .sh .nm{flex:1;color:var(--ink);font-weight:700;text-transform:none;letter-spacing:0;font-size:13px}
+  .col{width:60px;text-align:center}
+  .col.ctl{width:70px}
+  .col.ours{width:160px;text-align:right}
+  .item{display:flex;align-items:center;padding:2px 6px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;min-height:34px}
+  .item:hover{background:rgba(255,255,255,.04)}
+  .item .nm{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+  .item .ico{width:26px;height:26px;border-radius:3px;background:#3b342c;border:1px solid var(--line);flex:none;display:grid;place-items:center;color:var(--ink-3);font-size:12px}
+  .item .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mark{color:var(--clue);font-size:11px;margin-left:2px}
+  .item .ctl i{color:var(--ink-3);margin:0 3px;font-size:12px}
+  .ours{display:flex;justify-content:flex-end;gap:4px}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:3px;border:1px solid var(--gold);background:rgba(0,0,0,.35);color:#f0f0e0;font-family:var(--cond);font-size:11px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:var(--gold);color:#1d1a17}
+  .btn.read{border-color:var(--clue)}
+  .btn.read:hover{background:var(--clue)}
+  .btn[disabled]{opacity:.4;cursor:default}
+  .btn[disabled]:hover{background:rgba(0,0,0,.35);color:#f0f0e0}
+  .cur{display:flex;align-items:center;gap:8px;padding:6px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-2)}
+  .cur .coin{background:var(--panel-2);border:1px solid var(--line);border-radius:3px;padding:1px 7px;color:var(--ink)}
+  .cur .sp{margin-left:auto;display:flex;gap:6px}
+
+  /* the Reader */
+  .reader{position:absolute;left:min(110px,3%);top:24px;width:min(640px,calc(100% - 300px));z-index:20;background:#2a2622;border:1px solid var(--clue);border-radius:5px;box-shadow:0 10px 30px rgba(0,0,0,.7)}
+  .reader .ttl{border-bottom-color:var(--clue)}
+  .doc{margin:14px;padding:26px 30px;background:
+      radial-gradient(ellipse at 20% 10%,rgba(255,255,255,.35),transparent 60%),
+      linear-gradient(#e9dcc0,#d9c9a4);color:#2b2217;font-family:var(--hand);font-size:17px;line-height:1.5;border-radius:2px;box-shadow:inset 0 0 40px rgba(90,60,20,.25);min-height:200px;position:relative}
+  .doc h3{margin:0 0 10px;font-size:14px;font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;color:#6b5a3c;font-weight:700}
+  .doc p{margin:0 0 10px}
+  .doc .img{float:right;width:120px;height:120px;margin:0 0 8px 16px;border:1px solid #a08a5c;background:linear-gradient(135deg,#c9b58c,#8c7651);display:grid;place-items:center;color:#5a4a2e;font-family:var(--cond);font-size:11px;text-align:center;padding:6px}
+  .doc .rev{margin-top:12px;padding-top:8px;border-top:1px dashed #a08a5c;font-size:14px;color:#5a4a2e}
+  .stamp{margin:0 14px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px}
+  .stamp>div{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:4px;padding:6px 9px}
+  .stamp .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:11px;color:var(--ink)}
+  .chip.me{border-color:var(--clue)}
+  .chip.left{border-color:var(--bad);color:#e8b0a8}
+  .rfoot{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)}
+  .rfoot .sp{margin-left:auto;display:flex;gap:6px}
+
+  /* the Case File */
+  .cf{position:absolute;left:22px;top:30px;width:min(860px,calc(100% - 272px));background:#23201d;border:1px solid var(--gold);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.6);overflow:hidden}
+  .cfbar{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
+  .cfbar input{font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:3px 8px;width:180px}
+  .cfbar .f{display:flex;gap:4px;align-items:center}
+  .cfbar .f span{color:var(--ink-3);font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+  .pill{border:1px solid var(--line);border-radius:10px;padding:1px 9px;font-size:11px;color:var(--ink-2);background:var(--panel);cursor:pointer}
+  .pill[aria-pressed="true"]{border-color:var(--clue);color:var(--ink)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;padding:12px;max-height:470px;overflow:auto}
+  .card{background:#2a2622;border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer}
+  .card:hover{border-color:var(--gold)}
+  .card .ci{height:64px;background:linear-gradient(135deg,#4a3f30,#2a2622);display:flex;align-items:flex-end;padding:6px 8px;gap:6px}
+  .card .ci .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--clue);background:rgba(0,0,0,.45);padding:1px 6px;border-radius:3px}
+  .card .ci .k.t{color:#9fc3e0} .card .ci .k.o{color:#b7d99a}
+  .card h4{margin:0;padding:6px 8px 2px;font-size:13px;font-weight:600}
+  .card .ex{padding:0 8px;font-family:var(--hand);font-size:13px;color:var(--ink-2);line-height:1.35;height:52px;overflow:hidden}
+  .card .meta{padding:6px 8px 8px;font-size:11px;color:var(--ink-3);display:flex;flex-direction:column;gap:3px;margin-top:auto}
+  .card .meta b{color:var(--ink-2);font-weight:600}
+  .card .meta .chips .chip{font-size:10px}
+  .card.un{opacity:.45;border-style:dashed}
+  .card.un .ex{filter:blur(3px)}
+  .cffoot{display:flex;gap:8px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)}
+  .cffoot .sp{margin-left:auto;display:flex;gap:6px}
+  textarea.exp{position:absolute;left:22px;top:30px;width:min(860px,calc(100% - 272px));height:560px;z-index:25;background:#15171b;color:var(--ink-2);border:1px solid var(--gold);border-radius:5px;padding:14px;font:12px/1.5 ui-monospace,Consolas,monospace;resize:none}
+
+  /* the DM overlay */
+  .ov{position:absolute;left:22px;top:30px;width:min(860px,calc(100% - 272px));background:#1f2328;border:1px solid var(--info);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.6);overflow:hidden}
+  .ov .ttl{border-bottom-color:var(--info)}
+  .pieces{padding:12px;display:flex;flex-direction:column;gap:8px;max-height:520px;overflow:auto}
+  .piece{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:8px 12px;display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:center}
+  .piece h4{margin:0;font-size:14px;font-weight:600}
+  .piece .txt{grid-column:1;font-size:12px;color:var(--ink-2)}
+  .piece .cnt{grid-column:2;grid-row:1/3;text-align:right;font-family:var(--cond);font-size:12px;color:var(--ink-3)}
+  .piece .cnt b{display:block;font-size:22px;color:var(--ink);font-weight:700;line-height:1}
+  .piece .got{grid-column:1/3;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .piece.nudge{border-color:var(--warn)}
+  .nudgeline{grid-column:1/3;margin-top:6px;padding:6px 10px;border-left:4px solid var(--warn);background:rgba(222,120,40,.12);font-size:12px;color:var(--ink);display:flex;align-items:center;gap:10px}
+  .nudgeline .btn{margin-left:auto;border-color:var(--warn)}
+  .ovsec{padding:0 12px 12px}
+  .ovsec h5{margin:6px 0;font-family:var(--cond);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
+  table.heir{width:100%;border-collapse:collapse;font-size:12px}
+  table.heir td,table.heir th{padding:4px 6px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;vertical-align:top}
+  table.heir th{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  table.heir td.hid{color:var(--ink-2);font-style:italic}
+
+  /* notes column */
+  .notes{display:flex;flex-direction:column;gap:10px}
+  .note{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-size:13px;color:var(--ink-2)}
+  .note h3{margin:0 0 6px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+  .note ul{margin:0;padding-left:16px}
+  .note li{margin:3px 0}
+  .note code{font:12px ui-monospace,Consolas,monospace;color:var(--ink);background:rgba(255,255,255,.06);padding:0 4px;border-radius:3px}
+
+  /* dialog */
+  .dlg{position:absolute;left:260px;top:160px;width:360px;z-index:40;background:#2a2622;border:1px solid var(--gold);border-radius:5px;box-shadow:0 10px 30px rgba(0,0,0,.7)}
+  .dlg .body{padding:12px 14px;font-size:13px;color:var(--ink-2)}
+  .dlg .opts{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+  .dlg .opts button{text-align:left;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:6px 10px;cursor:pointer;font-size:13px}
+  .dlg .opts button:hover{border-color:var(--gold)}
+  .dlg .opts button small{color:var(--ink-3);margin-left:6px}
+  .dlg .foot{display:flex;justify-content:flex-end;gap:6px;padding:8px 14px;border-top:1px solid var(--line)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Clue Board, phase 1: the case file</h1>
+    <p>A clickable mock-up of the four places a player or the DM meets the module. Nothing here is Foundry; the
+      sheets are drawn in the dnd5e dark theme's shape. Pick who you are, then read things, take things, give things,
+      and watch the Case File and the chat column.</p>
+  </header>
+
+  <div class="bar">
+    <div class="grp" id="who"><span>You are</span>
+      <button data-who="Drew" aria-pressed="true">Drew <small>· Kartor</small></button>
+      <button data-who="Robert">Robert <small>· Cecil</small></button>
+      <button data-who="Tom">Tom <small>· Tychon</small></button>
+      <button data-who="Anthony">Anthony <small>· Lysandra</small></button>
+      <button data-who="DM">the DM</button>
+    </div>
+    <div class="grp" id="screens"><span>Screen</span>
+      <button data-scr="stash" aria-pressed="true">1 · The stash</button>
+      <button data-scr="sheet">2 · Kartor's sheet</button>
+      <button data-scr="case">3 · The Case File</button>
+      <button data-scr="dm">4 · The DM overlay</button>
+      <button class="reset" id="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="studio">
+    <div class="screen" id="screen">
+      <div class="map"></div>
+      <div class="toasts" id="toasts"></div>
+
+      <!-- 1: the group sheet -->
+      <div class="win" id="scr-stash">
+        <div class="ttl"><i class="fa-solid fa-people-group"></i> Echoes of Halruaa <span class="hb"><i class="fa-regular fa-bookmark"></i> 4 clues in the stash</span><span class="x"><i class="fa-solid fa-xmark"></i></span></div>
+        <div class="hdr"><div class="pic grp"></div><div><h2>Echoes of Halruaa</h2><div class="sub">Group · 4 members · the party stash</div></div></div>
+        <div class="stabs"><span>Members</span><span class="on">Inventory</span><span>Description</span></div>
+        <div class="inv">
+          <div class="section">
+            <div class="sh"><span class="nm">Loot</span><span class="col">Qty</span><span class="col">Weight</span><span class="col ctl"></span><span class="col ours"></span></div>
+            <div id="stash-rows"></div>
+          </div>
+          <div class="cur"><span>Currency</span><span class="coin">40 ep</span><span class="coin">12 gp</span><span class="coin">31 sp</span><span class="sp"><span class="btn"><i class="fa-solid fa-arrow-down"></i> Deposit</span><span class="btn"><i class="fa-solid fa-arrow-up"></i> Withdraw</span></span></div>
+        </div>
+      </div>
+
+      <!-- 2: Kartor's sheet -->
+      <div class="win hide" id="scr-sheet">
+        <div class="ttl"><i class="fa-solid fa-user"></i> Kartor Bloodaxe <span class="hb" id="sheet-hb"></span><span class="x"><i class="fa-solid fa-xmark"></i></span></div>
+        <div class="hdr"><div class="pic"></div><div><h2>Kartor Bloodaxe</h2><div class="sub">Paladin 2 · Human · Echoes of Halruaa</div></div></div>
+        <div class="stabs"><span>Details</span><span class="on">Inventory</span><span>Features</span><span>Spells</span><span>Effects</span><span>Biography</span></div>
+        <div class="inv">
+          <div class="section">
+            <div class="sh"><span class="nm">Weapons</span><span class="col">Qty</span><span class="col">Weight</span><span class="col ctl"></span><span class="col ours" style="width:220px"></span></div>
+            <div class="item"><span class="nm"><span class="ico"><i class="fa-solid fa-axe-battle"></i></span><span class="t">Battleaxe</span></span><span class="col">1</span><span class="col">4 lb.</span><span class="col ctl"><i class="fa-solid fa-pen-to-square"></i><i class="fa-solid fa-ellipsis-vertical"></i></span><span class="col ours" style="width:220px"><span class="btn"><i class="fa-solid fa-box-open"></i> Stash</span><span class="btn"><i class="fa-solid fa-people-arrows"></i> Give</span><span class="btn read"><i class="fa-solid fa-book-open"></i> Read</span></span></div>
+          </div>
+          <div class="section">
+            <div class="sh"><span class="nm">Loot</span><span class="col">Qty</span><span class="col">Weight</span><span class="col ctl"></span><span class="col ours" style="width:220px"></span></div>
+            <div id="kartor-rows"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3: the Case File -->
+      <div class="cf hide" id="scr-case">
+        <div class="ttl"><i class="fa-solid fa-folder-open"></i> Case File: Echoes of Halruaa <span class="hb on"><i class="fa-solid fa-bookmark"></i> <span id="cf-count"></span></span><span class="x"><i class="fa-solid fa-xmark"></i></span></div>
+        <div class="cfbar">
+          <input placeholder="Search the case…" id="cf-q">
+          <div class="f"><span>Kind</span><button class="pill" data-f="kind" data-v="document" aria-pressed="false">document</button><button class="pill" data-f="kind" data-v="testimony" aria-pressed="false">testimony</button><button class="pill" data-f="kind" data-v="observation" aria-pressed="false">observation</button></div>
+          <div class="f"><span>Held</span><button class="pill" data-f="holder" data-v="stash" aria-pressed="false">the stash</button><button class="pill" data-f="holder" data-v="pc" aria-pressed="false">a member</button><button class="pill" data-f="holder" data-v="left" aria-pressed="false">left</button></div>
+          <div class="f"><span>Read by</span><button class="pill" data-f="reader" data-v="me" aria-pressed="false">me</button><button class="pill" data-f="reader" data-v="nobody" aria-pressed="false">nobody yet</button></div>
+        </div>
+        <div class="cards" id="cards"></div>
+        <div class="cffoot"><span id="cf-foot"></span><span class="sp"><span class="btn" id="exp-btn"><i class="fa-solid fa-file-lines"></i> Export documents found</span><span class="btn" disabled title="Phase 2"><i class="fa-solid fa-thumbtack"></i> Board</span></span></div>
+        <textarea class="exp hide" id="exp" readonly></textarea>
+      </div>
+
+      <!-- 4: the DM overlay -->
+      <div class="ov hide" id="scr-dm">
+        <div class="ttl"><i class="fa-solid fa-user-secret"></i> Case File: Echoes of Halruaa (DM) <span class="hb"><i class="fa-solid fa-eye-slash"></i> players never see this journal</span><span class="x"><i class="fa-solid fa-xmark"></i></span></div>
+        <div class="pieces" id="pieces"></div>
+        <div class="ovsec">
+          <h5>Marked heirlooms with a hidden job (GM-only hint on the mark)</h5>
+          <table class="heir">
+            <tr><th>Item</th><th>Holder</th><th>Advertised</th><th>Hidden (hint)</th><th>Piece</th></tr>
+            <tr><td>Ward-chalk <i class="fa-solid fa-bookmark mark"></i></td><td>Lysandra</td><td>glows when magic crosses it</td><td class="hid">on returned soil it never stops glowing</td><td>B</td></tr>
+            <tr><td>Delver's stone <i class="fa-solid fa-bookmark mark"></i></td><td>Kartor</td><td>warms near hidden doors</td><td class="hid">goes cold where someone was taken</td><td>C</td></tr>
+            <tr><td>Scrounger's keys <i class="fa-solid fa-bookmark mark"></i></td><td>an echo at the Hearth</td><td>fit nothing in the Hearth</td><td class="hid">fit the seven seats of the Council</td><td>D</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- the Reader -->
+      <div class="reader hide" id="reader">
+        <div class="ttl"><i class="fa-solid fa-book-open"></i> <span id="rd-title"></span><span class="hb on" id="rd-mark"><i class="fa-solid fa-bookmark"></i> clue</span><span class="x" id="rd-close" style="cursor:pointer"><i class="fa-solid fa-xmark"></i></span></div>
+        <div class="doc" id="rd-doc"></div>
+        <div class="stamp" id="rd-stamp"></div>
+        <div class="rfoot"><span id="rd-foot"></span><span class="sp"><span class="btn" id="rd-sheet"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open the item</span><span class="btn" disabled title="Phase 2"><i class="fa-solid fa-thumbtack"></i> Pin</span></span></div>
+      </div>
+
+      <!-- a dialog -->
+      <div class="dlg hide" id="dlg">
+        <div class="ttl"><i class="fa-solid fa-people-arrows"></i> <span id="dlg-title"></span></div>
+        <div class="body" id="dlg-body"></div>
+        <div class="foot"><span class="btn" id="dlg-cancel">Cancel</span></div>
+      </div>
+
+      <div class="sidebar">
+        <div class="tabs"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="chat" id="chat"><div class="ey">Chat</div></div>
+      </div>
+    </div>
+
+    <aside class="notes" id="notes"></aside>
+  </div>
+</div>
+
+<script>
+/* ------------------------------------------------------------------ data */
+const PCS = { Drew:"Kartor", Robert:"Cecil", Tom:"Tychon", Anthony:"Lysandra" };
+const SCENE = "Townhouse 03 - Attic", CAL = "29 Tarsakh 1492", REAL = "2026-10-27";
+
+const seed = () => ({
+  who: "Drew",
+  screen: "stash",
+  filters: { kind:null, holder:null, reader:null, q:"" },
+  chat: [],
+  said: {},
+  clues: [
+    { id:"c1", name:"Ysolde's Key", kind:"document", holder:"stash", readers:[], pieces:[], thread:"the scouts' road",
+      found:{scene:"Mule Road Camp", cal:"29 Tarsakh 1492"}, img:"a scrap of hide, chalk marks",
+      html:`<p>A scrap of hide, four marks in chalk and a word beside each in a careful hand.</p><p><i>One stroke: the way. One every few hundred paces.<br>Three strokes: wrong way; we had to double back.<br>A ring: we camped here.<br>An arrow and a letter: one of us went this way alone.</i></p>`,
+      unread:true },
+    { id:"c2", name:"Brann's Tally", kind:"document", holder:"stash", readers:[], pieces:[], thread:"the scouts",
+      found:{scene:"Townhouse 03 - Attic", cal:CAL}, img:"seven marks cut in a beam",
+      html:`<p>Seven marks cut into the beam over the hatch. Five are neat and even. The last two are shaky, and the seventh is barely a scratch.</p>`,
+      unread:true },
+    { id:"c3", name:"Durgan's Unfinished Letter", kind:"document", holder:"stash", readers:[], pieces:[], thread:"Durgan",
+      found:{scene:"Townhouse 03 - Attic", cal:CAL}, img:"good paper, a double-bitted axe in red wax",
+      html:`<p><i>Sadric. You rode off this morning without a word, as I knew you would, and I let you, as you knew I would. Inspect the workings, count the mules, come down by the fair and we will say nothing more about it. Your mother would have laughed at us both. I have paid the Tessarins through the tenday. There is a thing I ought to have told you years ago, and I will tell you when</i></p><p>The pen lies across the last word.</p>`,
+      unread:true },
+    { id:"c4", name:"The Lady's Parcel", kind:"document", holder:"stash", readers:[], pieces:["lady"], thread:"the lady in grey",
+      found:{scene:"Townhouse 01 - Living Quarters", cal:CAL}, img:"a scrap folded small, the creases soft",
+      html:`<p><i>Mum. A lady came by on the road today, in Council grey, alone, no mules. She asked for our name and gave the house a parcel and said keep it and say nothing, it is for the children's children. She would not take bread. Da has put it in the strongbox and told me not to tell you. I am telling you. She looked like she had been crying. — M.</i></p>`,
+      unread:true },
+    { id:"c5", name:"The Wayhouse Ledger", kind:"document", holder:"house", readers:["Cecil"], pieces:[], thread:"Durgan; the dates",
+      found:{scene:"Townhouse 01 - Living Quarters", cal:CAL}, img:"a long book bound in mule-hide",
+      html:`<p><i>27 Tarsakh 1385. Down: 11 mules, electrum, sealed, for the Factor's house. Up: 9 mules, flour and lamp oil for the workings. Lord Durgan Bloodaxe lodges with us. His son rides up with me tomorrow and will not ride behind. Paid. — T.</i></p><p><i>28 Tarsakh. T. up with the Bloodaxe boy at first light. I keep the book. — A.</i></p><p><i>29 Tarsakh. Fair-day prices posted. Mirri's turtle still gone. — A.</i></p><p>The ink is black and the page is clean.</p>`,
+      rev:"Revealed on a History check (DC 15, Cecil): 29 Tarsakh 1385 is the day of the Blue Fire. The book stopped when the world did." },
+    { id:"c6", name:"The Lodging Board", kind:"document", holder:"house", readers:["Kartor","Cecil","Tychon","Lysandra"], pieces:["lady"], thread:"Durgan; the lady in grey",
+      found:{scene:"Townhouse 02 - Bedrooms", cal:CAL}, img:"a slate ruled in three, chalk unsmudged",
+      html:`<p><i>The attic. Lord D. Bloodaxe. Paid through the tenday.<br>The back room. Lady, Council grey. One night. Gave no name. Left before light.<br>The road rooms, below. Factor's men, two. Down Thursday. The rest empty, fair-week.</i></p><p>Under the board, three iron hooks. A key hangs on the second and the third. The first is empty.</p>` },
+    { id:"c7", name:"The Lost-Familiar Notice", kind:"document", holder:"house", readers:["Tychon"], pieces:[], thread:"Mirri",
+      found:{scene:"Townhouse 02 - Bedrooms", cal:CAL}, img:"a board, the nail still through it",
+      html:`<p><i>LOST. A turtle, brown, the size of a supper plate, with a chip out of her shell at the back. She is not a turtle, she is my familiar, so do not put her in the pond. She answers to Thimble but slowly. She has been gone since yesterday and she has never been gone before. If you find her bring her back here and ring the bell. Mirri Tessarin, aged nine.</i></p><p>Under it, in a grown-up's hand: <i>Stop nailing things to the door.</i></p>` },
+    { id:"c8", name:"Spell Scrolls: Silence, See Invisibility", kind:"document", holder:"Tychon", readers:["Tychon"], pieces:["lady"], thread:"the lady in grey",
+      found:{scene:"Townhouse 01 - Living Quarters", cal:CAL}, img:"two grey leather tubes, plain wax, no mark",
+      html:`<p>Two scrolls in grey leather tubes, twins, sealed with plain wax and no mark. <i>Silence</i>, and <i>See Invisibility</i>.</p>` },
+    { id:"c9", name:"The Luck Shoe", kind:"observation", holder:"house", readers:["Kartor","Cecil","Tychon","Lysandra"], pieces:[], thread:"the mark over the Door",
+      found:{scene:"Townhouse 01 - Living Quarters", cal:CAL}, img:"a mule shoe, heels up",
+      html:`<p>Nailed heels-up over the sitting-room hearth. A mule shoe, worn thin at the toe. Struck into the iron, a small mark: a pick inside a ring.</p><p><b>Observed:</b> you have seen this mark before. It is cut into the lintel over the Door of the Hearth, worn almost smooth.</p>` },
+    { id:"c10", name:"Ilka, at the Door", kind:"testimony", holder:"—", readers:["Kartor","Cecil","Tychon","Lysandra"], pieces:[], thread:"the scouts",
+      found:{scene:"The Door", cal:"29 Tarsakh 1492"}, img:"Ilka Coal, sixteen",
+      html:`<p>Ilka, of Ysolde's chalk-case: <i>"She was going to teach me when she got back."</i></p>` }
+  ],
+  pieces: [
+    { id:"lady", name:"The lady in Council grey", expect:3, text:"The youngest Elder handing the Chamber's instruments to eleven families, one night in this house. The board, the parcel note, the scrolls." },
+    { id:"A", name:"Piece A: the people were delivered, not taken", expect:3, text:"The Hearth's echoes; the casting record in Halarahh; the last sermon of a returned temple." },
+    { id:"B", name:"Piece B: the alarm is stuck on", expect:3, text:"Ward-chalk on returned soil; the sanctum of Azuth; an Archivist's page." },
+    { id:"C", name:"Piece C: home is the trigger", expect:3, text:"The Hearth's settlement; the town that goes; echo testimony; the Delver's stone." },
+    { id:"D", name:"Piece D: the off switch needs seven in the Chamber", expect:3, text:"The Scrounger's keys; the Hearth-guard's blade; the Tinker's device; the taster." },
+    { id:"E", name:"Piece E: the wrong god answered", expect:3, text:"The Archivists' prayer ledger; the two priests; the sanctum's records." }
+  ]
+});
+let S = seed();
+
+/* ------------------------------------------------------------------ helpers */
+const $ = s => document.querySelector(s);
+const me = () => PCS[S.who];
+const isDM = () => S.who === "DM";
+const clue = id => S.clues.find(c => c.id === id);
+const holderText = c => c.holder === "stash" ? "the party stash" : c.holder === "house" ? "the wayhouse (not carried)" : c.holder === "—" ? "no item" : c.holder.startsWith("left:") ? `left the party · ${c.holder.slice(5)}` : c.holder;
+function toast(kind, text){ const t=document.createElement("div"); t.className=`toast ${kind}`; t.textContent=text; $("#toasts").append(t); setTimeout(()=>t.remove(),2600); }
+function chat(spk, html, quiet){ S.chat.push({spk, html, quiet}); renderChat(); }
+function renderChat(){
+  const el=$("#chat"); el.innerHTML='<div class="ey">Chat</div>';
+  if(!S.chat.length) el.insertAdjacentHTML("beforeend",'<div class="msg quiet">Nothing yet. Read something: the chat stays as it is.</div>');
+  for(const m of S.chat) el.insertAdjacentHTML("beforeend",`<div class="msg${m.quiet?" quiet":""}"><div class="spk">${m.spk}<small>now</small></div>${m.html}</div>`);
+  el.scrollTop=el.scrollHeight;
+}
+
+/* ------------------------------------------------------------------ the Reader: gather on read */
+function read(id){
+  const c = clue(id);
+  if(!isDM() && c.unread !== false){
+    const first = !c.readers.length;
+    if(!c.readers.includes(me())){
+      c.readers.push(me());
+      c.gatheredBy = c.gatheredBy || me();
+      c.stampScene = c.stampScene || (c.holder==="stash" ? SCENE : c.found.scene);
+      if(first) toast("info", `Gathered: ${c.name}. The Case File has it, read by ${me()}.`);
+      else toast("info", `${me()} read ${c.name}. The card now names ${c.readers.length} readers.`);
+      // one quiet line in the chat column to show what did NOT happen
+      if(S.chat.filter(m=>m.quiet).length===0) chat("Clue Board", "<i>No message was posted. A Read never writes to chat; the record went to the Case File.</i>", true);
+    }
+  }
+  $("#rd-title").textContent = c.name;
+  $("#rd-mark").classList.toggle("hide", c.kind!=="document" && c.kind!=="observation" && false);
+  $("#rd-doc").innerHTML = `<div class="img">${c.img}</div><h3>${c.kind}</h3>${c.html}${c.rev?`<div class="rev"><b>Revision 2.</b> ${c.rev}</div>`:""}`;
+  const readers = c.readers.length ? c.readers.map(r=>`<span class="chip${r===me()?" me":""}">${r}</span>`).join("") : '<span class="chip">nobody yet</span>';
+  $("#rd-stamp").innerHTML = `
+    <div><div class="k">Found in</div>${c.found.scene}<br><small>${c.found.cal} · ${REAL}</small></div>
+    <div><div class="k">Read by</div><div class="chips">${readers}</div></div>
+    <div><div class="k">Held by</div>${c.holder.startsWith("left:")?`<span class="chip left">${holderText(c)}</span>`:holderText(c)}</div>`;
+  $("#rd-foot").textContent = isDM() ? "You are the DM: this read gathered nothing. Choose Read as… to read for a character." : `Reading as ${me()} (${S.who}).`;
+  $("#rd-sheet").classList.toggle("hide", !isDM());
+  $("#reader").classList.remove("hide");
+  renderAll();
+}
+$("#rd-close").onclick = () => $("#reader").classList.add("hide");
+
+/* ------------------------------------------------------------------ the stash and the sheet */
+const ITEM_ICON = { document:"fa-scroll", observation:"fa-magnifying-glass", testimony:"fa-comment" };
+function row(c, where){
+  const qty = c.id==="c8" ? 2 : 1;
+  let ours = "";
+  if(where==="stash") ours = `<span class="btn" data-take="${c.id}"><i class="fa-solid fa-hand"></i> Take</span><span class="btn read" data-read="${c.id}"><i class="fa-solid fa-book-open"></i> Read</span>`;
+  if(where==="kartor") ours = `<span class="btn" data-stash="${c.id}"><i class="fa-solid fa-box-open"></i> Stash</span><span class="btn" data-give="${c.id}"><i class="fa-solid fa-people-arrows"></i> Give</span><span class="btn read" data-read="${c.id}"><i class="fa-solid fa-book-open"></i> Read</span>`;
+  return `<div class="item"><span class="nm"><span class="ico"><i class="fa-solid ${ITEM_ICON[c.kind]}"></i></span><span class="t">${c.name}</span><i class="fa-solid fa-bookmark mark" title="a clue: reading it goes in the Case File"></i></span><span class="col">${qty}</span><span class="col">—</span><span class="col ctl"><i class="fa-solid fa-pen-to-square"></i><i class="fa-solid fa-ellipsis-vertical"></i></span><span class="col ours"${where==="kartor"?' style="width:220px"':""}>${ours}</span></div>`;
+}
+const plain = (name, where, ico="fa-sack") => `<div class="item"><span class="nm"><span class="ico"><i class="fa-solid ${ico}"></i></span><span class="t">${name}</span></span><span class="col">${name.startsWith("Rations")?6:1}</span><span class="col">—</span><span class="col ctl"><i class="fa-solid fa-pen-to-square"></i><i class="fa-solid fa-ellipsis-vertical"></i></span><span class="col ours"${where==="kartor"?' style="width:220px"':""}>${where==="stash"?'<span class="btn"><i class="fa-solid fa-hand"></i> Take</span><span class="btn read" data-plain="1"><i class="fa-solid fa-book-open"></i> Read</span>':'<span class="btn"><i class="fa-solid fa-box-open"></i> Stash</span><span class="btn"><i class="fa-solid fa-people-arrows"></i> Give</span><span class="btn read" data-plain="1"><i class="fa-solid fa-book-open"></i> Read</span>'}</span></div>`;
+
+function renderStash(){
+  const el=$("#stash-rows");
+  el.innerHTML = S.clues.filter(c=>c.holder==="stash").map(c=>row(c,"stash")).join("") + plain("Rations","stash") + plain("Rope, hempen (50 ft)","stash","fa-link");
+  $("#scr-stash .hb").innerHTML = `<i class="fa-regular fa-bookmark"></i> ${S.clues.filter(c=>c.holder==="stash").length} clues in the stash`;
+}
+function renderSheet(){
+  const mine = S.clues.filter(c=>c.holder==="Kartor");
+  $("#kartor-rows").innerHTML = mine.map(c=>row(c,"kartor")).join("") + plain("Rations","kartor") + plain("Holy symbol","kartor","fa-sun");
+  $("#sheet-hb").innerHTML = mine.length ? `<i class="fa-solid fa-bookmark" style="color:var(--clue)"></i> carrying ${mine.length} clue${mine.length>1?"s":""}` : "";
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-read],[data-take],[data-give],[data-stash],[data-plain]");
+  if(!b) return;
+  if(b.dataset.plain){ toast("info","Rations: read-only, the description as a document. Not a clue, so nothing is recorded."); chat("Clue Board","<i>Still nothing posted.</i>",true); return; }
+  if(b.dataset.read) return read(b.dataset.read);
+  if(b.dataset.take) return take(b.dataset.take);
+  if(b.dataset.stash) return stash(b.dataset.stash);
+  if(b.dataset.give) return giveDialog(b.dataset.give);
+});
+function take(id){
+  const c=clue(id); if(isDM()){ toast("warn","Take is a member's gesture; pick a player above."); return; }
+  c.holder = me();
+  chat("Party Stash", `<b>${me()}</b> took <b>${c.name}</b> from the stash. <small>receipt · revert</small>`);
+  toast("info", `Party Stash moved it. Clue Board saw the create on ${me()} and the delete in the stash: holder → ${me()}. Same clue id, new item id.`);
+  renderAll();
+}
+function stash(id){
+  const c=clue(id); c.holder="stash";
+  chat("Party Stash", `<b>Kartor</b> stashed <b>${c.name}</b>. <small>receipt · revert</small>`);
+  toast("info", `Holder → the party stash. Every member can Read it there.`);
+  renderAll();
+}
+function giveDialog(id){
+  const c=clue(id);
+  $("#dlg-title").textContent = `Give ${c.name}`;
+  $("#dlg-body").innerHTML = `Hand it to a party member whose player is online. Party Stash does the move; Clue Board only watches the holder.
+    <div class="opts">
+      <button data-to="Cecil">Cecil Edmunds <small>Robert · online</small></button>
+      <button data-to="Tychon">Tychon Tessarin <small>Tom · online</small></button>
+      <button data-to="Lysandra">Lysandra Vane <small>Anthony · online</small></button>
+    </div>
+    <div style="margin-top:10px;color:var(--ink-3);font-size:12px">Or the DM's move, outside Party Stash: drag the item onto an NPC's sheet.</div>
+    <div class="opts"><button data-to="left:Sadric Bloodaxe">Hand it to Sadric Bloodaxe <small>the DM drags it to his sheet</small></button></div>`;
+  $("#dlg").classList.remove("hide");
+  $("#dlg-body").onclick = e => {
+    const t = e.target.closest("[data-to]"); if(!t) return;
+    const to = t.dataset.to; c.holder = to;
+    if(to.startsWith("left:")){
+      c.leftNote = "given to Sadric at the first village";
+      chat("Durgan's Unfinished Letter", `Kartor hands his grandfather's letter to Sadric. <small>(the DM's drag; no receipt, this is not a stash move)</small>`);
+      toast("warn", `The item is on Sadric's sheet now: outside the party. Holder → left the party, last holder Kartor. The card keeps its snapshot.`);
+    } else {
+      chat("Party Stash", `<b>Kartor</b> gave <b>${c.name}</b> to <b>${to}</b>. <small>receipt · revert</small>`);
+      toast("info", `A Give passes through the stash marked for ${to}'s player; Clue Board skips the marked row and flips the holder once it lands on ${to}.`);
+    }
+    $("#dlg").classList.add("hide"); renderAll();
+  };
+}
+$("#dlg-cancel").onclick = () => $("#dlg").classList.add("hide");
+
+/* ------------------------------------------------------------------ the Case File */
+document.querySelectorAll(".pill").forEach(p => p.onclick = () => {
+  const f=p.dataset.f, v=p.dataset.v;
+  S.filters[f] = S.filters[f]===v ? null : v;
+  renderCase();
+});
+$("#cf-q").oninput = e => { S.filters.q = e.target.value.toLowerCase(); renderCase(); };
+function visible(c){
+  const f=S.filters;
+  if(f.kind && c.kind!==f.kind) return false;
+  if(f.holder==="stash" && c.holder!=="stash") return false;
+  if(f.holder==="pc" && !Object.values(PCS).includes(c.holder)) return false;
+  if(f.holder==="left" && !c.holder.startsWith("left:")) return false;
+  if(f.reader==="me" && !c.readers.includes(me())) return false;
+  if(f.reader==="nobody" && c.readers.length) return false;
+  if(f.q && !(c.name+" "+c.html+" "+c.thread).toLowerCase().includes(f.q)) return false;
+  return true;
+}
+function renderCase(){
+  document.querySelectorAll(".pill").forEach(p => p.setAttribute("aria-pressed", String(S.filters[p.dataset.f]===p.dataset.v)));
+  const gathered = S.clues.filter(c=>c.readers.length);
+  $("#cf-count").textContent = `${gathered.length} of ${S.clues.length} clues gathered`;
+  const list = S.clues.filter(visible);
+  $("#cards").innerHTML = list.map(c => {
+    const un = !c.readers.length;
+    const kindCls = c.kind==="testimony"?"t":c.kind==="observation"?"o":"";
+    return `<div class="card${un?" un":""}" data-read="${c.id}" title="${un?"Not gathered yet: nobody has read it. The card shows nothing until someone does.":"Open in the Reader"}">
+      <div class="ci"><span class="k ${kindCls}">${c.kind}</span>${c.pieces.length&&isDM()?`<span class="k" style="color:#9fc3e0">piece: ${c.pieces.join(", ")}</span>`:""}</div>
+      <h4>${un?"<i>(an unread clue)</i>":c.name}</h4>
+      <div class="ex">${c.html.replace(/<[^>]+>/g," ").trim()}</div>
+      <div class="meta">
+        <span><b>Found</b> ${c.found.scene} · ${c.found.cal}</span>
+        <span><b>Held</b> ${c.holder.startsWith("left:")?`<span class="chip left">${holderText(c)}</span>`:holderText(c)}</span>
+        <span class="chips"><b>Read</b> ${c.readers.length?c.readers.map(r=>`<span class="chip${r===me()?" me":""}">${r}</span>`).join(""):'<span class="chip">nobody</span>'}</span>
+      </div></div>`;
+  }).join("") || '<div style="color:var(--ink-3);padding:20px">Nothing matches.</div>';
+  const left = S.clues.filter(c=>c.holder.startsWith("left:")).length;
+  $("#cf-foot").textContent = `${list.length} shown · ${S.clues.filter(c=>c.holder==="stash").length} in the stash · ${left} left the party · players see this journal and own it; the DM's pieces are not in it`;
+}
+$("#exp-btn").onclick = () => {
+  const ta=$("#exp"); if(!ta.classList.contains("hide")){ ta.classList.add("hide"); return; }
+  const lines = ["## Documents Found", "", `_Session of ${REAL}. Every document the party read, verbatim, in the order found._`, ""];
+  for(const c of S.clues.filter(c=>c.readers.length && c.kind==="document")){
+    lines.push(`### ${c.name}`, `*Found in ${c.found.scene}, ${c.found.cal}. Read by ${c.readers.join(", ")}. Held by ${holderText(c)}.*`, "");
+    for(const p of c.html.replace(/<br>/g,"\n").replace(/<[^>]+>/g,"").trim().split(/\n+/)) lines.push(`> ${p.trim()}`);
+    if(c.rev) lines.push("", `> *${c.rev}*`);
+    lines.push("");
+  }
+  ta.value = lines.join("\n"); ta.classList.remove("hide");
+  toast("info","Copied to the clipboard and whispered to the DM. The Session Scribe reads the same pages itself.");
+};
+
+/* ------------------------------------------------------------------ the DM overlay */
+function renderDM(){
+  $("#pieces").innerHTML = S.pieces.map(p => {
+    const got = S.clues.filter(c=>c.pieces.includes(p.id) && c.readers.length);
+    const nudge = got.length >= p.expect-1 && !S.said[p.id];
+    return `<div class="piece${nudge?" nudge":""}">
+      <h4>${p.name}</h4>
+      <div class="cnt"><b>${got.length}</b>of ${p.expect}</div>
+      <div class="txt">${p.text}</div>
+      <div class="got">${got.length?got.map(c=>`<span class="chip">${c.name} <small style="color:var(--ink-3)">· ${c.readers.join(", ")}</small></span>`).join(""):'<span class="chip" style="color:var(--ink-3)">nothing gathered yet</span>'}</div>
+      ${nudge?`<div class="nudgeline"><i class="fa-solid fa-comment-dots"></i> ${got.length>=p.expect?"All of it is gathered":"Two of three are gathered"} and the party has not put it together. Let an NPC say it out loud: Mirri can, at the village. <span class="btn" data-said="${p.id}"><i class="fa-solid fa-check"></i> Said</span></div>`:""}
+      ${S.said[p.id]?`<div class="txt" style="grid-column:1/3;color:var(--good)"><i class="fa-solid fa-check"></i> said aloud by an NPC</div>`:""}
+    </div>`;
+  }).join("");
+}
+document.addEventListener("click", e => { const b=e.target.closest("[data-said]"); if(b){ S.said[b.dataset.said]=true; renderDM(); } });
+
+/* ------------------------------------------------------------------ screens, who, notes */
+const NOTES = {
+  stash: `<div class="note"><h3>What this screen shows</h3><ul>
+    <li>The group sheet's inventory is the party stash (Party Stash owns it). Clue Board adds one thing: <b>Read</b>, beside Party Stash's Take, in the same cell.</li>
+    <li>The <i class="fa-solid fa-bookmark mark"></i> is the GM's mark: a flag on the item, <code>clue.id</code>. Reading a marked item the first time <b>gathers</b> it.</li>
+    <li>Read never posts to chat. Watch the chat column.</li>
+    <li>Rations have Read too. Reading them records nothing.</li></ul></div>
+    <div class="note"><h3>Try</h3><ul><li>Read Durgan's letter as Drew, then as Robert: two readers on one card.</li><li>Take the letter as Drew, then go to screen 2.</li></ul></div>`,
+  sheet: `<div class="note"><h3>What this screen shows</h3><ul>
+    <li>Kartor's sheet: Party Stash's Stash and Give, and Clue Board's Read, one cell (the plan's open question 3: Party Stash's column template takes a <code>read</code> boolean).</li>
+    <li>Take, Stash and Give are copies landed then sources deleted. The clue's identity is the flag, so the card follows.</li>
+    <li>Give to an NPC is the DM's drag, outside Party Stash: the clue leaves the party and the card freezes.</li></ul></div>
+    <div class="note"><h3>Try</h3><ul><li>Give the letter to Cecil, then Stash it back from Cecil's… (this mock-up has only Kartor's sheet).</li><li>Hand it to Sadric and look at the Case File.</li></ul></div>`,
+  case: `<div class="note"><h3>What this screen shows</h3><ul>
+    <li>The Case File is a JournalEntry the players own; every card is a page of the module's sub-type.</li>
+    <li>A card shows the <b>snapshot</b> (what was read), the found-in stamp, the readers and the holder, live.</li>
+    <li>A clue nobody has read is a blurred placeholder: the players know something is there, not what. (Setting: hide them entirely.)</li>
+    <li>The ledger's card carries a <b>revision</b>: the DM added the History result to the item and the page re-snapshotted while the party still held it.</li>
+    <li>Export writes the session's Documents Found as Markdown.</li></ul></div>
+    <div class="note"><h3>Phase 2 lives here</h3><ul><li>The Board button: cards on cork, strings, leads, threads the players name, the timeline strip.</li></ul></div>`,
+  dm: `<div class="note"><h3>What this screen shows</h3><ul>
+    <li>A second journal, default ownership None. Pieces are the truths the clues add up to, each with how many it should take.</li>
+    <li>The plot's own rule, made visible: two of three gathered and nothing put together → the nudge. <b>Said</b> ticks it off.</li>
+    <li>The lady in grey is already there: the board, the parcel and the scrolls were all read in session 02.</li>
+    <li>Heirlooms are marked items with a GM-only hint; Phase 2's Reveal attaches a hint to the card as a revision.</li></ul></div>`
+};
+function renderAll(){ renderStash(); renderSheet(); renderCase(); renderDM(); renderChat(); }
+function showScreen(s){
+  S.screen = s;
+  for(const id of ["stash","sheet","case","dm"]) $(`#scr-${id}`).classList.toggle("hide", id!==s);
+  document.querySelectorAll("#screens [data-scr]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.scr===s)));
+  $("#notes").innerHTML = NOTES[s];
+  $("#reader").classList.add("hide"); $("#dlg").classList.add("hide"); $("#exp").classList.add("hide");
+  if(s==="dm" && !isDM()){ toast("warn","A player cannot open this journal at all. Showing it as the DM."); setWho("DM"); }
+}
+function setWho(w){
+  S.who = w;
+  document.querySelectorAll("#who [data-who]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.who===w)));
+  renderAll();
+}
+$("#screens").onclick = e => { const b=e.target.closest("[data-scr]"); if(b) showScreen(b.dataset.scr); };
+$("#who").onclick = e => { const b=e.target.closest("[data-who]"); if(b) setWho(b.dataset.who); };
+$("#reset").onclick = () => { S = seed(); setWho("Drew"); showScreen("stash"); };
+showScreen("stash"); renderAll();
+</script>
+</body>
+</html>
