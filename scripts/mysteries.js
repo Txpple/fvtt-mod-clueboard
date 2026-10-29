@@ -217,10 +217,20 @@ export function holderText(holder) {
   return holder.actorName;
 }
 
-const excerpt = html =>
-  foundry.utils
-    .escapeHTML(String(html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
-    .slice(0, 180);
+/**
+ * An entry's text as plain words, for the card and the search. Plain text, not HTML: the
+ * template escapes it once, so it is never escaped here (twice showed `&#x27;` for an
+ * apostrophe). A block's end and a line break become a space, so paragraphs do not run
+ * together; an inline tag becomes nothing, so "<em>rings</em>," reads "rings,". The browser's
+ * own parser decodes the entities; nothing is rendered or run.
+ */
+const plainText = html => {
+  const spaced = String(html ?? "").replace(/<br\s*\/?>|<\/(p|div|li|h[1-6]|blockquote|tr|td|th)>/gi, " ");
+  const text = new DOMParser().parseFromString(spaced, "text/html").body.textContent ?? "";
+  return text.replace(/\s+/g, " ").trim();
+};
+
+const excerpt = html => plainText(html).slice(0, 180);
 
 /** One party's section of the window: its entries as cards, and its count of the unread. */
 export function sectionFor(group, query = "") {
@@ -237,7 +247,7 @@ export function sectionFor(group, query = "") {
     holder: holderText(e.holder),
     left: e.holder.left,
     notes: e.notes,
-    search: `${e.snapshot.name} ${excerpt(e.snapshot.html)} ${e.notes}`.toLowerCase()
+    search: `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.notes}`.toLowerCase()
   }));
   let ungathered = 0;
   if (setting("countUngathered")) {
