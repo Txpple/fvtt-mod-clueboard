@@ -104,9 +104,11 @@ export const uncollectedFor = group => game.items.filter(i => isClue(i) && !entr
  * master copy), in a "Clues" folder. The DM's act; returns the entry, or null with a notice.
  * @param {Item} item
  * @param {Actor} group
- * @param {{ how?: string }} [options]  Where the collect came from, for the log.
+ * @param {{ how?: string, stamp?: boolean }} [options]  Where the collect came from, for the log;
+ *   `stamp: false` leaves the scene and the calendar date out of the stamp, for a clue found
+ *   before it was collected (its Found at line says where).
  */
-export async function collect(item, group, { how = "api" } = {}) {
+export async function collect(item, group, { how = "api", stamp = true } = {}) {
   if (!isClue(item) || group?.type !== "group") return null;
   if (!game.user.isGM) {
     ui.notifications.warn(t("collect.gmOnly"));
@@ -130,7 +132,7 @@ export async function collect(item, group, { how = "api" } = {}) {
       kind: snapshot.kind,
       source: { uuid: source.uuid, name: source.name },
       snapshot,
-      foundIn: stampNow(),
+      foundIn: stamp ? stampNow() : { ...stampNow(), sceneId: "", sceneName: "", calendarDate: "" },
       readers: {},
       notes: ""
     });

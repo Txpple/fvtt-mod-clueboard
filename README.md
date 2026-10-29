@@ -78,7 +78,7 @@ other dependencies; nothing of the family is required or detected.
   `threads` (keyed by thread, each `{ at, order }`).
 - `clueboard.thread(thread, what, group)` fires when a thread is `created`, `edited`, `reordered` or `removed`
   (then `thread` is null and a fourth argument is the thread as it was).
-- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group)`, `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
+- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group, { stamp })` (`stamp: false` leaves the scene and date out, for a clue found before it was collected), `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
   `markRead(group, id)`, `openReader({ group, id })`, `openMysteries()`, `entries(group)`, `entry(group, id)`,
   `findEntry(id)`, `parties()`, `threads(group)`, `createThread(group, { name, question })`,
   `updateThread(group, id, changes)`, `removeThread(group, id, { confirm })`, `pin(group, clueId, threadId)`,
