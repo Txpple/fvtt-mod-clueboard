@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clue Board, where clues live</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Roboto+Condensed:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --ground:#15171b; --canvas:#1e2126; --panel:#24272d; --panel-2:#2b2f36; --line:#3a3f48;
+    --ink:#e8e3d6; --ink-2:#b5b0a4; --ink-3:#7d7a72; --gold:#9f9275; --gold-soft:rgba(159,146,117,.18);
+    --info:rgb(70,120,170); --warn:rgb(222,120,40); --bad:rgb(180,70,60); --good:rgb(70,150,95);
+    --clue:#c9a24a;
+    --font:"Signika",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --cond:"Roboto Condensed","Signika",sans-serif;
+    --hand:"IM Fell English",Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;color-scheme:dark}
+  .wrap{max-width:1420px;margin:0 auto;padding:22px 20px 40px}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  header.top h1{margin:0;font-size:22px;font-weight:600}
+  header.top p{margin:0;color:var(--ink-2);max-width:80ch}
+  b{font-weight:600}
+  button{font:inherit}
+  .bar{display:flex;flex-wrap:wrap;gap:10px 22px;margin:12px 0 14px;align-items:center}
+  .grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .grp>span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-right:4px}
+  .grp button{font-size:12px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+  .grp button[aria-pressed="true"]{color:var(--ink);background:var(--panel-2);border-color:var(--gold)}
+  .grp button.reset{margin-left:6px;border-style:dashed}
+
+  .studio{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  @media (max-width:980px){.studio{grid-template-columns:1fr}}
+  .screen{position:relative;min-height:720px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--canvas)}
+  .map{position:absolute;inset:0;
+    background-image:
+      radial-gradient(ellipse at 30% 40%,rgba(90,110,80,.22),transparent 55%),
+      radial-gradient(ellipse at 70% 70%,rgba(120,90,60,.18),transparent 50%),
+      linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+    background-size:auto,auto,50px 50px,50px 50px}
+
+  /* the sidebar: the strip, and the Items directory as the open tab */
+  .sidebar{position:absolute;right:0;top:0;bottom:0;width:300px;background:#1a1c20;border-left:1px solid var(--line);display:flex;flex-direction:column}
+  .strip{display:flex;gap:1px;padding:6px 4px;border-bottom:1px solid var(--line);justify-content:space-between}
+  .strip .tab{flex:1;height:26px;border-radius:3px;display:grid;place-items:center;color:var(--ink-3);font-size:12px;cursor:default;position:relative}
+  .strip .tab.on{background:rgba(255,255,255,.14);color:var(--ink)}
+  .strip .tab.btn-mys{color:var(--clue);cursor:pointer}
+  .strip .tab.btn-mys:hover{background:var(--gold-soft)}
+  .strip .tab .tip{position:absolute;top:30px;left:50%;transform:translateX(-50%);background:#000;color:var(--ink);font-size:11px;padding:2px 7px;border-radius:3px;white-space:nowrap;display:none;z-index:5}
+  .strip .tab:hover .tip{display:block}
+  .dir{flex:1;overflow:auto;padding:6px 0}
+  .dir .dh{display:flex;align-items:center;gap:6px;padding:6px 10px;font-size:12px;color:var(--ink-2)}
+  .dir .dh input{flex:1;font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:3px 8px;min-width:0}
+  .folder{margin:4px 0}
+  .folder .fh{display:flex;align-items:center;gap:6px;padding:4px 10px;font-size:13px;font-weight:600;background:rgba(201,162,74,.14);border-left:3px solid var(--clue)}
+  .folder .fh.plain{background:rgba(255,255,255,.05);border-left-color:var(--ink-3)}
+  .folder .fh small{margin-left:auto;font-weight:400;color:var(--ink-3);font-size:11px}
+  .ditem{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 22px;font-size:13px;cursor:grab;border-bottom:1px solid rgba(255,255,255,.04)}
+  .ditem:hover{background:rgba(255,255,255,.05)}
+  .ditem .ico{width:24px;height:24px;border-radius:3px;background:#3b342c;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:11px;flex:none}
+  .ditem .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ditem .ty{font-family:var(--cond);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .ditem .ty.clue{color:var(--clue)}
+  .ditem .got{color:var(--good);font-size:11px}
+  .ditem.dragging{opacity:.4}
+  .dir .hint{padding:8px 12px;font-size:11px;color:var(--ink-3);font-style:italic}
+
+  .toasts{position:absolute;left:0;right:300px;top:8px;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;z-index:40}
+  .toast{max-width:560px;padding:6px 14px;border-radius:3px;font-size:13px;color:#fff;border-left:5px solid rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.5);animation:in .15s ease-out}
+  .toast.info{background:var(--info)} .toast.warn{background:var(--warn)}
+  @keyframes in{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+
+  /* windows */
+  .win{position:absolute;background:#2a2622;border:1px solid var(--gold);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.6);color:var(--ink);overflow:hidden}
+  .win[hidden]{display:none}
+  .ttl{display:flex;align-items:center;gap:8px;padding:4px 10px;background:#1d1a17;border-bottom:1px solid var(--gold);font-size:12px}
+  .ttl .x{margin-left:auto;color:var(--ink-3);cursor:pointer}
+  .ttl .x:hover{color:var(--ink)}
+  .dropok{outline:2px dashed var(--clue);outline-offset:-4px}
+
+  /* the Party sheet */
+  .party{left:22px;top:30px;width:min(760px,calc(100% - 322px));z-index:10}
+  .hdr{display:flex;align-items:center;gap:12px;padding:10px 14px;background:linear-gradient(90deg,rgba(159,146,117,.18),transparent)}
+  .hdr .faces{display:grid;grid-template-columns:repeat(4,34px);gap:3px}
+  .hdr .face{width:34px;height:34px;border-radius:4px;border:1px solid var(--gold);background:radial-gradient(circle at 35% 35%,#6a5a4a,#2a2622);display:grid;place-items:center;font-size:10px;color:var(--ink-2)}
+  .hdr .face.dropok{outline-offset:-2px}
+  .hdr h2{margin:0;font-size:22px;font-weight:700;font-family:var(--cond);text-transform:uppercase;letter-spacing:.06em}
+  .hdr .sub{font-size:12px;color:var(--ink-2)}
+  .stabs{display:flex;gap:18px;padding:0 14px;border-bottom:1px solid var(--line);font-family:var(--cond);font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3)}
+  .stabs span{padding:7px 0;cursor:pointer}
+  .stabs span.on{color:var(--ink);border-bottom:2px solid var(--gold)}
+  .stabs span.new{color:var(--clue);outline:1px dashed var(--clue);outline-offset:3px}
+  .stabs span[hidden]{display:none}
+  .body{padding:8px 10px 12px;min-height:300px}
+  .sh{display:flex;align-items:center;padding:4px 6px;font-family:var(--cond);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);border-bottom:1px solid var(--line);background:rgba(120,40,40,.25)}
+  .sh .nm{flex:1;color:var(--ink);font-weight:700;text-transform:none;letter-spacing:0;font-size:13px}
+  .col{width:70px;text-align:center}
+  .item{display:flex;align-items:center;padding:2px 6px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;min-height:34px}
+  .item:hover{background:rgba(255,255,255,.04)}
+  .item .nm{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+  .item .ico{width:26px;height:26px;border-radius:3px;background:#3b342c;border:1px solid var(--line);flex:none;display:grid;place-items:center;color:var(--ink-3);font-size:12px}
+  .item .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .sub{font-size:10px;color:var(--ink-3);font-family:var(--cond);text-transform:uppercase;letter-spacing:.05em;margin-left:4px}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:3px;border:1px solid var(--gold);background:rgba(0,0,0,.35);color:#f0f0e0;font-family:var(--cond);font-size:11px;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;white-space:nowrap}
+  .btn:hover{background:var(--gold);color:#1d1a17}
+  .btn.clue{border-color:var(--clue)}
+  .btn.clue:hover{background:var(--clue)}
+  .btn.bad{border-color:var(--bad);color:#f0c0b0}
+  .btn.bad:hover{background:var(--bad);color:#fff}
+  .btn[disabled]{opacity:.4;cursor:default}
+  .note{padding:10px 8px;font-size:12px;color:var(--ink-3);font-style:italic}
+  .dz{margin:8px 6px;padding:14px;border:1px dashed var(--line);border-radius:4px;text-align:center;color:var(--ink-3);font-size:12px}
+  .dz.dropok{border-color:var(--clue);color:var(--clue)}
+  .crow{display:flex;align-items:center;gap:10px;padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+  .crow .ico{width:30px;height:30px;border-radius:3px;background:#3b342c;border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:12px;flex:none}
+  .crow .t{flex:1;min-width:0}
+  .crow .t small{display:block;color:var(--ink-3);font-size:11px}
+  .crow .chips{flex:none}
+
+  /* Mysteries */
+  .mys{left:22px;top:30px;width:min(820px,calc(100% - 322px));background:#23201d;z-index:11}
+  .mysbar{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
+  .mysbar input{font:inherit;font-size:12px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:4px 8px;flex:1;min-width:160px}
+  .mysbar .cnt{color:var(--ink-3);font-size:11px;margin-left:auto}
+  .gmstrip{display:flex;align-items:center;gap:10px;padding:6px 12px;background:rgba(201,162,74,.08);border-bottom:1px solid var(--line);font-size:12px;flex-wrap:wrap}
+  .gmstrip .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--clue)}
+  .gmstrip .u{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:2px 4px 2px 8px}
+  .gmstrip .u i{color:var(--ink-3)}
+  .gmstrip .none{color:var(--ink-3);font-style:italic}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;padding:12px;max-height:520px;overflow:auto;min-height:160px}
+  .card{background:#2a2622;border:1px solid var(--line);border-radius:4px;display:flex;gap:8px;padding:8px;cursor:pointer;position:relative}
+  .card:hover{border-color:var(--gold)}
+  .card.unread{border-left:3px solid var(--clue)}
+  .card .ci{width:48px;height:48px;border-radius:3px;background:linear-gradient(135deg,#4a3f30,#2a2622);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);flex:none}
+  .card .cb{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .card h4{margin:0;font-size:13px;font-weight:600;padding-right:22px}
+  .card .ex{font-family:var(--hand);font-size:13px;color:var(--ink-2);line-height:1.3;max-height:52px;overflow:hidden}
+  .card .meta{font-size:11px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+  .card .meta b{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-right:4px}
+  .chips{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:11px;color:var(--ink)}
+  .chip.me{border-color:var(--clue)}
+  .chip.none{color:var(--ink-3);border-style:dashed}
+  .card .rm{position:absolute;top:6px;right:6px;color:var(--ink-3);font-size:11px;cursor:pointer;padding:2px 4px}
+  .card .rm:hover{color:#f0c0b0}
+  .empty{padding:30px;text-align:center;color:var(--ink-3);font-size:12px;grid-column:1/-1}
+
+  /* the Reader */
+  .reader{left:min(140px,5%);top:60px;width:min(600px,calc(100% - 360px));z-index:20;border-color:var(--clue)}
+  .reader .ttl{border-bottom-color:var(--clue)}
+  .doc{margin:14px;padding:26px 30px;background:
+      radial-gradient(ellipse at 20% 10%,rgba(255,255,255,.35),transparent 60%),
+      linear-gradient(#e9dcc0,#d9c9a4);color:#2b2217;font-family:var(--hand);font-size:17px;line-height:1.5;border-radius:2px;box-shadow:inset 0 0 40px rgba(90,60,20,.25);min-height:160px}
+  .doc h3{margin:0 0 8px;font-size:20px;font-weight:400}
+  .doc p{margin:0 0 10px}
+  .stamp{margin:0 14px 14px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:12px}
+  .stamp>div{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:4px;padding:6px 9px}
+  .stamp .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+  .rfoot{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-3)}
+  .rfoot .sp{margin-left:auto;display:flex;gap:6px}
+
+  /* the Clue item sheet */
+  .csheet{left:min(200px,8%);top:80px;width:min(520px,calc(100% - 380px));z-index:21}
+  .csheet .fh{display:flex;gap:12px;padding:12px 14px}
+  .csheet .fh .pic{width:64px;height:64px;border-radius:4px;border:1px solid var(--gold);background:linear-gradient(135deg,#c9b58c,#8c7651);flex:none}
+  .csheet .fh .nm{flex:1}
+  .csheet .fh input{width:100%;font:inherit;font-size:16px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--ink);padding:2px 0}
+  .csheet .fh .ty{font-family:var(--cond);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--clue);margin-top:4px}
+  .csheet .fld{padding:0 14px 10px;font-size:12px}
+  .csheet .fld .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:3px}
+  .csheet .fld .v{background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:3px;padding:6px 8px;color:var(--ink-2);font-family:var(--hand);font-size:14px;min-height:60px}
+  .csheet .fld .v.one{min-height:0;font-family:var(--font);font-size:12px}
+  .csheet .cfoot{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-2);background:rgba(201,162,74,.06)}
+  .csheet .cfoot .sp{margin-left:auto;display:flex;gap:6px}
+
+  /* the notes panel */
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--ink-2);position:sticky;top:12px}
+  .notes h3{margin:0 0 6px;font-size:13px;color:var(--ink);text-transform:uppercase;letter-spacing:.1em;font-family:var(--cond)}
+  .notes p{margin:0 0 8px}
+  .notes ul{margin:0 0 10px;padding-left:18px}
+  .notes li{margin:3px 0}
+  .notes .p[hidden]{display:none}
+  .notes .tag{display:inline-block;font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:3px;border:1px solid var(--clue);color:var(--clue);margin-right:4px}
+  .notes .k{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Clue Board: where clues live</h1>
+    <p>Three proposals, one prototype. In all three a clue is a <b>Clue item</b> of the module's own in the Items directory, never in anyone's inventory; collecting it puts it on the party's record and Mysteries shows it at once. Pick a proposal and a seat, then drag a Clue from the sidebar, click cards, open the sheets.</p>
+  </header>
+
+  <div class="bar">
+    <div class="grp" id="proposal"><span>Proposal</span>
+      <button data-p="A" aria-pressed="true">A · manage in Mysteries</button>
+      <button data-p="B" aria-pressed="false">B · a Clues tab on the Party sheet</button>
+      <button data-p="C" aria-pressed="false">C · both, the tab for the DM only</button>
+    </div>
+    <div class="grp" id="role"><span>Seat</span>
+      <button data-r="dm" aria-pressed="true">the DM</button>
+      <button data-r="kartor" aria-pressed="false">Drew (Kartor)</button>
+      <button data-r="cecil" aria-pressed="false">Robert (Cecil)</button>
+    </div>
+    <div class="grp"><span>Windows</span>
+      <button id="openParty">Party sheet</button>
+      <button id="openMys">Mysteries</button>
+      <button class="reset" id="reset">Reset the world</button>
+    </div>
+  </div>
+
+  <div class="studio">
+    <div class="screen" id="screen">
+      <div class="map"></div>
+      <div class="toasts" id="toasts"></div>
+
+      <!-- the Party sheet -->
+      <div class="win party" id="party" hidden>
+        <div class="ttl"><i class="fa-solid fa-users"></i> Party <span class="x" data-close="party">✕</span></div>
+        <div class="hdr">
+          <div class="faces" id="faces">
+            <div class="face" data-member="Kartor" title="Kartor">Ka</div>
+            <div class="face" data-member="Lysandra" title="Lysandra">Ly</div>
+            <div class="face" data-member="Tychon" title="Tychon">Ty</div>
+            <div class="face" data-member="Cecil" title="Cecil">Ce</div>
+          </div>
+          <div><h2>Party</h2><div class="sub">Travel pace Normal · Avg. level 2</div></div>
+        </div>
+        <div class="stabs" id="stabs">
+          <span data-t="members">Members</span>
+          <span data-t="inventory" class="on">Inventory</span>
+          <span data-t="effects">Effects</span>
+          <span data-t="biography">Biography</span>
+          <span data-t="clues" class="new" id="cluesTab">Clues</span>
+        </div>
+        <div class="body" id="pbody"></div>
+      </div>
+
+      <!-- Mysteries -->
+      <div class="win mys" id="mys" hidden>
+        <div class="ttl"><i class="fa-solid fa-scroll"></i> Mysteries <span class="x" data-close="mys">✕</span></div>
+        <div class="mysbar"><input placeholder="Search the mysteries" id="q"><span class="cnt" id="cnt"></span></div>
+        <div class="gmstrip" id="gmstrip" hidden></div>
+        <div class="cards" id="cards"></div>
+      </div>
+
+      <!-- the Reader -->
+      <div class="win reader" id="reader" hidden></div>
+
+      <!-- the Clue item sheet -->
+      <div class="win csheet" id="csheet" hidden></div>
+
+      <!-- the sidebar -->
+      <div class="sidebar">
+        <div class="strip">
+          <div class="tab"><i class="fa-solid fa-comments"></i><span class="tip">Chat</span></div>
+          <div class="tab"><i class="fa-solid fa-fist-raised"></i><span class="tip">Combat</span></div>
+          <div class="tab"><i class="fa-solid fa-map"></i><span class="tip">Scenes</span></div>
+          <div class="tab"><i class="fa-solid fa-user"></i><span class="tip">Actors</span></div>
+          <div class="tab on"><i class="fa-solid fa-suitcase"></i><span class="tip">Items</span></div>
+          <div class="tab"><i class="fa-solid fa-book-open"></i><span class="tip">Journal</span></div>
+          <div class="tab btn-mys" id="stripMys"><i class="fa-solid fa-scroll"></i><span class="tip">Mysteries</span></div>
+          <div class="tab"><i class="fa-solid fa-table-list"></i><span class="tip">Tables</span></div>
+          <div class="tab"><i class="fa-solid fa-atlas"></i><span class="tip">Compendia</span></div>
+          <div class="tab"><i class="fa-solid fa-cogs"></i><span class="tip">Settings</span></div>
+        </div>
+        <div class="dir" id="dir"></div>
+      </div>
+    </div>
+
+    <aside class="notes" id="notes">
+      <h3>What you are looking at</h3>
+      <div class="p" data-p="A">
+        <p><span class="tag">A</span><span class="k">Manage in Mysteries.</span> The DM collects a clue by dragging it from the Items directory onto the Party sheet, onto a member's portrait, or onto the Mysteries window; or by Collect on the clue's sheet or in the GM strip at the top of Mysteries. Remove is the ✕ on a card, DM only.</p>
+        <ul><li>Players see Mysteries only: the cards, their own read marks, the Reader.</li><li>Nothing on the Party sheet changes.</li></ul>
+      </div>
+      <div class="p" data-p="B" hidden>
+        <p><span class="tag">B</span><span class="k">A Clues tab on the Party sheet.</span> The sheet gains a fifth tab. For the DM it is the management page: the collected list, a drop target, Remove. Players see the same list read-only, a second door into the record.</p>
+        <ul><li>Mysteries has no GM strip; Collect lives on the clue's sheet and the tab.</li><li>Two places show one list.</li></ul>
+      </div>
+      <div class="p" data-p="C" hidden>
+        <p><span class="tag">C</span><span class="k">Both.</span> A's drops and strip, plus the Clues tab on the Party sheet for the DM only. Players never see the tab.</p>
+      </div>
+      <h3>In every proposal</h3>
+      <ul>
+        <li><span class="k">A Clue is an item type of its own</span> in the Items directory, with a plain sheet: name, image, text, found at. Never in an inventory, never on a character.</li>
+        <li><span class="k">Collected means on the party's record.</span> Mysteries fills itself. The item stays as the DM's master; an edit updates the party's copy with a revision mark.</li>
+        <li><span class="k">Read is marked when a player opens the card</span> in Mysteries. The DM's opening marks nothing.</li>
+        <li><span class="k">Where and when</span> is stamped at collection: the scene the table is viewing, the calendar date when the world has one.</li>
+        <li><span class="k">Gone:</span> the Read column, the Clue loot type, the bookmark, held-by, the Party Stash hand-off logic.</li>
+      </ul>
+      <h3>Try</h3>
+      <ul>
+        <li>As the DM: drag <i>Hollis's Note</i> onto the Party sheet, or onto Kartor's portrait, or onto Mysteries.</li>
+        <li>Switch to Drew: the card is unread; open it, and the read is Kartor's.</li>
+        <li>Under B, open the Party sheet as Drew: the Clues tab is read-only. Under C it is gone.</li>
+      </ul>
+    </aside>
+  </div>
+</div>
+
+<script>
+const EXCERPT = {
+  tally: "Scratched into the underside of the cache's slab: four rings, one for each camp, a date beside each, about a week apart. A fifth ring, started and not closed.",
+  key: "A scrap of hide, marked in a small, neat hand. One stroke: the way. One every few hundred paces. Three strokes: wrong way; we had to double back. A ring: we rested here.",
+  letter: "Found on the writing desk of the attic bedroom of the house where Hollis and Brann died, in the drowned town on the Mule Road. Marit, if this reaches you before I do, the road is not what the maps say.",
+  ledger: "Found on the sideboard in the dining room of the house where Hollis and Brann died. The last line is dated 29 Tarsakh 1385, in a different hand.",
+  hollis: "Found folded on the pillow beside Hollis's body, in the child's bed in the small south-west room. Marit. The dogs are still on the roof. Brann and I are sick.",
+  notice: "Found on the floor inside the big bedroom's outer door. LOST: a familiar, a raven, answers to Ash. Reward at the Wayhouse.",
+  bird: "A half-carved wooden bird, the knife marks still fresh. Not a clue; it stays in the stash as loot."
+};
+const WORLD = () => ({
+  clues: [
+    { id: "tally", name: "Brann's Tally", icon: "fa-ring", found: "Townhouse 03, the cache", collected: true, readers: ["Tychon"], at: "Townhouse 03 - Attic" },
+    { id: "key", name: "Ysolde's Key", icon: "fa-map", found: "Broken Road", collected: true, readers: ["Kartor"], at: "Broken Road" },
+    { id: "letter", name: "Durgan's Unfinished Letter", icon: "fa-envelope-open-text", found: "Townhouse 03, the attic desk", collected: true, readers: ["Kartor", "Cecil"], at: "Broken Road" },
+    { id: "ledger", name: "The Wayhouse Ledger", icon: "fa-book", found: "Townhouse 03, the dining room", collected: true, readers: ["Cecil"], at: "Broken Road" },
+    { id: "hollis", name: "Hollis's Note", icon: "fa-scroll", found: "Townhouse 03, the child's bed", collected: false, readers: [], at: "" },
+    { id: "notice", name: "The Lost-Familiar Notice", icon: "fa-feather", found: "Townhouse 03, the big bedroom", collected: false, readers: [], at: "" }
+  ],
+  loot: [
+    { name: "Half-Carved Wooden Bird", type: "Loot" }, { name: "Sealed Waterskins", type: "Loot" }, { name: "Ysolde's Chalk-Case", type: "Loot" }, { name: "Rope", type: "Loot" }
+  ]
+});
+const SEAT = { dm: { name: "the DM", gm: true }, kartor: { name: "Drew", gm: false, pc: "Kartor" }, cecil: { name: "Robert", gm: false, pc: "Cecil" } };
+let world = WORLD(), proposal = "A", role = "dm", ptab = "inventory", dragging = null;
+const $ = s => document.querySelector(s);
+const seat = () => SEAT[role];
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function toast(text, kind = "info") {
+  const t = document.createElement("div"); t.className = `toast ${kind}`; t.textContent = text;
+  $("#toasts").append(t); setTimeout(() => t.remove(), 3200);
+}
+
+/* ---- the sidebar's Items directory ---- */
+function renderDir() {
+  const gm = seat().gm;
+  const clue = c => `<div class="ditem" draggable="${gm}" data-clue="${c.id}"><span class="ico"><i class="fa-solid ${c.icon}"></i></span><span class="t">${esc(c.name)}</span>${c.collected ? '<i class="fa-solid fa-check got" title="collected"></i>' : ""}<span class="ty clue">Clue</span></div>`;
+  const visible = gm ? world.clues : [];
+  $("#dir").innerHTML = `
+    <div class="dh"><input placeholder="Search Items"><i class="fa-solid fa-folder-plus"></i></div>
+    <div class="folder"><div class="fh"><i class="fa-solid fa-folder-open"></i> Clues <small>${gm ? `${visible.length} · ${visible.filter(c => c.collected).length} collected` : "no permission"}</small></div>
+      ${visible.map(clue).join("") || '<div class="hint">A player sees nothing here: Clue items are the DM\'s, like any item they do not own.</div>'}
+    </div>
+    <div class="folder"><div class="fh plain"><i class="fa-solid fa-folder-open"></i> Session 02 loot <small>${world.loot.length}</small></div>
+      ${world.loot.map(l => `<div class="ditem" draggable="false"><span class="ico"><i class="fa-solid fa-box"></i></span><span class="t">${esc(l.name)}</span><span class="ty">${l.type}</span></div>`).join("")}
+    </div>
+    <div class="hint">${gm ? "Drag a Clue onto the Party sheet, a member's portrait" + (proposal !== "B" ? " or Mysteries" : "") + " to collect it. Click one to open its sheet." : ""}</div>`;
+  for (const el of $("#dir").querySelectorAll("[data-clue]")) {
+    el.addEventListener("dragstart", ev => { dragging = el.dataset.clue; el.classList.add("dragging"); ev.dataTransfer.setData("text/plain", dragging); });
+    el.addEventListener("dragend", () => { dragging = null; el.classList.remove("dragging"); document.querySelectorAll(".dropok").forEach(d => d.classList.remove("dropok")); });
+    el.addEventListener("click", () => openSheet(el.dataset.clue));
+  }
+}
+
+/* ---- collecting ---- */
+function collect(id, how) {
+  const c = world.clues.find(x => x.id === id);
+  if (!c) return;
+  if (c.collected) { toast(`${c.name} is already in Mysteries.`, "warn"); return; }
+  c.collected = true; c.at = "Townhouse 03 - Attic"; c.readers = [];
+  toast(`${c.name} is in Mysteries (${how}).`);
+  renderAll();
+}
+function uncollect(id) {
+  const c = world.clues.find(x => x.id === id);
+  c.collected = false; c.readers = []; c.at = "";
+  toast(`${c.name} was taken out of Mysteries. The item is still in the Items directory.`);
+  renderAll();
+}
+function dropTarget(el, how) {
+  el.addEventListener("dragover", ev => { if (dragging && seat().gm) { ev.preventDefault(); el.classList.add("dropok"); } });
+  el.addEventListener("dragleave", () => el.classList.remove("dropok"));
+  el.addEventListener("drop", ev => { ev.preventDefault(); el.classList.remove("dropok"); if (dragging) collect(dragging, typeof how === "function" ? how(el) : how); });
+}
+
+/* ---- the Party sheet ---- */
+function renderParty() {
+  const gm = seat().gm;
+  const tab = $("#cluesTab");
+  tab.hidden = proposal === "A" || (proposal === "C" && !gm);
+  if (tab.hidden && ptab === "clues") ptab = "inventory";
+  for (const s of $("#stabs").querySelectorAll("span")) s.classList.toggle("on", s.dataset.t === ptab);
+  const body = $("#pbody");
+  if (ptab === "inventory") {
+    body.innerHTML = `
+      <div class="sh"><span class="nm">Loot</span><span class="col">Quantity</span><span class="col">Charges</span><span class="col"></span><span class="col">Take</span></div>
+      ${world.loot.map(l => `<div class="item"><span class="nm"><span class="ico"><i class="fa-solid fa-box"></i></span><span class="t">${esc(l.name)}</span><span class="sub">${l.type}</span></span><span class="col">1</span><span class="col">—</span><span class="col"><i class="fa-solid fa-ellipsis-vertical" style="color:var(--ink-3)"></i></span><span class="col"><span class="btn"><i class="fa-solid fa-hand"></i> Take</span></span></div>`).join("")}
+      <div class="note">Only gear. No Read column, no bookmarks: a Clue cannot be here at all.</div>`;
+  } else if (ptab === "clues") {
+    const got = world.clues.filter(c => c.collected);
+    body.innerHTML = `
+      <div class="sh"><span class="nm">Collected</span><span class="col" style="width:auto">Read by</span>${gm ? '<span class="col"></span>' : ""}</div>
+      ${got.map(c => `<div class="crow"><span class="ico"><i class="fa-solid ${c.icon}"></i></span><span class="t">${esc(c.name)}<small>${esc(c.at)} · ${esc(c.found)}</small></span><span class="chips">${chips(c)}</span>${gm ? `<span class="btn bad" data-rm="${c.id}"><i class="fa-solid fa-xmark"></i> Remove</span>` : ""}</div>`).join("") || '<div class="note">Nothing collected yet.</div>'}
+      ${gm ? '<div class="dz" id="pdz"><i class="fa-solid fa-scroll"></i> Drop a Clue from the Items directory here to collect it</div>' : '<div class="note">Read-only. Open a clue in Mysteries to read it.</div>'}`;
+    if (gm) dropTarget($("#pdz"), "dropped on the Clues tab");
+    for (const b of body.querySelectorAll("[data-rm]")) b.addEventListener("click", () => uncollect(b.dataset.rm));
+  } else {
+    body.innerHTML = `<div class="note">dnd5e's ${ptab} tab, unchanged.</div>`;
+  }
+}
+const chips = c => c.readers.length
+  ? c.readers.map(r => `<span class="chip${r === seat().pc ? " me" : ""}">${r}</span>`).join("")
+  : '<span class="chip none">nobody yet</span>';
+
+/* ---- Mysteries ---- */
+function renderMys() {
+  const gm = seat().gm;
+  const q = $("#q").value.trim().toLowerCase();
+  const got = world.clues.filter(c => c.collected && (!q || (c.name + EXCERPT[c.id]).toLowerCase().includes(q)));
+  const unread = world.clues.filter(c => c.collected && (gm ? !c.readers.length : !c.readers.includes(seat().pc))).length;
+  $("#cnt").textContent = `${world.clues.filter(c => c.collected).length} · ${unread} unread${gm ? " by anyone" : ""}`;
+  const strip = $("#gmstrip");
+  strip.hidden = !(gm && proposal !== "B");
+  if (!strip.hidden) {
+    const un = world.clues.filter(c => !c.collected);
+    strip.innerHTML = `<span class="k">GM · not yet collected</span>${un.map(c => `<span class="u"><i class="fa-solid ${c.icon}"></i>${esc(c.name)}<span class="btn clue" data-collect="${c.id}">Collect</span></span>`).join("") || '<span class="none">every Clue in the world is collected</span>'}<span class="none" style="margin-left:auto">or drop a Clue anywhere on this window</span>`;
+    for (const b of strip.querySelectorAll("[data-collect]")) b.addEventListener("click", () => collect(b.dataset.collect, "the GM strip"));
+  }
+  $("#cards").innerHTML = got.map(c => {
+    const unreadMe = gm ? !c.readers.length : !c.readers.includes(seat().pc);
+    return `<div class="card${unreadMe ? " unread" : ""}" data-open="${c.id}">
+      <span class="ci"><i class="fa-solid ${c.icon}"></i></span>
+      <div class="cb"><h4>${esc(c.name)}</h4><div class="ex">${esc(EXCERPT[c.id])}</div>
+        <div class="meta"><span><b>Found</b>${esc(c.at)}</span><span class="chips"><b>Read</b>${chips(c)}</span></div></div>
+      ${gm ? `<span class="rm" data-rm="${c.id}" title="Take it out of Mysteries"><i class="fa-solid fa-xmark"></i></span>` : ""}
+    </div>`;
+  }).join("") || `<div class="empty">${q ? "Nothing matches." : "Nothing collected yet. The DM collects a clue and it appears here."}</div>`;
+  for (const el of $("#cards").querySelectorAll("[data-open]")) el.addEventListener("click", ev => { if (ev.target.closest("[data-rm]")) return; openReader(el.dataset.open); });
+  for (const el of $("#cards").querySelectorAll("[data-rm]")) el.addEventListener("click", () => uncollect(el.dataset.rm));
+}
+
+/* ---- the Reader: opening marks the read ---- */
+function openReader(id) {
+  const c = world.clues.find(x => x.id === id);
+  const s = seat();
+  if (!s.gm && !c.readers.includes(s.pc)) { c.readers.push(s.pc); toast(`${s.pc} read ${c.name}.`); renderMys(); renderParty(); }
+  $("#reader").innerHTML = `
+    <div class="ttl"><i class="fa-solid fa-book-open"></i> ${esc(c.name)} <span class="x" data-close="reader">✕</span></div>
+    <div class="doc"><h3>${esc(c.name)}</h3><p>${esc(EXCERPT[c.id])}</p></div>
+    <div class="stamp"><div><div class="k">Found in</div>${esc(c.at)}<br><small style="color:var(--ink-3)">${esc(c.found)}</small></div><div><div class="k">Read by</div><span class="chips">${chips(c)}</span></div><div><div class="k">The party's note</div><i style="color:var(--ink-3)">none yet</i></div></div>
+    <div class="rfoot">${s.gm ? "A GM's reading marks nothing." : "Your reading is marked for " + s.pc + "."}<span class="sp"><span class="btn"><i class="fa-solid fa-pen"></i> Note</span></span></div>`;
+  $("#reader").hidden = false; wireClose();
+}
+
+/* ---- the Clue item sheet ---- */
+function openSheet(id) {
+  const c = world.clues.find(x => x.id === id);
+  $("#csheet").innerHTML = `
+    <div class="ttl"><i class="fa-solid fa-scroll"></i> ${esc(c.name)} <span class="x" data-close="csheet">✕</span></div>
+    <div class="fh"><div class="pic"></div><div class="nm"><input value="${esc(c.name)}"><div class="ty">Clue · Open Roll 5e: Clue Board</div></div></div>
+    <div class="fld"><div class="k">The text</div><div class="v">${esc(EXCERPT[c.id])}</div></div>
+    <div class="fld"><div class="k">Found at (optional, the DM's words)</div><div class="v one">${esc(c.found)}</div></div>
+    <div class="cfoot">${c.collected ? `<i class="fa-solid fa-check" style="color:var(--good)"></i> Collected by <b>Party</b>, read by ${c.readers.join(", ") || "nobody yet"}` : "Not collected. The party has not found this yet."}<span class="sp">${c.collected ? `<span class="btn bad" data-rm="${c.id}">Take back</span>` : `<span class="btn clue" data-collect="${c.id}"><i class="fa-solid fa-users"></i> Collect for Party</span>`}</span></div>`;
+  $("#csheet").hidden = false; wireClose();
+  $("#csheet").querySelector("[data-collect]")?.addEventListener("click", () => { collect(id, "the clue's sheet"); openSheet(id); });
+  $("#csheet").querySelector("[data-rm]")?.addEventListener("click", () => { uncollect(id); openSheet(id); });
+}
+
+/* ---- wiring ---- */
+function wireClose() { for (const x of document.querySelectorAll("[data-close]")) x.onclick = () => { $("#" + x.dataset.close).hidden = true; }; }
+function renderAll() { renderDir(); renderParty(); renderMys(); for (const p of document.querySelectorAll(".notes .p")) p.hidden = p.dataset.p !== proposal; }
+$("#proposal").addEventListener("click", ev => { const b = ev.target.closest("[data-p]"); if (!b) return; proposal = b.dataset.p; for (const x of $("#proposal").querySelectorAll("button")) x.setAttribute("aria-pressed", x === b); $("#reader").hidden = true; $("#csheet").hidden = true; renderAll(); });
+$("#role").addEventListener("click", ev => { const b = ev.target.closest("[data-r]"); if (!b) return; role = b.dataset.r; for (const x of $("#role").querySelectorAll("button")) x.setAttribute("aria-pressed", x === b); $("#reader").hidden = true; $("#csheet").hidden = true; renderAll(); });
+$("#stabs").addEventListener("click", ev => { const s = ev.target.closest("[data-t]"); if (!s || s.hidden) return; ptab = s.dataset.t; renderParty(); });
+$("#openParty").addEventListener("click", () => { $("#party").hidden = false; renderParty(); });
+$("#openMys").addEventListener("click", () => { $("#mys").hidden = false; renderMys(); });
+$("#stripMys").addEventListener("click", () => { $("#mys").hidden = false; renderMys(); });
+$("#reset").addEventListener("click", () => { world = WORLD(); renderAll(); toast("The world is as it was."); });
+$("#q").addEventListener("input", renderMys);
+dropTarget($("#party"), "dropped on the Party sheet");
+for (const f of $("#faces").querySelectorAll(".face")) dropTarget(f, el => `dropped on ${el.dataset.member}'s portrait`);
+$("#mys").addEventListener("dragover", ev => { if (dragging && seat().gm && proposal !== "B") { ev.preventDefault(); $("#mys").classList.add("dropok"); } });
+$("#mys").addEventListener("dragleave", () => $("#mys").classList.remove("dropok"));
+$("#mys").addEventListener("drop", ev => { ev.preventDefault(); $("#mys").classList.remove("dropok"); if (dragging && proposal !== "B") collect(dragging, "dropped on Mysteries"); });
+wireClose();
+renderAll();
+$("#mys").hidden = false;
+</script>
+</body>
+</html>
