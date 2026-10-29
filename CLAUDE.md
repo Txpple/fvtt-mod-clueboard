@@ -9,8 +9,8 @@ MIT.
 
 **State (2026-10-29).** Phase 1 is released as 1.0.0 (the user's word) and on prod (Echoes of Halruaa: installed and
 enabled through the installer; the ten Session 02 documents migrated to Clues from their world originals, all kind
-Document for the user's audit, collected on the Party with no scene stamp, the stash copies removed, the originals
-kept). It is the third shape of the day on the
+Document for the user's audit, collected on the Party with no scene stamp, the stash copies and then, on the user's
+word, the originals deleted). It is the third shape of the day on the
 user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
 the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
 the read marked when a player opens the card, the Mysteries window off a spy button on the sidebar's strip
