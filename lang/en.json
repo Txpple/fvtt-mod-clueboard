@@ -1,14 +1,9 @@
 {
-  "TYPES": {
-    "JournalEntryPage": {
-      "fvtt-mod-clueboard.clue": "Clue"
-    }
-  },
   "fvtt-mod-clueboard": {
     "settings": {
       "enabled": {
         "name": "Enabled",
-        "hint": "Off leaves the group sheet, the sidebar and the journals exactly as Foundry and the system have them (no Read column, no Mysteries button)."
+        "hint": "Off leaves the group sheet and the sidebar exactly as Foundry and the system have them (no Read column, no Mysteries button); the parties' records stay on them."
       },
       "showMark": {
         "name": "Show the mark to players",
@@ -19,17 +14,13 @@
         "hint": "Mysteries says how many Clues in the party's hands nobody has read yet."
       }
     },
-    "elected": "This client keeps the Mysteries journals.",
     "lootType": "Clue",
     "tab": "Mysteries",
     "mysteries": {
       "title": "Mysteries",
-      "journalName": "Mysteries: {group}",
-      "journalNameWorld": "Mysteries",
-      "folder": "Clue Board",
       "search": "Search the mysteries",
       "empty": "Nothing gathered yet. Read a Clue in the party stash and it appears here.",
-      "noJournal": "No Mysteries journal yet: a GM has to be online once for the party's journal to be made.",
+      "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor, and reading a Clue in its stash is how one gets in.",
       "ungathered": "{count} unread",
       "ungatheredOne": "1 unread",
       "gathered": "{gathered} of {total} gathered",
@@ -39,8 +30,7 @@
       "left": "left the party",
       "stash": "the party stash",
       "nobody": "nobody yet",
-      "markTooltip": "A Clue: reading it goes in Mysteries.",
-      "openJournal": "Open the journal"
+      "markTooltip": "A Clue: reading it goes in Mysteries."
     },
     "read": {
       "button": "Read",
@@ -56,18 +46,16 @@
       "noReader": "You have no character in this party, so the read is not recorded.",
       "pickReader": "Who is reading?",
       "pickReaderHint": "You own more than one member of the party. The read is recorded for the one you pick.",
-      "noJournal": "Mysteries has no journal for this party yet: a GM has to be online once. The read is not recorded.",
+      "notOwner": "You do not own {group}, so the read is not recorded in its Mysteries.",
       "failed": "Mysteries could not record the read ({reason}).",
       "revision": "Revision {n}: the item changed while the party held it; this is the text as it reads now.",
       "itemGone": "The item is gone; the entry keeps what was read."
     },
-    "page": {
+    "stamp": {
       "notesLabel": "The party's note",
       "foundIn": "Found in",
       "readBy": "Read by",
-      "heldBy": "Held by",
-      "source": "The item",
-      "sheet": "Clue (Mysteries entry)"
+      "heldBy": "Held by"
     }
   }
 }

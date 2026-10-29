@@ -21,16 +21,6 @@
       "path": "lang/en.json"
     }
   ],
-  "documentTypes": {
-    "JournalEntryPage": {
-      "clue": {
-        "htmlFields": [
-          "snapshot.html",
-          "notes"
-        ]
-      }
-    }
-  },
   "compatibility": {
     "minimum": "13",
     "verified": "14"

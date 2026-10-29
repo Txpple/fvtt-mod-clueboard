@@ -2,11 +2,14 @@
  * The Reader: an item's image and description as a document, nothing else of the sheet, and
  * never a word to chat. On a Clue in the party stash it gathers first (mysteries.js) and shows
  * the entry's stamp; on an entry from Mysteries it shows the snapshot, which outlives the item.
+ * An entry is named by its party and its clue id and read live from the party's record, so the
+ * Reader redraws when that record changes (clueboard.js).
  */
 
 import { log, MODULE_ID, t } from "./common.js";
-import { clueId, isClue } from "./decide/clue.js";
-import { entryFor, gather, holderText } from "./mysteries.js";
+import { clueId, isClue, readerList } from "./decide/clue.js";
+import { entryOf, findEntry, gather, holderText } from "./mysteries.js";
+import * as store from "./store.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -28,31 +31,38 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /**
    * @param {object} options
-   * @param {Item} [options.item]        The item being read (may be absent for an old entry).
-   * @param {JournalEntryPage} [options.page]  The Mysteries entry, when the clue has one.
+   * @param {Item} [options.item]    The item being read (may be absent for an entry whose item is gone).
+   * @param {Actor} [options.group]  The party whose record holds the entry.
+   * @param {string} [options.clue]  The entry's clue id.
    */
-  constructor({ item = null, page = null, ...options } = {}) {
+  constructor({ item = null, group = null, clue = null, ...options } = {}) {
     super(options);
     this.item = item;
-    this.page = page;
+    this.group = group;
+    this.clue = clue;
+  }
+
+  /** The entry as the party's record holds it now, or null. */
+  get entry() {
+    return entryOf(this.group, this.clue);
   }
 
   /** @override */
   get title() {
-    return this.page?.name ?? this.item?.name ?? t("read.button");
+    return this.entry?.snapshot.name || this.item?.name || t("read.button");
   }
 
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    const page = this.page;
+    const entry = this.entry;
     const item = this.item;
-    const fromPage = Boolean(page);
+    const fromEntry = Boolean(entry);
     let name;
     let img;
     let html;
-    if (fromPage) {
-      ({ name, img, html } = page.system.snapshot);
+    if (fromEntry) {
+      ({ name, img, html } = entry.snapshot);
     } else {
       const masked = !game.user.isGM && item?.system?.identified === false;
       name = (masked ? item.system.unidentified?.name : null) || item?.name || "";
@@ -62,45 +72,45 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
     const TextEditor = foundry.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
     context.name = name;
     context.img = img;
-    context.html = await TextEditor.enrichHTML(html ?? "", { secrets: game.user.isGM, relativeTo: page ?? item });
-    context.isClue = fromPage || isClue(item);
-    context.revision = page?.system.snapshot.revision > 1 ? t("read.revision", { n: page.system.snapshot.revision }) : "";
-    context.stamp = page
+    context.html = await TextEditor.enrichHTML(html ?? "", { secrets: game.user.isGM, relativeTo: item ?? this.group });
+    context.isClue = fromEntry || isClue(item);
+    context.revision = entry?.snapshot.revision > 1 ? t("read.revision", { n: entry.snapshot.revision }) : "";
+    context.stamp = entry
       ? {
-          foundIn: page.system.foundIn.sceneName,
-          calendarDate: page.system.foundIn.calendarDate,
-          realDate: page.system.foundIn.realDate ? new Date(page.system.foundIn.realDate).toLocaleDateString() : "",
-          readers: page.system.readers.map(r => ({ name: r.actorName, me: r.userId === game.user.id })),
-          holder: holderText(page.system.holder),
-          left: page.system.holder.left,
-          notes: page.system.notes
+          foundIn: entry.foundIn.sceneName,
+          calendarDate: entry.foundIn.calendarDate,
+          realDate: entry.foundIn.realDate ? new Date(entry.foundIn.realDate).toLocaleDateString() : "",
+          readers: readerList(entry.readers).map(r => ({ name: r.actorName, me: r.userId === game.user.id })),
+          holder: holderText(entry.holder),
+          left: entry.holder.left,
+          notes: entry.notes
         }
       : null;
-    context.canNote = Boolean(page?.isOwner);
-    context.canOpenItem = Boolean(item?.sheet) || Boolean(page?.system.source.uuid);
-    context.gmSilent = game.user.isGM && !fromPage && isClue(item);
-    context.notClue = !fromPage && item && !isClue(item);
+    context.canNote = Boolean(entry && this.group?.isOwner);
+    context.canOpenItem = Boolean(item?.sheet) || Boolean(entry?.source.uuid);
+    context.gmSilent = game.user.isGM && !fromEntry && isClue(item);
+    context.notClue = !fromEntry && item && !isClue(item);
     return context;
   }
 
   static async #onNote() {
-    const page = this.page;
-    if (!page?.isOwner) return;
-    const current = foundry.utils.escapeHTML(page.system.notes ?? "");
+    const entry = this.entry;
+    if (!entry || !this.group?.isOwner) return;
+    const current = foundry.utils.escapeHTML(entry.notes ?? "");
     const value = await foundry.applications.api.DialogV2.prompt({
       window: { title: t("read.note") },
-      content: `<p>${t("read.notePrompt", { name: foundry.utils.escapeHTML(page.name) })}</p><textarea name="notes" rows="4" autofocus>${current}</textarea>`,
+      content: `<p>${t("read.notePrompt", { name: foundry.utils.escapeHTML(entry.snapshot.name) })}</p><textarea name="notes" rows="4" autofocus>${current}</textarea>`,
       ok: { callback: (_ev, button) => button.form.elements.notes.value },
       rejectClose: false
     });
     if (value === null || value === undefined) return;
-    await page.update({ "system.notes": value });
-    Hooks.callAll("clueboard.changed", page, "notes", value);
+    await store.setNotes(this.group, entry.id, value);
+    Hooks.callAll("clueboard.changed", this.entry, "notes", value, this.group);
     this.render();
   }
 
   static async #onOpenItem() {
-    const item = this.item ?? (this.page?.system.source.uuid ? await fromUuid(this.page.system.source.uuid) : null);
+    const item = this.item ?? (this.entry?.source.uuid ? await fromUuid(this.entry.source.uuid) : null);
     if (!item) {
       ui.notifications.warn(t("read.itemGone"));
       return;
@@ -109,23 +119,34 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 }
 
+/** Redraw every open Reader on this party's record. */
+export function refreshReaders(group) {
+  for (const app of foundry.applications.instances.values()) {
+    if (app instanceof Reader && app.group === group && app.rendered) app.render();
+  }
+}
+
 /**
  * Open the Reader. With an item in a group's stash, a player's read gathers it first; a GM's
- * read is silent. With a page, the entry is read as it was gathered.
- * @param {{ item?: Item, group?: Actor, page?: JournalEntryPage }} options
+ * read is silent. With a group and a clue id, the entry is read as it was gathered.
+ * @param {{ item?: Item, group?: Actor, id?: string }} options
  */
-export async function openReader({ item = null, group = null, page = null }) {
+export async function openReader({ item = null, group = null, id = null }) {
   try {
+    let clue = id;
     if (item && group && isClue(item)) {
-      page = (await gather(item, group)) ?? entryFor(clueId(item, MODULE_ID)) ?? null;
-    } else if (item && !page) {
-      page = entryFor(clueId(item, MODULE_ID));
+      const entry = await gather(item, group);
+      clue = entry?.id ?? clueId(item, MODULE_ID);
+    } else if (item && !clue) {
+      const found = findEntry(clueId(item, MODULE_ID));
+      if (found) ({ group, entry: { id: clue } } = found);
     }
-    if (page && !item && page.system.source.uuid) {
-      const source = await fromUuid(page.system.source.uuid);
+    const entry = entryOf(group, clue);
+    if (entry && !item && entry.source.uuid) {
+      const source = await fromUuid(entry.source.uuid).catch(() => null);
       if (source instanceof Item) item = source;
     }
-    const reader = new Reader({ item, page });
+    const reader = new Reader({ item, group, clue: entry ? clue : null });
     return reader.render({ force: true });
   } catch (err) {
     log.error("opening the Reader failed", err);

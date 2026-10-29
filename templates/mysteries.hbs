@@ -9,7 +9,7 @@
 
 <div class="clueboard-entries">
     {{#if none}}
-    <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.noJournal" }}</p>
+    <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.noParty" }}</p>
     {{else if empty}}
     <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.empty" }}</p>
     {{/if}}
@@ -19,13 +19,9 @@
         <div class="clueboard-section-head">
             {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
             <span class="clueboard-count">{{ total }}{{#if ungathered}} · {{ ungatheredText }}{{/if}}</span>
-            {{#if ../isGM}}
-            <button type="button" class="ui-control plain icon fa-solid fa-book" data-action="openJournal" data-uuid="{{ uuid }}"
-                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.openJournal" }}"></button>
-            {{/if}}
         </div>
         {{#each entries}}
-        <article class="clueboard-card" data-action="open" data-uuid="{{ uuid }}" data-search="{{ search }}" role="button" tabindex="0">
+        <article class="clueboard-card" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
             {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
             <div class="clueboard-card-body">
                 <h5 class="clueboard-card-title">{{ name }}</h5>

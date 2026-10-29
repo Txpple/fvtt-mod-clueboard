@@ -1,6 +1,6 @@
 /*
- * Clue Board: the Read column on the group sheet, the bookmark, the Reader, the Mysteries window
- * and the entry's page. Scoped to the module's own classes and the group sheet's column id;
+ * Clue Board: the Read column on the group sheet, the bookmark, the Reader and the Mysteries
+ * window. Scoped to the module's own classes and the group sheet's column id;
  * no bare element or dnd5e class selector, so the system's sheets are untouched elsewhere.
  */
 
@@ -332,21 +332,4 @@
   gap: 0.15rem;
   font-size: var(--font-size-11, 0.6875rem);
   opacity: 0.85;
-}
-
-/* -------------------------------------------------- */
-/*  The entry's page in the journal                   */
-/* -------------------------------------------------- */
-
-.clueboard-page .clueboard-doc {
-  margin-bottom: 0.75rem;
-}
-
-.clueboard-page .clueboard-stamp {
-  margin-bottom: 0.75rem;
-}
-
-.clueboard-page-notes textarea {
-  width: 100%;
-  min-height: 5rem;
 }

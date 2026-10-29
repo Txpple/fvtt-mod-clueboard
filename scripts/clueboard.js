@@ -7,24 +7,23 @@
  * a sidebar tab: nothing of the module's is drawn inside the sidebar). Nothing here touches a character sheet, an item card or an
  * item sheet. The plan is the suite's docs/plans/clueboard.md.
  *
- * The kit (scripts/kit/, byte-identical across the family) gives the module its logger and its
- * elect (common.js); the elect does one GM-only chore, keeping a Mysteries journal per party.
- * Every other write is the reader's own, on a journal the players own.
+ * The party's record lives on its Group actor (store.js), written by the reader's own client on a
+ * party the players own; there is no journal, no document type and no GM chore. The kit
+ * (scripts/kit/, byte-identical across the family) gives the module its logger (common.js).
  */
 
-import { ClueModel, ClueSheet } from "./clue-page.js";
-import { elect, log, MODULE_ID, setting, t } from "./common.js";
-import { changesSnapshot, CLUE_TYPE, clueId, isClue, PAGE_TYPE } from "./decide/clue.js";
+import { log, MODULE_ID, setting, t } from "./common.js";
+import { changesSnapshot, CLUE_TYPE, clueId, isClue } from "./decide/clue.js";
 import * as mysteries from "./mysteries.js";
-import { openReader } from "./reader.js";
+import { openReader, refreshReaders } from "./reader.js";
 
-export { MODULE_ID, log, elect, t, setting };
+export { MODULE_ID, log, t, setting };
 
 const COLUMN_ID = "clueboardRead";
 const BUTTON_ID = "clueboard-mysteries-button";
 
 /* -------------------------------------------------- */
-/*  init: settings, the loot type, the page type      */
+/*  init: settings and the loot type                  */
 /* -------------------------------------------------- */
 
 Hooks.once("init", () => {
@@ -40,16 +39,6 @@ Hooks.once("init", () => {
     });
   }
 
-  // The page type exists whether or not the module is enabled, so a world that holds Mysteries
-  // pages never sees them as an unknown type.
-  CONFIG.JournalEntryPage.dataModels[PAGE_TYPE] = ClueModel;
-  CONFIG.JournalEntryPage.typeIcons[PAGE_TYPE] = "fa-solid fa-scroll";
-  foundry.applications.apps.DocumentSheetConfig.registerSheet(JournalEntryPage, MODULE_ID, ClueSheet, {
-    types: [PAGE_TYPE],
-    makeDefault: true,
-    label: `${MODULE_ID}.page.sheet`
-  });
-
   if (!setting("enabled")) return;
 
   // The Clue loot type. dnd5e localizes every lootTypes label at i18nInit, ours with them.
@@ -63,9 +52,7 @@ Hooks.once("init", () => {
   load([
     `modules/${MODULE_ID}/templates/read-column.hbs`,
     `modules/${MODULE_ID}/templates/reader.hbs`,
-    `modules/${MODULE_ID}/templates/mysteries.hbs`,
-    `modules/${MODULE_ID}/templates/clue-page-view.hbs`,
-    `modules/${MODULE_ID}/templates/clue-page-edit.hbs`
+    `modules/${MODULE_ID}/templates/mysteries.hbs`
   ]).catch(err => log.error("preloading the templates failed", err));
 });
 
@@ -168,30 +155,21 @@ Hooks.on("updateItem", (item, changes, _options, userId) => {
 });
 
 /* -------------------------------------------------- */
-/*  The journals: one per party, kept by the elect    */
+/*  The window and the Readers follow the record      */
 /* -------------------------------------------------- */
 
-elect.onElected(() => {
-  if (!setting("enabled") || !game.user.isGM) return;
-  log.info(t("elected"));
-  mysteries.ensureJournals().catch(err => log.error("keeping the Mysteries journals failed", err));
+/** A party's record changed (on any client): redraw what shows it. */
+Hooks.on("updateActor", (actor, changes) => {
+  if (actor.type !== "group" || !foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`)) return;
+  mysteries.MysteriesWindow.refresh();
+  refreshReaders(actor);
 });
 
-Hooks.on("createActor", (actor, _options, userId) => {
-  if (!setting("enabled") || actor.type !== "group" || !mine(userId) || !game.user.isGM) return;
-  mysteries.ensureJournals().catch(err => log.error("making a Mysteries journal failed", err));
-});
-
-/** The window follows the journals. */
-for (const hook of [
-  "createJournalEntryPage",
-  "updateJournalEntryPage",
-  "deleteJournalEntryPage",
-  "createJournalEntry",
-  "deleteJournalEntry",
-  "updateJournalEntry"
-]) {
-  Hooks.on(hook, () => mysteries.MysteriesWindow.refresh());
+/** A party made or removed changes the window's sections. */
+for (const hook of ["createActor", "deleteActor"]) {
+  Hooks.on(hook, actor => {
+    if (actor.type === "group") mysteries.MysteriesWindow.refresh();
+  });
 }
 
 /* -------------------------------------------------- */
@@ -262,14 +240,14 @@ Hooks.once("ready", () => {
   if (module) {
     module.api = {
       CLUE_TYPE,
-      PAGE_TYPE,
       isClue,
       clueId: item => clueId(item, MODULE_ID),
       openReader,
       openMysteries: () => mysteries.MysteriesWindow.open(),
       gather: mysteries.gather,
-      journalFor: mysteries.journalFor,
-      ensureJournals: mysteries.ensureJournals
+      entries: mysteries.entriesOf,
+      entry: mysteries.entryOf,
+      findEntry: mysteries.findEntry
     };
   }
 });

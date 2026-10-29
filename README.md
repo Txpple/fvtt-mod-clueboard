@@ -23,9 +23,10 @@ Phase 1 is three things.
   sheets, item cards and item sheets are untouched.
 - **Mysteries.** A scroll button on the sidebar's strip, directly after Journal, opens Mysteries as its own window
   in the middle of the screen (the sidebar itself never changes): the party's entries as cards, newest first,
-  with a search and a count of the Clues nobody has read yet; a click on a card opens the entry in the Reader. Behind the window is a journal the players own, *Mysteries: \<party\>* in a *Clue Board* folder,
-  made by the GM's client the first time it is needed; each entry is a page of the module's own type, so
-  Foundry's search, export and permissions apply, and an owner can edit the party's note on the page.
+  with a search and a count of the Clues nobody has read yet; a click on a card opens the entry in the Reader, where a player can write the party's note on it. The record is
+  kept on the party's Group actor itself, out of sight: no journal, no folder, nothing in a directory or on a sheet.
+  The players write it from their own clients (they own the party, as Party Stash needs), so a read is recorded
+  with no GM online.
 
 The entry follows the item: taken from the stash, its holder flips to the member; stashed back, to the stash;
 given to an NPC, deleted or sold, the entry says *left the party* and keeps what was read. A change to the item's
@@ -36,8 +37,7 @@ The reader is the player's assigned character when it is in the party, else the 
 their pick. A GM's read is silent.
 
 Phase 2: Read on character sheets, item cards and item sheets; the board (cards, strings, leads, mysteries the
-players name, a timeline); the DM's side (the truths the clues add up to and the nudge when the party has two of
-three); testimony and observation; the export of the session's documents found.
+players name, a timeline); testimony and observation; the export of the session's documents found.
 
 ## Installation
 
@@ -56,34 +56,37 @@ other dependencies. Party Stash is detected when present (the Read column sits b
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| Enabled | on | Off leaves the group sheet, the sidebar and the journals exactly as Foundry and the system have them (reload). |
+| Enabled | on | Off leaves the group sheet and the sidebar exactly as Foundry and the system have them (reload); the parties' records stay on them. |
 | Show the mark to players | on | The bookmark on a Clue's row in the stash. Off, only the GM sees it. |
 | Count the ungathered | on | Mysteries says how many Clues in the party's hands nobody has read yet. |
 
 ## Hooks and API
 
-- `clueboard.gathered(page, reader, item)` fires on the gathering client when an entry is made.
-- `clueboard.changed(page, what, detail)` fires when an entry changes: `reader`, `holder`, `snapshot`, `notes`.
+- `clueboard.gathered(entry, reader, item, group)` fires on the gathering client when an entry is made.
+- `clueboard.changed(entry, what, detail, group)` fires when an entry changes: `reader`, `holder`, `snapshot`,
+  `notes`. An entry is a plain object: `id`, `source`, `snapshot`, `foundIn`, `readers` (keyed by actor),
+  `holder`, `notes`.
 - `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `clueId(item)`, `openReader({ item, group })` or
-  `openReader({ page })`, `openMysteries()`, `gather(item, group)`, `journalFor(group)`, `ensureJournals()`.
+  `openReader({ group, id })`, `openMysteries()`, `gather(item, group)`, `entries(group)`, `entry(group, id)`,
+  `findEntry(id)`.
 
 Every listener tolerates the hooks never firing; nothing in the family listens yet.
 
 ## Repository layout
 
 ```
-module.json                    the Foundry manifest (the Clue page type is declared here)
+module.json                    the Foundry manifest
 scripts/
   clueboard.js                 the entry point: settings, the loot type, the column, the button, the hooks
-  common.js                    the id, the logger, the elect, the strings
-  mysteries.js                 the journals, the gather, the holder, the Mysteries window
+  common.js                    the id, the logger, the strings
+  store.js                     the party's record on its Group actor: the entry's schema, the writes
+  mysteries.js                 the gather, the holder, the Mysteries window
   reader.js                    the Reader window
-  clue-page.js                 the entry's data model and page sheet
   decide/clue.js               the decisions that need no Foundry (tested)
   kit/                         the Open Roll 5e kit: elect.js, receipt.js, log.js, the same
                                bytes in every module that holds it (the suite keeps them)
-templates/                     the column cell, the Reader, the window, the page (view and edit)
-styles/clueboard.css           the column width, the mark, the Reader, the window, the page
+templates/                     the column cell, the Reader, the window
+styles/clueboard.css           the column width, the mark, the Reader, the window
 lang/en.json                   every word a player reads
 tools/live-check.mjs           the live check on the sandbox (a GM page and a player page)
 prototypes/phase-1.html        the clickable prototype the design was ruled on

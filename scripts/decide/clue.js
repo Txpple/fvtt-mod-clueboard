@@ -1,15 +1,12 @@
 // @ts-check
 /**
  * Clue Board's decisions that need no Foundry: what a Clue is, what a snapshot holds, where a
- * clue's holder is, and how the sidebar's tab table takes a new entry. Pure functions over plain
+ * clue's holder is, and how a party's record reads as a list. Pure functions over plain
  * data, so the unit tests run them without a world.
  */
 
 /** The loot subtype that makes an item a Clue (`system.type.value` on a dnd5e loot item). */
 export const CLUE_TYPE = "clue";
-
-/** The journal page type the module registers (module id dot subtype). */
-export const PAGE_TYPE = "fvtt-mod-clueboard.clue";
 
 /**
  * A Clue is a dnd5e loot item whose loot type is `clue`. Nothing else marks one.
@@ -73,9 +70,33 @@ export function resolveHolder(carriers, last = null) {
 }
 
 /**
- * The entries of a Mysteries journal, newest gather first, filtered by a search string over
- * name, text and notes.
- * @param {Array<{ name: string, system: { snapshot?: { html?: string, at?: string }, notes?: string } }>} entries
+ * A party's record as a list: the stored map of entries (keyed by clue id) in gather order,
+ * newest first. Anything that is not an entry object is skipped.
+ * @param {Record<string, any> | null | undefined} stored
+ * @returns {Array<any>}
+ */
+export function entryList(stored) {
+  if (!stored || typeof stored !== "object") return [];
+  return Object.values(stored)
+    .filter(e => e && typeof e === "object" && typeof e.id === "string")
+    .sort((a, b) => (b.snapshot?.at ?? "").localeCompare(a.snapshot?.at ?? ""));
+}
+
+/**
+ * An entry's readers in the order they read (the store keys them by actor).
+ * @param {Record<string, { actorId: string, actorName: string, userId?: string, at?: string }> | null | undefined} readers
+ */
+export function readerList(readers) {
+  if (!readers || typeof readers !== "object") return [];
+  return Object.values(readers)
+    .filter(r => r && typeof r === "object")
+    .sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
+}
+
+/**
+ * Entries filtered by a search string over the name, the text and the party's note, newest
+ * gather first.
+ * @param {Array<{ snapshot?: { name?: string, html?: string, at?: string }, notes?: string }>} entries
  * @param {string} [query]
  */
 export function sortAndFilter(entries, query = "") {
@@ -84,17 +105,17 @@ export function sortAndFilter(entries, query = "") {
   return entries
     .filter(e => {
       if (!q) return true;
-      const hay = `${e.name} ${strip(e.system?.snapshot?.html ?? "")} ${e.system?.notes ?? ""}`.toLowerCase();
+      const hay = `${e.snapshot?.name ?? ""} ${strip(e.snapshot?.html ?? "")} ${e.notes ?? ""}`.toLowerCase();
       return hay.includes(q);
     })
-    .sort((a, b) => (b.system?.snapshot?.at ?? "").localeCompare(a.system?.snapshot?.at ?? ""));
+    .sort((a, b) => (b.snapshot?.at ?? "").localeCompare(a.snapshot?.at ?? ""));
 }
 
 /**
  * How many Clues in the party's hands nobody has read: a Clue with no id, or with an id no entry
  * carries, counts once per id (or per item when it has none).
  * @param {Array<{ id: string | null }>} clues  Every Clue item on the party's actors, with its id flag.
- * @param {Set<string>} gathered  The ids the journal holds.
+ * @param {Set<string>} gathered  The ids the party's record holds.
  */
 export function countUngathered(clues, gathered) {
   const seen = new Set();

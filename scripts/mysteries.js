@@ -1,14 +1,14 @@
 /**
  * Mysteries: the party's record, and the window that shows it.
  *
- * One JournalEntry per party (a dnd5e Group actor), in a "Clue Board" folder, default ownership
- * Owner for every player, made by the elect (players cannot create journals). Each gathered Clue
- * is a page of the module's type (clue-page.js). The reader's own client writes the page it
- * gathered; the client that moved an item writes the holder it moved to.
+ * Each party (a dnd5e Group actor) keeps its own record on the actor itself (store.js): no
+ * journal, no folder, nothing in a directory. The reader's own client writes the read it made,
+ * on a party the players own; the client that moved an item writes the holder it moved to.
  */
 
 import { log, MODULE_ID, setting, t } from "./common.js";
-import { clueId, countUngathered, isClue, PAGE_TYPE, resolveHolder, snapshotOf, sortAndFilter } from "./decide/clue.js";
+import { clueId, countUngathered, isClue, readerList, resolveHolder, snapshotOf, sortAndFilter } from "./decide/clue.js";
+import * as store from "./store.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -16,8 +16,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 /*  The party                                         */
 /* -------------------------------------------------- */
 
-/** Every Group actor in the world: each is a party with a stash. */
-export const groups = () => game.actors.filter(a => a.type === "group");
+export const { groups, findEntry, entriesOf, entryOf } = store;
 
 /** A group's members, as actors (a member whose actor is gone is skipped). */
 export const membersOf = group => Array.from(group?.system?.members ?? []).map(m => m.actor).filter(Boolean);
@@ -27,60 +26,6 @@ export const partyActorsOf = group => [group, ...membersOf(group)];
 
 /** A stash row Party Stash is handing to another player: not a carrier until it lands. */
 export const isHandOffRow = item => Boolean(item?.flags?.["fvtt-mod-partystash"]?.giveTo);
-
-/* -------------------------------------------------- */
-/*  The journals                                      */
-/* -------------------------------------------------- */
-
-/** The party's Mysteries journal, or null until the elect has made it. */
-export function journalFor(group) {
-  return game.journal.find(j => j.getFlag(MODULE_ID, "group") === group?.id) ?? null;
-}
-
-/** Every Mysteries journal, each with its group (a group may be gone; the journal stays). */
-export function journals() {
-  return game.journal.filter(j => j.getFlag(MODULE_ID, "mysteries") === true);
-}
-
-/** The pages of a journal that are Clue entries. */
-export const entriesOf = journal => journal.pages.filter(p => p.type === PAGE_TYPE);
-
-/** The entry carrying a clue id, in any Mysteries journal. */
-export function entryFor(id) {
-  for (const j of journals()) {
-    const page = j.pages.find(p => p.type === PAGE_TYPE && p.system.id === id);
-    if (page) return page;
-  }
-  return null;
-}
-
-/**
- * The elect's one chore: a folder, and a journal per party that lacks one. GM only; a player
- * calling it is a no-op.
- */
-export async function ensureJournals() {
-  if (!game.user.isGM) return;
-  let folder = game.folders.find(f => f.type === "JournalEntry" && f.getFlag(MODULE_ID, "folder") === true);
-  const missing = groups().filter(g => !journalFor(g));
-  if (!missing.length) return;
-  if (!folder) {
-    folder = await Folder.create({
-      name: t("mysteries.folder"),
-      type: "JournalEntry",
-      flags: { [MODULE_ID]: { folder: true } }
-    });
-  }
-  const OWNER = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
-  await JournalEntry.createDocuments(
-    missing.map(g => ({
-      name: t("mysteries.journalName", { group: g.name }),
-      folder: folder.id,
-      ownership: { default: OWNER },
-      flags: { [MODULE_ID]: { mysteries: true, group: g.id } }
-    }))
-  );
-  log.info(`made ${missing.length} Mysteries journal(s): ${missing.map(g => g.name).join(", ")}`);
-}
 
 /* -------------------------------------------------- */
 /*  The stamp                                         */
@@ -147,17 +92,16 @@ export async function pickReader(group) {
 
 /**
  * The one trigger: a player reading a Clue in the party stash. Writes the id flag if the item
- * has none, makes the entry if none carries the id, and appends the reader. Returns the entry,
- * or null with a notice when nothing could be recorded.
+ * has none, makes the entry if the party's record has none for the id, and adds the reader.
+ * Returns the entry, or null with a notice when nothing could be recorded.
  * @param {Item} item   A Clue in a Group actor's inventory.
  * @param {Actor} group The group.
  */
 export async function gather(item, group) {
   if (!isClue(item) || item.parent !== group || group?.type !== "group") return null;
-  if (game.user.isGM) return entryFor(clueId(item, MODULE_ID)) ?? null;
-  const journal = journalFor(group);
-  if (!journal) {
-    ui.notifications.warn(t("read.noJournal"));
+  if (game.user.isGM) return entryOf(group, clueId(item, MODULE_ID));
+  if (!group.isOwner) {
+    ui.notifications.warn(t("read.notOwner", { group: group.name }));
     return null;
   }
   const reader = await pickReader(group);
@@ -173,32 +117,29 @@ export async function gather(item, group) {
     }
     const now = new Date().toISOString();
     const readerRecord = { actorId: reader.id, actorName: reader.name, userId: game.user.id, at: now };
-    let page = journal.pages.find(p => p.type === PAGE_TYPE && p.system.id === id);
-    if (!page) {
+    const existing = entryOf(group, id);
+    if (!existing) {
       const snapshot = { ...snapshotOf(item, { identified: game.user.isGM, at: now }), revision: 1 };
-      [page] = await journal.createEmbeddedDocuments("JournalEntryPage", [
-        {
-          name: snapshot.name,
-          type: PAGE_TYPE,
-          title: { show: true, level: 1 },
-          system: {
-            id,
-            source: { uuid: item.uuid, name: item.name },
-            snapshot,
-            foundIn: stampNow(reader),
-            readers: [readerRecord],
-            holder: { actorId: group.id, actorName: group.name, left: false, lastHolder: "", at: now }
-          }
-        }
-      ]);
+      await store.createEntry(group, {
+        id,
+        source: { uuid: item.uuid, name: item.name },
+        snapshot,
+        foundIn: stampNow(reader),
+        readers: { [reader.id]: readerRecord },
+        holder: { actorId: group.id, actorName: group.name, left: false, lastHolder: "", at: now },
+        notes: ""
+      });
+      const entry = entryOf(group, id);
       ui.notifications.info(t("read.gathered", { name: snapshot.name, reader: reader.name }));
-      Hooks.callAll("clueboard.gathered", page, reader, item);
-    } else if (!page.system.readers.some(r => r.actorId === reader.id)) {
-      await page.update({ "system.readers": [...page.system.readers, readerRecord] });
-      ui.notifications.info(t("read.readAgain", { name: page.name, reader: reader.name }));
-      Hooks.callAll("clueboard.changed", page, "reader", reader);
+      Hooks.callAll("clueboard.gathered", entry, reader, item, group);
+      return entry;
     }
-    return page;
+    if (!existing.readers?.[reader.id]) {
+      await store.addReader(group, id, readerRecord);
+      ui.notifications.info(t("read.readAgain", { name: existing.snapshot.name, reader: reader.name }));
+      Hooks.callAll("clueboard.changed", entryOf(group, id), "reader", reader, group);
+    }
+    return entryOf(group, id);
   } catch (err) {
     log.error("gathering failed", err);
     ui.notifications.error(t("read.failed", { reason: err?.message ?? String(err) }));
@@ -224,33 +165,43 @@ export function carriersOf(id) {
 
 /**
  * Write the entry's holder from where the item is now. `lastParent` is the actor an item was
- * just deleted from, named when nobody carries the clue any more.
+ * just deleted from, named when nobody carries the clue any more. A client that does not own
+ * the party leaves the write to the next one that does (the holder is recomputed whole).
  */
 export async function followHolder(id, lastParent = null) {
-  const page = entryFor(id);
-  if (!page) return;
-  const was = page.system.holder;
+  const found = findEntry(id);
+  if (!found) return;
+  const { group, entry } = found;
+  if (!group.isOwner) {
+    log.debug?.(`not the party's owner: the holder of ${id} waits for the next owner's move`);
+    return;
+  }
+  const was = entry.holder;
   const now = resolveHolder(carriersOf(id), lastParent ? { actorId: lastParent.id, actorName: lastParent.name } : was);
   const same = now.left ? was.left && was.lastHolder === now.lastHolder : !was.left && was.actorId === now.actorId;
   if (same) return;
-  await page.update({
-    "system.holder": now.left
-      ? { actorId: "", actorName: "", left: true, lastHolder: now.lastHolder, at: new Date().toISOString() }
-      : { actorId: now.actorId, actorName: now.actorName, left: false, lastHolder: "", at: new Date().toISOString() }
-  });
-  Hooks.callAll("clueboard.changed", page, "holder", now);
+  const at = new Date().toISOString();
+  await store.setHolder(
+    group,
+    id,
+    now.left
+      ? { actorId: "", actorName: "", left: true, lastHolder: now.lastHolder, at }
+      : { actorId: now.actorId, actorName: now.actorName, left: false, lastHolder: "", at }
+  );
+  Hooks.callAll("clueboard.changed", entryOf(group, id), "holder", now, group);
 }
 
 /** The item's text changed while the party holds it: the entry shows what it reads now. */
 export async function refreshSnapshot(id, item) {
-  const page = entryFor(id);
-  if (!page || page.system.holder.left) return;
+  const found = findEntry(id);
+  if (!found || found.entry.holder.left || !found.group.isOwner) return;
+  const { group, entry } = found;
   const snapshot = {
-    ...snapshotOf(item, { identified: true, at: new Date().toISOString() }),
-    revision: (page.system.snapshot.revision ?? 1) + 1
+    ...snapshotOf(item, { identified: true, at: entry.snapshot.at || new Date().toISOString() }),
+    revision: (entry.snapshot.revision ?? 1) + 1
   };
-  await page.update({ name: snapshot.name, "system.snapshot": snapshot });
-  Hooks.callAll("clueboard.changed", page, "snapshot", snapshot);
+  await store.setSnapshot(group, id, snapshot);
+  Hooks.callAll("clueboard.changed", entryOf(group, id), "snapshot", snapshot, group);
 }
 
 /* -------------------------------------------------- */
@@ -271,35 +222,34 @@ const excerpt = html =>
     .escapeHTML(String(html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
     .slice(0, 180);
 
-/** One journal's section of the window: its entries as cards, and its count of the unread. */
-export function sectionFor(journal, query = "") {
-  const group = game.actors.get(journal.getFlag(MODULE_ID, "group"));
-  const pages = entriesOf(journal);
-  const entries = sortAndFilter(pages, query).map(p => ({
-    uuid: p.uuid,
-    name: p.name,
-    img: p.system.snapshot.img,
-    excerpt: excerpt(p.system.snapshot.html),
-    foundIn: p.system.foundIn.sceneName,
-    calendarDate: p.system.foundIn.calendarDate,
-    readers: p.system.readers.map(r => r.actorName),
-    holder: holderText(p.system.holder),
-    left: p.system.holder.left,
-    notes: p.system.notes,
-    search: `${p.name} ${excerpt(p.system.snapshot.html)} ${p.system.notes}`.toLowerCase()
+/** One party's section of the window: its entries as cards, and its count of the unread. */
+export function sectionFor(group, query = "") {
+  const all = entriesOf(group);
+  const entries = sortAndFilter(all, query).map(e => ({
+    group: group.id,
+    id: e.id,
+    name: e.snapshot.name,
+    img: e.snapshot.img,
+    excerpt: excerpt(e.snapshot.html),
+    foundIn: e.foundIn.sceneName,
+    calendarDate: e.foundIn.calendarDate,
+    readers: readerList(e.readers).map(r => r.actorName),
+    holder: holderText(e.holder),
+    left: e.holder.left,
+    notes: e.notes,
+    search: `${e.snapshot.name} ${excerpt(e.snapshot.html)} ${e.notes}`.toLowerCase()
   }));
   let ungathered = 0;
-  if (group && setting("countUngathered")) {
-    const gathered = new Set(pages.map(p => p.system.id));
+  if (setting("countUngathered")) {
+    const gathered = new Set(all.map(e => e.id));
     const clues = partyActorsOf(group).flatMap(a => a.items.filter(isClue).map(i => ({ id: clueId(i, MODULE_ID) })));
     ungathered = countUngathered(clues, gathered);
   }
   return {
-    id: journal.id,
-    uuid: journal.uuid,
-    name: group?.name ?? journal.name,
+    id: group.id,
+    name: group.name,
     entries,
-    total: pages.length,
+    total: all.length,
     ungathered,
     ungatheredText: ungathered === 1 ? t("mysteries.ungatheredOne") : t("mysteries.ungathered", { count: ungathered })
   };
@@ -321,8 +271,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-scroll", resizable: true },
     position: { width: 760, height: 720 },
     actions: {
-      open: MysteriesWindow.#onOpen,
-      openJournal: MysteriesWindow.#onOpenJournal
+      open: MysteriesWindow.#onOpen
     }
   };
 
@@ -348,7 +297,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     return app;
   }
 
-  /** Re-render when open: the journals changed. The search survives the render. */
+  /** Re-render when open: a party's record changed. The search survives the render. */
   static refresh() {
     const app = MysteriesWindow.current;
     if (app?.rendered) app.render();
@@ -359,12 +308,11 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
-    const list = journals().filter(j => j.testUserPermission(game.user, "OBSERVER"));
-    context.sections = list.map(j => sectionFor(j));
+    const list = groups().filter(g => g.testUserPermission(game.user, "OBSERVER"));
+    context.sections = list.map(g => sectionFor(g));
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
-    context.isGM = game.user.isGM;
     context.query = this.#query;
     return context;
   }
@@ -386,18 +334,13 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   static async #onOpen(_event, target) {
-    const page = await fromUuid(target.dataset.uuid);
-    if (page) await openReaderFor(page);
-  }
-
-  static async #onOpenJournal(_event, target) {
-    const journal = await fromUuid(target.dataset.uuid);
-    journal?.sheet?.render(true);
+    const group = game.actors.get(target.dataset.group);
+    if (group) await openReaderFor(group, target.dataset.id);
   }
 }
 
 /** The Reader on an entry (the import is lazy: reader.js imports this module). */
-async function openReaderFor(page) {
+async function openReaderFor(group, id) {
   const { openReader } = await import("./reader.js");
-  return openReader({ page });
+  return openReader({ group, id });
 }

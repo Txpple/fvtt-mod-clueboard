@@ -9,13 +9,12 @@
 // user, assigned the --reader member and given Owner on the group for the run, reads each named
 // Clue through the module's own Reader, which gathers it; the check then moves the first one to
 // the reader's character and back on the GM page, so the holder is seen to follow. The temp user
-// and its ownership go in `finally`; the Clue types and the Mysteries entries stay, which is the
-// point: a world to look at.
+// and its ownership go in `finally`; the Clue types and the party's Mysteries entries (on the
+// Group actor) stay, which is the point: a world to look at.
 import { Foundry, foundryConfig, loadEnv } from "fvtt-mcp-dnd5e/client";
 
 const env = loadEnv();
 const MODULE_ID = "fvtt-mod-clueboard";
-const PAGE_TYPE = `${MODULE_ID}.clue`;
 const TEMP_USER = "ZZ-CLUE Reader";
 
 const arg = n => {
@@ -93,13 +92,13 @@ try {
         opened: !!win,
         centred,
         sidebarStill: ui.sidebar.tabGroups.primary === before && ui.sidebar.expanded === expanded,
-        pageModel: !!CONFIG.JournalEntryPage.dataModels[pageType],
-        sheet: Object.keys(CONFIG.JournalEntryPage.sheetClasses?.[pageType] ?? {}),
+        noPageType: !CONFIG.JournalEntryPage.dataModels[pageType] && !(game.documentTypes?.JournalEntryPage ?? []).includes(pageType),
+        noJournal: !game.journal.some(j => j.flags?.[id]) && !game.folders.some(fo => fo.flags?.[id]),
         isGM: game.user.isGM,
         user: game.user.name
       };
     },
-    { id: MODULE_ID, pageType: PAGE_TYPE }
+    { id: MODULE_ID, pageType: `${MODULE_ID}.clue` }
   );
   console.log(`  bridge user ${A.user} (GM=${A.isGM}); module ${A.installed ? `v${A.version} active=${A.active}` : "NOT INSTALLED"}`);
   assert(A.active, "the module is active");
@@ -109,19 +108,18 @@ try {
   assert(A.noTab, "no sidebar tab is registered: nothing of the module's is drawn in the sidebar");
   assert(A.opened && A.centred, "the button opens the Mysteries window, centred");
   assert(A.sidebarStill, "the click left the sidebar's tab and its expansion as they were");
-  assert(A.pageModel, "the Clue page type has its data model");
-  assert(A.sheet.length > 0, `the Clue page type has a sheet (${A.sheet.join(", ")})`);
+  assert(A.noPageType, "no journal page type is registered");
+  assert(A.noJournal, "no journal and no folder of the module's in the world");
   if (!A.active) throw new Error("module not active; enable it and restart the world");
 
-  // --- B. the party and its journal ------------------------------------------------------
+  // --- B. the party and its record -------------------------------------------------------
   console.log("# B. the party");
   const B = await f.evaluate(
     async ({ id }) => {
       const primary = game.settings.get("dnd5e", "primaryParty")?.actor ?? null;
       const group = primary ?? game.actors.find(a => a.type === "group");
       if (!group) return { error: "no group actor" };
-      await game.modules.get(id).api.ensureJournals();
-      const journal = game.modules.get(id).api.journalFor(group);
+      const entries = game.modules.get(id).api.entries(group);
       return {
         groupId: group.id,
         groupName: group.name,
@@ -134,9 +132,8 @@ try {
           qty: i.system?.quantity ?? 1,
           clueId: i.flags?.[id]?.id ?? null
         })),
-        journal: journal
-          ? { id: journal.id, name: journal.name, folder: journal.folder?.name, defaultOwnership: journal.ownership.default, pages: journal.pages.filter(p => p.type === `${id}.clue`).map(p => ({ name: p.name, id: p.system.id, readers: p.system.readers.map(r => r.actorName), holder: p.system.holder })) }
-          : null
+        schema: group.flags?.[id]?.schema ?? null,
+        entries: entries.map(e => ({ name: e.snapshot.name, id: e.id, readers: Object.values(e.readers).map(r => r.actorName), holder: e.holder }))
       };
     },
     { id: MODULE_ID }
@@ -145,9 +142,8 @@ try {
   groupId = B.groupId;
   console.log(`  group "${B.groupName}" (${B.groupId}); members: ${B.members.map(m => m.name).join(", ")}`);
   for (const i of B.stash) console.log(`    stash: ${i.name}  [${i.type}${i.loot ? `/${i.loot}` : ""}] x${i.qty}${i.clueId ? `  id=${i.clueId}` : ""}`);
-  assert(B.journal, `the party's Mysteries journal exists (${B.journal?.name} in ${B.journal?.folder})`);
-  assert(B.journal?.defaultOwnership === 3, "its default ownership is Owner");
-  for (const p of B.journal?.pages ?? []) console.log(`    entry: ${p.name}  readers=${p.readers.join(",")}  holder=${p.holder.left ? "left" : p.holder.actorName}`);
+  for (const e of B.entries) console.log(`    entry: ${e.name}  readers=${e.readers.join(",")}  holder=${e.holder.left ? "left" : e.holder.actorName}`);
+  if (B.entries.length) assert(B.schema === 1, `the party's record carries its schema version (${B.schema})`);
 
   // --- C. the Clue type --------------------------------------------------------------------
   if (clueNames.length) {
@@ -216,8 +212,7 @@ try {
           const stamp = !!app?.element?.querySelector(".clueboard-stamp");
           const chat = game.messages.contents.slice(-1)[0]?.id ?? null;
           await app?.close();
-          const journal = api.journalFor(group);
-          const page = journal?.pages.find(p => p.type === `${id}.clue` && p.system.id === item.getFlag(id, "id"));
+          const entry = api.entry(group, item.getFlag(id, "id"));
           return {
             isOwnerOfGroup: group.isOwner,
             clueId: item.getFlag(id, "id") ?? null,
@@ -225,7 +220,8 @@ try {
             text,
             stamp,
             chat,
-            page: page ? { name: page.name, readers: page.system.readers.map(r => r.actorName), holder: page.system.holder.actorName, scene: page.system.foundIn.sceneName, cal: page.system.foundIn.calendarDate, isOwner: page.isOwner } : null
+            page: entry ? { name: entry.snapshot.name, readers: Object.values(entry.readers).map(r => r.actorName), holder: entry.holder.actorName, scene: entry.foundIn.sceneName, cal: entry.foundIn.calendarDate } : null,
+            inDirectory: game.journal.some(j => j.flags?.[id]) || game.folders.some(fo => fo.flags?.[id])
           };
         },
         { id: MODULE_ID, groupId: B.groupId, name }
@@ -240,7 +236,7 @@ try {
       assert(D.page?.readers.includes(temp.readerName), `the entry exists and names the reader (${D.page?.readers.join(", ")})`);
       assert(D.page?.holder === B.groupName, `the holder is the stash (${D.page?.holder})`);
       assert(D.stamp, `the Reader shows the stamp (scene "${D.page?.scene}", ${D.page?.cal || "no calendar"})`);
-      assert(D.page?.isOwner, "the player owns the entry");
+      assert(!D.inDirectory, "nothing of the record shows in the player's Journal directory");
     }
 
     // the chat stayed quiet
@@ -268,8 +264,7 @@ try {
         const item = group.items.find(i => i.name === name);
         if (!item) return { error: `no stash item ${name}` };
         const clueId = item.getFlag(id, "id");
-        const journal = api.journalFor(group);
-        const page = () => journal.pages.find(p => p.type === `${id}.clue` && p.system.id === clueId);
+        const entry = () => api.entry(group, clueId);
         const wait = async pred => {
           for (let i = 0; i < 25; i++) {
             if (pred()) return true;
@@ -279,12 +274,12 @@ try {
         };
         const [copy] = await reader.createEmbeddedDocuments("Item", [item.toObject()]);
         await item.delete();
-        const toReader = await wait(() => page()?.system.holder.actorId === reader.id);
-        const holder1 = page()?.system.holder.actorName;
+        const toReader = await wait(() => entry()?.holder.actorId === reader.id);
+        const holder1 = entry()?.holder.actorName;
         const [back] = await group.createEmbeddedDocuments("Item", [copy.toObject()]);
         await copy.delete();
-        const toStash = await wait(() => page()?.system.holder.actorId === group.id);
-        const holder2 = page()?.system.holder.actorName;
+        const toStash = await wait(() => entry()?.holder.actorId === group.id);
+        const holder2 = entry()?.holder.actorName;
         return { toReader, holder1, toStash, holder2, backId: back.id };
       },
       { id: MODULE_ID, groupId: B.groupId, readerId: temp.readerId, name: readNames[0] }
@@ -318,23 +313,16 @@ try {
     await f.evaluate(async ({ groupId, id }) => {
       await foundry.applications.instances.get("clueboard-mysteries")?.close();
       const api = game.modules.get(id).api;
-      const journal = api.journalFor(game.actors.get(groupId));
-      const page = journal.pages.find(p => p.type === `${id}.clue`);
-      await api.openReader({ page });
+      const group = game.actors.get(groupId);
+      const [first] = api.entries(group);
+      if (first) await api.openReader({ group, id: first.id });
       await new Promise(r => setTimeout(r, 800));
     }, { groupId, id: MODULE_ID });
     await f.page.screenshot({ path: `${shots}/3-reader.png` });
-    await f.evaluate(async ({ groupId, id }) => {
+    await f.evaluate(async () => {
       for (const app of foundry.applications.instances.values()) if (app.constructor.name === "Reader") await app.close();
-      const journal = game.modules.get(id).api.journalFor(game.actors.get(groupId));
-      await journal.sheet.render({ force: true });
-      await new Promise(r => setTimeout(r, 1000));
-    }, { groupId, id: MODULE_ID });
-    await f.page.screenshot({ path: `${shots}/4-journal.png` });
-    await f.evaluate(async ({ groupId, id }) => {
-      game.modules.get(id).api.journalFor(game.actors.get(groupId)).sheet.close();
-    }, { groupId, id: MODULE_ID });
-    console.log("  written: 1-stash.png, 2-mysteries.png, 3-reader.png, 4-journal.png");
+    });
+    console.log("  written: 1-stash.png, 2-mysteries.png, 3-reader.png");
   }
 } finally {
   if (fp) await fp.disconnect?.().catch(() => {});

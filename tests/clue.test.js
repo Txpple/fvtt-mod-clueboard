@@ -6,7 +6,9 @@ import {
   isClue,
   resolveHolder,
   snapshotOf,
-  sortAndFilter
+  readerList,
+  sortAndFilter,
+  entryList
 } from "../scripts/decide/clue.js";
 
 const loot = (value, extra = {}) => ({ type: "loot", system: { type: { value } }, ...extra });
@@ -103,9 +105,11 @@ describe("the holder", () => {
 
 describe("the Mysteries list", () => {
   const entry = (name, at, html = "", notes = "") => ({
-    name,
-    system: { snapshot: { html, at }, notes }
+    id: name.toLowerCase().replace(/\W+/g, "-"),
+    snapshot: { name, html, at },
+    notes
   });
+  const names = list => list.map(e => e.snapshot.name);
   const entries = [
     entry("The Luck Shoe", "2026-10-27T19:00:00Z", "<p>a pick inside a ring</p>"),
     entry("The Wayhouse Ledger", "2026-10-27T21:00:00Z", "<p>27 Tarsakh 1385</p>", "two hands"),
@@ -113,7 +117,7 @@ describe("the Mysteries list", () => {
   ];
 
   it("lists the newest gather first", () => {
-    expect(sortAndFilter(entries).map(e => e.name)).toEqual([
+    expect(names(sortAndFilter(entries))).toEqual([
       "The Wayhouse Ledger",
       "The Luck Shoe",
       "Ysolde's Key"
@@ -121,9 +125,29 @@ describe("the Mysteries list", () => {
   });
 
   it("searches names, text and notes, ignoring tags and case", () => {
-    expect(sortAndFilter(entries, "RING").map(e => e.name)).toEqual(["The Luck Shoe"]);
-    expect(sortAndFilter(entries, "two hands").map(e => e.name)).toEqual(["The Wayhouse Ledger"]);
+    expect(names(sortAndFilter(entries, "RING"))).toEqual(["The Luck Shoe"]);
+    expect(names(sortAndFilter(entries, "two hands"))).toEqual(["The Wayhouse Ledger"]);
     expect(sortAndFilter(entries, "<p>")).toEqual([]);
+  });
+
+  it("reads the stored map as a list, newest first, skipping what is not an entry", () => {
+    const stored = Object.fromEntries(entries.map(e => [e.id, e]));
+    expect(names(entryList({ ...stored, junk: 3, none: null, noid: { snapshot: {} } }))).toEqual([
+      "The Wayhouse Ledger",
+      "The Luck Shoe",
+      "Ysolde's Key"
+    ]);
+    expect(entryList(undefined)).toEqual([]);
+    expect(entryList("x")).toEqual([]);
+  });
+
+  it("lists the readers in the order they read", () => {
+    const readers = {
+      b: { actorId: "b", actorName: "Cecil", at: "2026-10-28T02:00:00Z" },
+      a: { actorId: "a", actorName: "Kartor", at: "2026-10-28T01:00:00Z" }
+    };
+    expect(readerList(readers).map(r => r.actorName)).toEqual(["Kartor", "Cecil"]);
+    expect(readerList(null)).toEqual([]);
   });
 
   it("counts the ungathered once per id, and every unread Clue without one", () => {
