@@ -28,7 +28,7 @@ Phase 1 is four things.
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
   their character; a GM's opening marks nothing. Nothing goes to chat, ever.
 - **Mysteries the party names.** The party's own sorting. A mystery (a *thread* in the code) is a question or a
-  line of inquiry with a name, a colour and a short *Where we stand*, open or answered; it is a tab beside *All*
+  line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All*
   and *Unassigned*. Drag a card onto
   a mystery's tab to pin it there, onto another card inside it to order it; a clue can sit in as many mysteries as
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
