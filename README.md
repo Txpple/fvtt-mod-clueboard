@@ -10,7 +10,7 @@ it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.ht
 
 ## How it works
 
-Phase 1 is three things.
+Phase 1 is four things.
 
 - **The Clue.** A new item type, Clue, in the Create Item dialog beside dnd5e's own. Its sheet is plain: name,
   image, the text, an optional *Found at* line in the DM's words, and the kind: Document, Object, Statement,
@@ -27,6 +27,11 @@ Phase 1 is three things.
   search and a count of what the player has not read yet. A click opens the Reader, which shows the text, the stamp
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
   their character; a GM's opening marks nothing. Nothing goes to chat, ever.
+- **Threads.** The party's own sorting. A thread is a question or a line of inquiry with a name, a colour and a
+  short *Where we stand*, open or answered; it is a tab in Mysteries beside *All* and *Unsorted*. Drag a card onto
+  a thread's tab to pin it there, onto another card inside the thread to order it; a clue can sit in as many threads
+  as the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes threads, the GM
+  included; deleting one unpins its clues and loses nothing else.
 
 The record is kept on the party's Group actor itself, out of sight: no journal, no folder, nothing in a directory
 or on a sheet. The players write their reads from their own clients (they own the party, as Party Stash needs),
@@ -58,11 +63,16 @@ other dependencies; nothing of the family is required or detected.
 
 - `clueboard.collected(entry, group, item)` fires on the collecting client when an entry is made.
 - `clueboard.changed(entry, what, detail, group)` fires when an entry changes: `reader`, `snapshot`, `notes`,
-  `removed` (then `entry` is null and `detail` the entry as it was). An entry is a plain object: `id` (the Clue
-  item's), `kind`, `source`, `snapshot`, `foundIn`, `readers` (keyed by actor), `notes`.
+  `pinned`, `unpinned`, `removed` (then `entry` is null and `detail` the entry as it was). An entry is a plain
+  object: `id` (the Clue item's), `kind`, `source`, `snapshot`, `foundIn`, `readers` (keyed by actor), `notes`,
+  `threads` (keyed by thread, each `{ at, order }`).
+- `clueboard.thread(thread, what, group)` fires when a thread is `created`, `edited`, `reordered` or `removed`
+  (then `thread` is null and a fourth argument is the thread as it was).
 - `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group)`, `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
   `markRead(group, id)`, `openReader({ group, id })`, `openMysteries()`, `entries(group)`, `entry(group, id)`,
-  `findEntry(id)`, `parties()`.
+  `findEntry(id)`, `parties()`, `threads(group)`, `createThread(group, { name, question })`,
+  `updateThread(group, id, changes)`, `removeThread(group, id, { confirm })`, `pin(group, clueId, threadId)`,
+  `unpin(group, clueId, threadId)`, `movePin(group, threadId, clueId, beforeId)`.
 
 Every listener tolerates the hooks never firing; nothing in the family listens yet.
 
@@ -74,8 +84,8 @@ scripts/
   clueboard.js                 the entry point: the setting, the type, the drops, the button, the hooks
   common.js                    the id, the logger, the strings
   clue-item.js                 the Clue's data model, its sheet, its icon
-  store.js                     the party's record on its Group actor: the entry's schema, the writes
-  mysteries.js                 collecting, the read marks, the Mysteries window
+  store.js                     the party's record on its Group actor: the entry's and the thread's schema, the writes
+  mysteries.js                 collecting, the read marks, the threads, the Mysteries window
   reader.js                    the Reader window
   decide/clue.js               the decisions that need no Foundry (tested)
   kit/                         the Open Roll 5e kit: elect.js, receipt.js, log.js, the same
@@ -97,7 +107,8 @@ There is no build step: the module is plain ES modules loaded straight from `scr
 The live check, `FOUNDRY_HOST=local node tools/live-check.mjs`, joins the sandbox as the bridge user and reads
 back the registration and the party; with `--walk [--reader Kartor] [--shots <dir>]` it makes a scratch Clue,
 collects it three ways, proves it can never land in an inventory, has a temporary player open it so the read is
-marked, edits it for a revision, and cleans up after itself. It needs the MCP repo cloned beside this one
+marked, edits it for a revision, has the player make a thread and pin and order clues on it, and cleans up after
+itself. It needs the MCP repo cloned beside this one
 (`fvtt-mcp-dnd5e`, a dev dependency) with its `.env`.
 
 Releases: bump `version` and the `download` URL in `module.json` together and commit, then push an

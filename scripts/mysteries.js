@@ -8,7 +8,21 @@
  */
 
 import { log, MODULE_ID, t } from "./common.js";
-import { CLUE_TYPE, defaultParty, isClue, partyFor, readerList, snapshotOf, sortAndFilter, unreadCount } from "./decide/clue.js";
+import {
+  CLUE_TYPE,
+  defaultParty,
+  isClue,
+  nextColour,
+  partyFor,
+  pinnedTo,
+  readerList,
+  reorder,
+  snapshotOf,
+  sortAndFilter,
+  THREAD_COLOURS,
+  unreadCount,
+  unsorted
+} from "./decide/clue.js";
 import * as store from "./store.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -17,7 +31,7 @@ const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 /*  The party                                         */
 /* -------------------------------------------------- */
 
-export const { groups, findEntry, holdersOf, entriesOf, entryOf, primaryParty } = store;
+export const { groups, findEntry, holdersOf, entriesOf, entryOf, primaryParty, threadsOf, threadOf } = store;
 
 /** A group's members, as actors (a member whose actor is gone is skipped). */
 export const membersOf = group => Array.from(group?.system?.members ?? []).map(m => m.actor).filter(Boolean);
@@ -233,6 +247,140 @@ export async function markRead(group, id) {
 }
 
 /* -------------------------------------------------- */
+/*  Threads: the party's own sorting                  */
+/* -------------------------------------------------- */
+
+/** Whether this user may organise a party's Mysteries: its owners, which the players are. */
+export function mayOrganise(group, { tell = true } = {}) {
+  if (group?.isOwner) return true;
+  if (tell) ui.notifications.warn(t("mysteries.notOwner", { group: group?.name ?? "" }));
+  return false;
+}
+
+/** The thread dialog's form: name, question, colour. Returns the values, or null. */
+async function threadForm(title, thread = null) {
+  const esc = foundry.utils.escapeHTML;
+  const colours = THREAD_COLOURS.map(
+    c => `<option value="${c}" ${thread?.colour === c ? "selected" : ""}>${esc(t(`mysteries.colours.${c}`))}</option>`
+  ).join("");
+  const content = `
+    <p class="hint">${esc(t("mysteries.newThreadHint"))}</p>
+    <div class="form-group"><label>${esc(t("mysteries.threadName"))}</label><div class="form-fields"><input type="text" name="name" value="${esc(thread?.name ?? "")}" autofocus required></div></div>
+    <div class="form-group"><label>${esc(t("mysteries.threadQuestion"))}</label><div class="form-fields"><input type="text" name="question" value="${esc(thread?.question ?? "")}"></div></div>
+    ${thread ? `<div class="form-group"><label>${esc(t("mysteries.threadColour"))}</label><div class="form-fields"><select name="colour">${colours}</select></div></div>` : ""}`;
+  const values = await foundry.applications.api.DialogV2.prompt({
+    window: { title, icon: "fa-solid fa-user-secret" },
+    content,
+    ok: {
+      callback: (_ev, button) => {
+        const f = button.form.elements;
+        return { name: f.name.value.trim(), question: f.question.value.trim(), colour: f.colour?.value };
+      }
+    },
+    rejectClose: false
+  });
+  return values?.name ? values : null;
+}
+
+/** A new thread, asked for in a dialog; the colour is the least used. Returns it, or null. */
+export async function createThread(group, given = null) {
+  if (!mayOrganise(group)) return null;
+  const values = given ?? (await threadForm(t("mysteries.newThread")));
+  if (!values?.name) return null;
+  const threads = threadsOf(group);
+  const thread = {
+    id: foundry.utils.randomID(),
+    name: values.name,
+    colour: values.colour && THREAD_COLOURS.includes(values.colour) ? values.colour : nextColour(threads),
+    question: values.question ?? "",
+    status: "open",
+    stand: "",
+    order: (threads.at(-1)?.order ?? -1) + 1,
+    at: new Date().toISOString(),
+    by: game.user.id
+  };
+  await store.createThread(group, thread);
+  Hooks.callAll("clueboard.thread", threadOf(group, thread.id), "created", group);
+  return threadOf(group, thread.id);
+}
+
+/** The thread's name, question and colour, edited in a dialog. */
+export async function editThread(group, id) {
+  if (!mayOrganise(group)) return null;
+  const thread = threadOf(group, id);
+  if (!thread) return null;
+  const values = await threadForm(t("mysteries.threadEdit"), thread);
+  if (!values) return thread;
+  await store.updateThread(group, id, { name: values.name, question: values.question, colour: values.colour ?? thread.colour });
+  Hooks.callAll("clueboard.thread", threadOf(group, id), "edited", group);
+  return threadOf(group, id);
+}
+
+/** One field of a thread (status, stand, order), no dialog. */
+export async function updateThread(group, id, changes) {
+  if (!mayOrganise(group) || !threadOf(group, id)) return null;
+  await store.updateThread(group, id, changes);
+  Hooks.callAll("clueboard.thread", threadOf(group, id), "edited", group);
+  return threadOf(group, id);
+}
+
+/** A thread gone, after a confirm; its clues stay in Mysteries, unpinned from it. */
+export async function removeThread(group, id, { confirm = true } = {}) {
+  if (!mayOrganise(group)) return false;
+  const thread = threadOf(group, id);
+  if (!thread) return false;
+  const pinned = pinnedTo(entriesOf(group), id);
+  if (confirm) {
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: t("mysteries.threadDelete"), icon: "fa-solid fa-user-secret" },
+      content: `<p>${foundry.utils.escapeHTML(t("mysteries.threadDeleteConfirm", { name: thread.name, count: pinned.length }))}</p>`,
+      yes: { label: t("mysteries.threadDeleteYes"), icon: "fa-solid fa-xmark", default: false },
+      no: { label: t("mysteries.threadDeleteNo"), default: true },
+      rejectClose: false
+    });
+    if (!ok) return false;
+  }
+  await store.removeThread(group, id, pinned.map(e => e.id));
+  Hooks.callAll("clueboard.thread", null, "removed", group, thread);
+  return true;
+}
+
+/** A clue pinned to a thread, at its end; a second pin keeps its place. */
+export async function pinClue(group, clueId, threadId) {
+  if (!mayOrganise(group)) return false;
+  const entry = entryOf(group, clueId);
+  const thread = threadOf(group, threadId);
+  if (!entry || !thread) return false;
+  if (entry.threads?.[threadId]) return true;
+  const last = pinnedTo(entriesOf(group), threadId).at(-1);
+  await store.pin(group, clueId, threadId, (last?.threads?.[threadId]?.order ?? -1) + 1);
+  ui.notifications.info(t("mysteries.pinned", { name: entry.snapshot.name, thread: thread.name }));
+  Hooks.callAll("clueboard.changed", entryOf(group, clueId), "pinned", thread, group);
+  return true;
+}
+
+/** A clue unpinned from a thread; it stays in Mysteries. */
+export async function unpinClue(group, clueId, threadId) {
+  if (!mayOrganise(group)) return false;
+  const entry = entryOf(group, clueId);
+  if (!entry?.threads?.[threadId]) return false;
+  await store.unpin(group, clueId, threadId);
+  Hooks.callAll("clueboard.changed", entryOf(group, clueId), "unpinned", threadOf(group, threadId), group);
+  return true;
+}
+
+/** A pinned clue moved before another in its thread (null: to the end); every place rewritten. */
+export async function movePin(group, threadId, clueId, beforeId) {
+  if (!mayOrganise(group)) return false;
+  const ids = pinnedTo(entriesOf(group), threadId).map(e => e.id);
+  const next = reorder(ids, clueId, beforeId);
+  if (next.every((id, i) => id === ids[i])) return true;
+  await store.setPinOrders(group, threadId, Object.fromEntries(next.map((id, i) => [id, i])));
+  Hooks.callAll("clueboard.thread", threadOf(group, threadId), "reordered", group);
+  return true;
+}
+
+/* -------------------------------------------------- */
 /*  What the window shows                             */
 /* -------------------------------------------------- */
 
@@ -259,11 +407,20 @@ export function myReader(group) {
   return owned.length === 1 ? owned[0] : null;
 }
 
-/** One party's section of the window: its entries as cards, and its count of the unread. */
-export function sectionFor(group, query = "") {
+/**
+ * One party's section of the window: its tabs (All, Unsorted, each thread), the active tab's
+ * cards, the thread's head when one is active, and the count of the unread.
+ */
+export function sectionFor(group, query = "", tab = "all") {
   const all = entriesOf(group);
   const me = myReader(group);
-  const entries = sortAndFilter(all, query).map(e => ({
+  const threads = threadsOf(group);
+  const thread = threadOf(group, tab);
+  const active = thread ? "thread" : tab === "unsorted" ? "unsorted" : "all";
+  const shown = active === "thread" ? pinnedTo(all, thread.id) : active === "unsorted" ? unsorted(all) : all;
+  const ordered = active === "thread" ? shown.filter(e => sortAndFilter([e], query).length) : sortAndFilter(shown, query);
+  const byId = Object.fromEntries(threads.map(th => [th.id, th]));
+  const entries = ordered.map(e => ({
     group: group.id,
     id: e.id,
     name: e.snapshot.name,
@@ -275,13 +432,36 @@ export function sectionFor(group, query = "") {
     readers: readerList(e.readers).map(r => ({ name: r.actorName, me: me ? r.actorId === me.id : false })),
     unread: me ? !e.readers?.[me.id] : !Object.keys(e.readers ?? {}).length,
     notes: e.notes,
+    threads: Object.keys(e.threads ?? {})
+      .map(id => byId[id])
+      .filter(Boolean)
+      .map(th => ({ id: th.id, name: th.name, colour: th.colour })),
     search: `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase()
   }));
   const unread = unreadCount(all, me?.id ?? null);
+  const tabs = [
+    { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all", fixed: true },
+    { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted", fixed: true },
+    ...threads.map(th => ({
+      id: th.id,
+      name: th.name,
+      colour: th.colour,
+      answered: th.status === "answered",
+      count: pinnedTo(all, th.id).length,
+      active: thread?.id === th.id,
+      droppable: true
+    }))
+  ];
   return {
     id: group.id,
     name: group.name,
     entries,
+    tabs,
+    active,
+    thread: thread
+      ? { ...thread, answered: thread.status === "answered", count: pinnedTo(all, thread.id).length }
+      : null,
+    mayOrganise: mayOrganise(group, { tell: false }),
     total: all.length,
     unread,
     unreadText: me ? t("mysteries.unreadMine", { count: unread }) : t("mysteries.unreadAnyone", { count: unread })
@@ -308,7 +488,13 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       open: MysteriesWindow.#onOpen,
       collect: MysteriesWindow.#onCollect,
       remove: MysteriesWindow.#onRemove,
-      openItem: MysteriesWindow.#onOpenItem
+      openItem: MysteriesWindow.#onOpenItem,
+      tab: MysteriesWindow.#onTab,
+      newThread: MysteriesWindow.#onNewThread,
+      editThread: MysteriesWindow.#onEditThread,
+      deleteThread: MysteriesWindow.#onDeleteThread,
+      toggleStatus: MysteriesWindow.#onToggleStatus,
+      unpin: MysteriesWindow.#onUnpin
     }
   };
 
@@ -342,11 +528,20 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 
   #query = "";
 
+  /** The active tab per party: "all", "unsorted" or a thread's id. */
+  #tabs = {};
+
+  /** Open a party's tab (the API's and the live check's way in). */
+  showTab(groupId, tab) {
+    this.#tabs[groupId] = tab;
+    if (this.rendered) this.render();
+  }
+
   /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const list = groups().filter(g => g.testUserPermission(game.user, "OBSERVER"));
-    context.sections = list.map(g => sectionFor(g));
+    context.sections = list.map(g => sectionFor(g, "", this.#tabs[g.id] ?? "all"));
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
@@ -369,6 +564,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     const input = this.element.querySelector("input[name=search]");
     input?.addEventListener("input", ev => this.#filter(ev.currentTarget.value));
     if (this.#query) this.#filter(this.#query);
+    this.#wireThreads();
     if (game.user.isGM) {
       const el = this.element;
       el.addEventListener("dragover", ev => {
@@ -400,6 +596,130 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     } catch {
       return null;
     }
+  }
+
+  /** A card being dragged (its party and id), set at dragstart; a drag of anything else is null. */
+  static #dragging = null;
+
+  /**
+   * The party's own sorting: a card dragged onto a thread's tab pins it there; inside a thread, a
+   * card dropped on another goes before it, on the empty space after it, at the end. The stand
+   * saves as it is typed away from.
+   */
+  #wireThreads() {
+    const root = this.element;
+    for (const section of root.querySelectorAll(".clueboard-section[data-group]")) {
+      const group = game.actors.get(section.dataset.group);
+      if (!group) continue;
+      const may = mayOrganise(group, { tell: false });
+      const threadId = section.dataset.thread || null;
+      for (const card of section.querySelectorAll(".clueboard-card[data-id]")) {
+        card.draggable = may;
+        card.addEventListener("dragstart", ev => {
+          MysteriesWindow.#dragging = { group: group.id, id: card.dataset.id };
+          ev.dataTransfer.effectAllowed = "move";
+          ev.dataTransfer.setData("text/plain", card.dataset.id);
+          card.classList.add("dragging");
+        });
+        card.addEventListener("dragend", () => {
+          MysteriesWindow.#dragging = null;
+          card.classList.remove("dragging");
+          for (const el of root.querySelectorAll(".drop-before, .drop-ok")) el.classList.remove("drop-before", "drop-ok");
+        });
+        if (threadId) {
+          card.addEventListener("dragover", ev => {
+            const d = MysteriesWindow.#dragging;
+            if (!d || d.group !== group.id || d.id === card.dataset.id) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            card.classList.add("drop-before");
+          });
+          card.addEventListener("dragleave", () => card.classList.remove("drop-before"));
+          card.addEventListener("drop", ev => {
+            const d = MysteriesWindow.#dragging;
+            if (!d || d.group !== group.id) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            void movePin(group, threadId, d.id, card.dataset.id);
+          });
+        }
+      }
+      if (threadId) {
+        const grid = section.querySelector(".clueboard-cards");
+        grid?.addEventListener("dragover", ev => {
+          const d = MysteriesWindow.#dragging;
+          if (!d || d.group !== group.id) return;
+          ev.preventDefault();
+        });
+        grid?.addEventListener("drop", ev => {
+          const d = MysteriesWindow.#dragging;
+          if (!d || d.group !== group.id || ev.target.closest(".clueboard-card")) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          void movePin(group, threadId, d.id, null);
+        });
+      }
+      for (const tab of section.querySelectorAll(".clueboard-tab[data-droppable]")) {
+        tab.addEventListener("dragover", ev => {
+          const d = MysteriesWindow.#dragging;
+          if (!d || d.group !== group.id) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          tab.classList.add("drop-ok");
+        });
+        tab.addEventListener("dragleave", () => tab.classList.remove("drop-ok"));
+        tab.addEventListener("drop", ev => {
+          const d = MysteriesWindow.#dragging;
+          if (!d || d.group !== group.id) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          tab.classList.remove("drop-ok");
+          void pinClue(group, d.id, tab.dataset.tab);
+        });
+      }
+      const stand = section.querySelector("textarea[name=stand]");
+      if (stand && threadId) {
+        stand.addEventListener("change", ev => {
+          const value = ev.currentTarget.value;
+          if (value !== (threadOf(group, threadId)?.stand ?? "")) void updateThread(group, threadId, { stand: value });
+        });
+      }
+    }
+  }
+
+  static #onTab(_event, target) {
+    const section = target.closest("[data-group]");
+    if (section) this.showTab(section.dataset.group, target.dataset.tab);
+  }
+
+  static async #onNewThread(_event, target) {
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
+    if (!group) return;
+    const thread = await createThread(group);
+    if (thread) this.showTab(group.id, thread.id);
+  }
+
+  static async #onEditThread(_event, target) {
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
+    if (group) await editThread(group, target.dataset.thread);
+  }
+
+  static async #onDeleteThread(_event, target) {
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
+    if (!group) return;
+    if (await removeThread(group, target.dataset.thread)) this.showTab(group.id, "all");
+  }
+
+  static async #onToggleStatus(_event, target) {
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
+    const thread = threadOf(group, target.dataset.thread);
+    if (group && thread) await updateThread(group, thread.id, { status: thread.status === "answered" ? "open" : "answered" });
+  }
+
+  static async #onUnpin(event, target) {
+    event.stopPropagation();
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
+    if (group) await unpinClue(group, target.dataset.id, target.dataset.thread);
   }
 
   async #dropped(uuid) {

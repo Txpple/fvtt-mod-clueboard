@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * Clue Board's decisions that need no Foundry: what a Clue is, what a snapshot holds, which
- * party a drop lands in, and how a party's record reads as a list. Pure functions over plain
+ * party a drop lands in, how a party's record reads as a list, and how its threads sort it. Pure functions over plain
  * data, so the unit tests run them without a world.
  */
 
@@ -135,4 +135,75 @@ export function unreadCount(entries, actorId = null) {
     if (!read) n += 1;
   }
   return n;
+}
+
+/* -------------------------------------------------- */
+/*  Threads: the party's own sorting of its clues     */
+/* -------------------------------------------------- */
+
+/** The colours a thread can wear, in the order new threads take them. Names, styled in CSS. */
+export const THREAD_COLOURS = ["gold", "red", "blue", "green", "violet", "teal", "orange", "rose"];
+
+/**
+ * A party's threads as a list, in the order the party put them (then by name). Anything that is
+ * not a thread object is skipped.
+ * @param {Record<string, any> | null | undefined} stored
+ * @returns {Array<any>}
+ */
+export function threadList(stored) {
+  if (!stored || typeof stored !== "object") return [];
+  return Object.values(stored)
+    .filter(th => th && typeof th === "object" && typeof th.id === "string")
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || String(a.name ?? "").localeCompare(String(b.name ?? "")));
+}
+
+/**
+ * The colour a new thread takes: the least used, ties broken by the palette's order.
+ * @param {Array<{ colour?: string }>} threads
+ */
+export function nextColour(threads) {
+  const used = new Map(THREAD_COLOURS.map(c => [c, 0]));
+  for (const th of threads) if (used.has(th.colour)) used.set(th.colour, used.get(th.colour) + 1);
+  let best = THREAD_COLOURS[0];
+  for (const c of THREAD_COLOURS) if (used.get(c) < used.get(best)) best = c;
+  return best;
+}
+
+/**
+ * The entries pinned to a thread, in the thread's own order (then newest collection first).
+ * @param {Array<{ threads?: Record<string, { order?: number }>, foundIn?: { realDate?: string } }>} entries
+ * @param {string} threadId
+ */
+export function pinnedTo(entries, threadId) {
+  return entries
+    .filter(e => e.threads && typeof e.threads === "object" && threadId in e.threads)
+    .sort(
+      (a, b) =>
+        (a.threads[threadId]?.order ?? 0) - (b.threads[threadId]?.order ?? 0) ||
+        (b.foundIn?.realDate ?? "").localeCompare(a.foundIn?.realDate ?? "")
+    );
+}
+
+/**
+ * The entries pinned to no thread at all.
+ * @param {Array<{ threads?: Record<string, any> }>} entries
+ */
+export function unsorted(entries) {
+  return entries.filter(e => !e.threads || typeof e.threads !== "object" || !Object.keys(e.threads).length);
+}
+
+/**
+ * A list of ids with one moved before another (or to the end when `beforeId` is null or
+ * unknown). The moved id must be in the list; the list is never mutated.
+ * @param {string[]} ids
+ * @param {string} movedId
+ * @param {string | null} beforeId
+ * @returns {string[]}
+ */
+export function reorder(ids, movedId, beforeId) {
+  if (!ids.includes(movedId) || beforeId === movedId) return [...ids];
+  const rest = ids.filter(id => id !== movedId);
+  const at = beforeId === null ? -1 : rest.indexOf(beforeId);
+  if (at < 0) return [...rest, movedId];
+  return [...rest.slice(0, at), movedId, ...rest.slice(at)];
 }

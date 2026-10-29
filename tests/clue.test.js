@@ -6,11 +6,17 @@ import {
   entryList,
   isClue,
   KINDS,
+  nextColour,
   partyFor,
+  pinnedTo,
   readerList,
+  reorder,
   snapshotOf,
   sortAndFilter,
-  unreadCount
+  THREAD_COLOURS,
+  threadList,
+  unreadCount,
+  unsorted
 } from "../scripts/decide/clue.js";
 
 describe("what a Clue is", () => {
@@ -127,5 +133,53 @@ describe("the Mysteries list", () => {
     expect(unreadCount(entries, "cecil")).toBe(2);
     expect(unreadCount(entries, null)).toBe(1);
     expect(unreadCount([], "kartor")).toBe(0);
+  });
+});
+
+describe("threads", () => {
+  const e = (id, threads = {}, at = "2026-10-29T10:00:00Z") => ({
+    id,
+    threads,
+    foundIn: { realDate: at }
+  });
+
+  it("lists threads in the party's order, then by name", () => {
+    const stored = {
+      b: { id: "b", name: "B", order: 2 },
+      a: { id: "a", name: "A", order: 2 },
+      c: { id: "c", name: "C", order: 1 },
+      junk: 3
+    };
+    expect(threadList(stored).map(t => t.id)).toEqual(["c", "a", "b"]);
+    expect(threadList(null)).toEqual([]);
+  });
+
+  it("gives a new thread the least-used colour, in palette order", () => {
+    expect(nextColour([])).toBe(THREAD_COLOURS[0]);
+    expect(nextColour([{ colour: "gold" }])).toBe("red");
+    expect(nextColour(THREAD_COLOURS.map(colour => ({ colour })))).toBe("gold");
+    expect(nextColour([{ colour: "gold" }, { colour: "gold" }, { colour: "red" }])).toBe("blue");
+  });
+
+  it("finds what is pinned to a thread, in its order, and what is unsorted", () => {
+    const entries = [
+      e("x", { t1: { order: 2 } }),
+      e("y", { t1: { order: 1 }, t2: { order: 0 } }),
+      e("z"),
+      e("w", {})
+    ];
+    expect(pinnedTo(entries, "t1").map(x => x.id)).toEqual(["y", "x"]);
+    expect(pinnedTo(entries, "t2").map(x => x.id)).toEqual(["y"]);
+    expect(unsorted(entries).map(x => x.id)).toEqual(["z", "w"]);
+  });
+
+  it("moves an id before another, or to the end, without touching the list", () => {
+    const ids = ["a", "b", "c", "d"];
+    expect(reorder(ids, "d", "b")).toEqual(["a", "d", "b", "c"]);
+    expect(reorder(ids, "a", null)).toEqual(["b", "c", "d", "a"]);
+    expect(reorder(ids, "a", "nope")).toEqual(["b", "c", "d", "a"]);
+    expect(reorder(ids, "b", "b")).toEqual(["a", "b", "c", "d"]);
+    expect(reorder(ids, "q", "b")).toEqual(ids);
+    expect(ids).toEqual(["a", "b", "c", "d"]);
   });
 });

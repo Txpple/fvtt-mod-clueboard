@@ -17,6 +17,7 @@ const MODULE_ID = "fvtt-mod-clueboard";
 const CLUE_TYPE = `${MODULE_ID}.clue`;
 const TEMP_USER = "ZZ-CLUE Reader";
 const SCRATCH = "ZZ-CLUE Scratch";
+const THREAD = "ZZ-CLUE Thread";
 
 const arg = n => {
   const i = process.argv.indexOf(`--${n}`);
@@ -70,13 +71,14 @@ cleanup = async () => {
   if (scratchId || temp?.userId) {
     await f
       .evaluate(
-        async ({ id, groupId, scratchId, userId, had }) => {
+        async ({ id, groupId, scratchId, userId, had, thread }) => {
           const api = game.modules.get(id).api;
           const group = game.actors.get(groupId);
           if (scratchId) {
             if (api.entry(group, scratchId)) await api.uncollect(group, scratchId, { confirm: false });
             await game.items.get(scratchId)?.delete();
           }
+          for (const th of api.threads(group).filter(th => th.name === thread)) await api.removeThread(group, th.id, { confirm: false });
           if (userId) {
             // The whole map, replaced: a deletion operator inside ownership fails its validation
             // on v14, and a key left for a deleted user is litter on the party's actor.
@@ -87,7 +89,7 @@ cleanup = async () => {
             await game.users.get(userId)?.delete();
           }
         },
-        { id: MODULE_ID, groupId, scratchId, userId: temp?.userId ?? null, had: temp?.had ?? null }
+        { id: MODULE_ID, groupId, scratchId, userId: temp?.userId ?? null, had: temp?.had ?? null, thread: THREAD }
       )
       .catch(err => console.log(`  cleanup: ${err?.message ?? err}`));
   }
@@ -412,6 +414,60 @@ try {
     );
     assert(E.revision === 2 && E.html.includes("revised"), `the entry's snapshot followed the edit (revision ${E.revision})`);
     assert(E.readers === 1, "the readers survived the re-snapshot");
+
+    // --- G. threads: the party's own sorting ---------------------------------------------
+    console.log("# G. threads (the player makes one, pins, orders; the GM deletes it)");
+    const G1 = await fp.evaluate(
+      async ({ id, groupId, clueId, name }) => {
+        const api = game.modules.get(id).api;
+        const group = game.actors.get(groupId);
+        for (const th of api.threads(group).filter(th => th.name === name)) await api.removeThread(group, th.id, { confirm: false });
+        const thread = await api.createThread(group, { name, question: "Is this a check?" });
+        const other = api.entries(group).find(e => e.id !== clueId);
+        await api.pin(group, clueId, thread.id);
+        await api.pin(group, other.id, thread.id);
+        const pinnedTwice = await api.pin(group, clueId, thread.id);
+        const win = api.openMysteries();
+        for (let i = 0; i < 50 && !win.rendered; i++) await new Promise(r => setTimeout(r, 100));
+        win.showTab(group.id, thread.id);
+        await new Promise(r => setTimeout(r, 500));
+        const tabs = [...win.element.querySelectorAll(".clueboard-tab[data-tab]")].map(b => b.dataset.tab);
+        const head = win.element.querySelector(".clueboard-thread-head h4")?.textContent?.trim() ?? null;
+        const cardsBefore = [...win.element.querySelectorAll(".clueboard-card[data-id]")].map(c => c.dataset.id);
+        await api.movePin(group, thread.id, other.id, clueId);
+        await new Promise(r => setTimeout(r, 500));
+        const cardsAfter = [...win.element.querySelectorAll(".clueboard-card[data-id]")].map(c => c.dataset.id);
+        win.showTab(group.id, "unsorted");
+        await new Promise(r => setTimeout(r, 400));
+        const unsortedHasPinned = !!win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
+        await api.unpin(group, other.id, thread.id);
+        const afterUnpin = Object.keys(api.entry(group, other.id).threads ?? {}).includes(thread.id);
+        await win.close();
+        return { threadId: thread.id, colour: thread.colour, pinnedTwice, tabs, head, cardsBefore, cardsAfter, unsortedHasPinned, afterUnpin, otherId: other.id };
+      },
+      { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId, name: THREAD }
+    );
+    assert(G1.threadId && G1.colour, `a player who owns the party made a thread (${G1.colour})`);
+    assert(G1.tabs.includes("all") && G1.tabs.includes("unsorted") && G1.tabs.includes(G1.threadId), `the window shows All, Unsorted and the thread's tab (${G1.tabs.length} tabs)`);
+    assert(G1.head === THREAD, `the thread's head shows its name ("${G1.head}")`);
+    assert(G1.pinnedTwice && G1.cardsBefore.join() === [C.clueId, G1.otherId].join(), `two clues pinned, in pin order; a second pin is a no-op (${G1.cardsBefore.length} cards)`);
+    assert(G1.cardsAfter.join() === [G1.otherId, C.clueId].join(), "a move before another card reorders the thread");
+    assert(!G1.unsortedHasPinned, "a pinned clue is not in Unsorted");
+    assert(!G1.afterUnpin, "an unpin takes the clue off the thread");
+
+    const G2 = await f.evaluate(
+      async ({ id, groupId, clueId, threadId }) => {
+        const api = game.modules.get(id).api;
+        const group = api.parties().find(g => g.id === groupId);
+        const before = api.threads(group).some(th => th.id === threadId);
+        const removed = await api.removeThread(group, threadId, { confirm: false });
+        const after = api.threads(group).some(th => th.id === threadId);
+        const pinLeft = Object.keys(api.entry(group, clueId)?.threads ?? {}).includes(threadId);
+        return { before, removed, after, pinLeft };
+      },
+      { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId, threadId: G1.threadId }
+    );
+    assert(G2.before && G2.removed && !G2.after && !G2.pinLeft, "the GM deletes the thread and its pins go with it");
   }
 
   // --- F. screenshots, on the GM page ------------------------------------------------------

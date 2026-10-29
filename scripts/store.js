@@ -6,6 +6,8 @@
  *   flags.fvtt-mod-clueboard.schema            2
  *   flags.fvtt-mod-clueboard.entries.<itemId>  one entry (MysteryEntry below), keyed by the
  *                                              world Clue item it was collected from
+ *   flags.fvtt-mod-clueboard.threads.<id>      one thread (Thread below): the party's own
+ *                                              sorting; an entry's pins live on the entry
  *
  * Every write names the narrowest key it changes (an entry, a reader inside it, the snapshot,
  * the note), so two clients writing at once never overwrite each other. The writer must own the
@@ -13,7 +15,7 @@
  */
 
 import { MODULE_ID } from "./common.js";
-import { entryList, KINDS } from "./decide/clue.js";
+import { entryList, KINDS, threadList } from "./decide/clue.js";
 
 export const SCHEMA = 2;
 
@@ -40,7 +42,27 @@ export class MysteryEntry extends foundry.abstract.DataModel {
       readers: new fields.TypedObjectField(
         new fields.SchemaField({ actorId: text(), actorName: text(), userId: text(), at: text() })
       ),
-      notes: text()
+      notes: text(),
+      threads: new fields.TypedObjectField(
+        new fields.SchemaField({ at: text(), order: new fields.NumberField({ required: true, integer: true, initial: 0 }) })
+      )
+    };
+  }
+}
+
+/** One thread: a question the party asks of its clues, with where they stand on it. */
+export class Thread extends foundry.abstract.DataModel {
+  static defineSchema() {
+    return {
+      id: new fields.StringField({ required: true, blank: false }),
+      name: new fields.StringField({ required: true, blank: false }),
+      colour: new fields.StringField({ required: true, blank: false, initial: "gold" }),
+      question: text(),
+      status: new fields.StringField({ required: true, blank: false, initial: "open", choices: ["open", "answered"] }),
+      stand: text(),
+      order: new fields.NumberField({ required: true, integer: true, initial: 0 }),
+      at: text(),
+      by: text()
     };
   }
 }
@@ -48,8 +70,22 @@ export class MysteryEntry extends foundry.abstract.DataModel {
 /** A plain, validated copy of an entry (throws on data the schema refuses). */
 export const clean = data => new MysteryEntry(data, { strict: true }).toObject();
 
+/** A plain, validated copy of a thread. */
+export const cleanThread = data => new Thread(data, { strict: true }).toObject();
+
 /** The flag path of an entry, or of a key inside it. */
 const path = (id, key = "") => `flags.${MODULE_ID}.entries.${id}${key ? `.${key}` : ""}`;
+
+/** The flag path of a thread, or of a key inside it. */
+const tpath = (id, key = "") => `flags.${MODULE_ID}.threads.${id}${key ? `.${key}` : ""}`;
+
+const gone = () => new foundry.data.operators.ForcedDeletion();
+
+/** A group's threads, in the party's order (plain objects, read from the flags). */
+export const threadsOf = group => threadList(group?.flags?.[MODULE_ID]?.threads);
+
+/** One thread of a group's, or null. */
+export const threadOf = (group, id) => (id ? (group?.flags?.[MODULE_ID]?.threads?.[id] ?? null) : null);
 
 /** A group's entries, newest collection first (plain objects, read from the flags). */
 export const entriesOf = group => entryList(group?.flags?.[MODULE_ID]?.entries);
@@ -104,3 +140,32 @@ export const setSnapshot = (group, id, snapshot) =>
 
 /** The party's note. */
 export const setNotes = (group, id, notes) => write(group, { [path(id, "notes")]: String(notes ?? "") });
+
+/* -------------------------------------------------- */
+/*  Threads                                           */
+/* -------------------------------------------------- */
+
+/** A new thread, whole. */
+export const createThread = (group, thread) => write(group, { [tpath(thread.id)]: cleanThread(thread) });
+
+/** Some of a thread's fields (name, colour, question, status, stand, order). */
+export const updateThread = (group, id, changes) =>
+  write(group, Object.fromEntries(Object.entries(changes).map(([k, v]) => [tpath(id, k), v])));
+
+/** A thread gone, and every pin to it on the named entries, in one write. */
+export const removeThread = (group, id, entryIds) =>
+  write(group, {
+    [tpath(id)]: gone(),
+    ...Object.fromEntries(entryIds.map(eid => [path(eid, `threads.${id}`), gone()]))
+  });
+
+/** An entry pinned to a thread (a second pin to the same thread keeps its place). */
+export const pin = (group, clueId, threadId, order) =>
+  write(group, { [path(clueId, `threads.${threadId}`)]: { at: new Date().toISOString(), order } });
+
+/** An entry's pin to a thread gone. */
+export const unpin = (group, clueId, threadId) => write(group, { [path(clueId, `threads.${threadId}`)]: gone() });
+
+/** The order of a thread's pins, every entry's place in one write. */
+export const setPinOrders = (group, threadId, orders) =>
+  write(group, Object.fromEntries(Object.entries(orders).map(([clueId, n]) => [path(clueId, `threads.${threadId}.order`), n])));

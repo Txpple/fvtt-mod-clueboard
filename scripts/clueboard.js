@@ -200,7 +200,14 @@ Hooks.once("ready", () => {
       entries: mysteries.entriesOf,
       entry: mysteries.entryOf,
       findEntry: mysteries.findEntry,
-      parties: mysteries.groups
+      parties: mysteries.groups,
+      threads: mysteries.threadsOf,
+      createThread: mysteries.createThread,
+      removeThread: mysteries.removeThread,
+      updateThread: mysteries.updateThread,
+      pin: mysteries.pinClue,
+      unpin: mysteries.unpinClue,
+      movePin: mysteries.movePin
     };
   }
 });
