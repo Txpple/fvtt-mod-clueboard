@@ -40,7 +40,7 @@ the setup-screen `getPackages` check is owed before the first release. Phase 2 (
   snapshot, the note) with `render: false`; a removal is a `ForcedDeletion` on the entry's key. No elect anywhere.
 - **No GM secrets.** Anyone who can see the party can read its flags; nothing the module stores is hidden from
   players: the user's ruling, phase 2 included.
-- **Threads are the party's, on the party.** `flags.<id>.threads.<threadId>` (`Thread`: name, colour, question,
+- **Threads are the party's, on the party** (a *mystery* in every word a player reads; *thread* in the code). `flags.<id>.threads.<threadId>` (`Thread`: name, colour, question,
   status open/answered, stand, order) and an entry's pins at `entries.<clueId>.threads.<threadId>` (`{ at, order }`),
   so removing an entry removes its pins and deleting a thread is one write that forces its pins away. Any owner of
   the party organises, the GM included; a clue sits in as many threads as the party likes. A card dragged onto a
