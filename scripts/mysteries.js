@@ -132,14 +132,33 @@ export async function collect(item, group, { how = "api" } = {}) {
   }
 }
 
-/** Take a Clue off a party's record. The item stays in the world. */
-export async function uncollect(group, id) {
-  if (!game.user.isGM) return;
+/**
+ * Take a Clue off a party's record, after the GM confirms: the readers and the note on it go
+ * with it, and the item stays in the world. `confirm: false` is for scripts, never for a button.
+ * Returns true when the entry was removed.
+ */
+export async function uncollect(group, id, { confirm = true } = {}) {
+  if (!game.user.isGM) return false;
   const entry = entryOf(group, id);
-  if (!entry) return;
+  if (!entry) return false;
+  if (confirm) {
+    const readers = readerList(entry.readers).map(r => r.actorName);
+    const detail = readers.length
+      ? t("collect.confirmReaders", { readers: readers.join(", ") })
+      : t("collect.confirmNoReaders");
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: t("collect.confirmTitle"), icon: "fa-solid fa-scroll" },
+      content: `<p>${t("collect.confirm", { name: foundry.utils.escapeHTML(entry.snapshot.name), group: foundry.utils.escapeHTML(group.name) })}</p><p>${foundry.utils.escapeHTML(detail)}</p>`,
+      yes: { label: t("collect.confirmYes"), icon: "fa-solid fa-xmark", default: false },
+      no: { label: t("collect.confirmNo"), default: true },
+      rejectClose: false
+    });
+    if (!ok) return false;
+  }
   await store.removeEntry(group, id);
   ui.notifications.info(t("collect.removed", { name: entry.snapshot.name, group: group.name }));
   Hooks.callAll("clueboard.changed", null, "removed", entry, group);
+  return true;
 }
 
 /** The folder imported Clues land in, made on first need (GM). */

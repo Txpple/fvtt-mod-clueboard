@@ -46,10 +46,12 @@ function watch(f, label, sink) {
   });
 }
 
-setTimeout(() => {
-  console.error("[clueboard] WATCHDOG: 240s elapsed, hard abort");
+let cleanup = async () => {};
+setTimeout(async () => {
+  console.error("[clueboard] WATCHDOG: 120s elapsed, cleaning up and aborting");
+  await cleanup().catch(() => {});
   process.exit(3);
-}, 240_000).unref();
+}, 120_000).unref();
 
 const lines = [];
 const f = new Foundry(foundryConfig(env));
@@ -61,6 +63,37 @@ let temp = null;
 let fp = null;
 let groupId = null;
 let scratchId = null;
+/** The one cleanup, run by `finally` or by the watchdog, whichever comes first. */
+cleanup = async () => {
+  cleanup = async () => {};
+  if (fp) await fp.disconnect?.().catch(() => {});
+  if (scratchId || temp?.userId) {
+    await f
+      .evaluate(
+        async ({ id, groupId, scratchId, userId, had }) => {
+          const api = game.modules.get(id).api;
+          const group = game.actors.get(groupId);
+          if (scratchId) {
+            if (api.entry(group, scratchId)) await api.uncollect(group, scratchId, { confirm: false });
+            await game.items.get(scratchId)?.delete();
+          }
+          if (userId) {
+            // The whole map, replaced: a deletion operator inside ownership fails its validation
+            // on v14, and a key left for a deleted user is litter on the party's actor.
+            const ownership = { ...group.ownership };
+            if (had === null) delete ownership[userId];
+            else ownership[userId] = had;
+            await group.update({ ownership }, { recursive: false, diff: false });
+            await game.users.get(userId)?.delete();
+          }
+        },
+        { id: MODULE_ID, groupId, scratchId, userId: temp?.userId ?? null, had: temp?.had ?? null }
+      )
+      .catch(err => console.log(`  cleanup: ${err?.message ?? err}`));
+  }
+  await f.disconnect?.().catch(() => {});
+};
+
 try {
   // --- A. registration --------------------------------------------------------------------
   console.log("# A. registration");
@@ -156,6 +189,19 @@ try {
   if (walk) {
     // --- C. a scratch Clue, collected three ways, never carried --------------------------
     console.log("# C. a scratch Clue is collected, never carried (GM page)");
+    const swept = await f.evaluate(
+      async ({ id, type, name }) => {
+        const api = game.modules.get(id).api;
+        const stale = game.items.filter(i => i.type === type && i.name === name);
+        for (const item of stale) {
+          for (const g of api.parties()) if (api.entry(g, item.id)) await api.uncollect(g, item.id, { confirm: false });
+          await item.delete();
+        }
+        return stale.length;
+      },
+      { id: MODULE_ID, type: CLUE_TYPE, name: SCRATCH }
+    );
+    if (swept) console.log(`  swept ${swept} stale scratch Clue(s) from an aborted run`);
     const C = await f.evaluate(
       async ({ id, type, groupId, name, readerName }) => {
         const api = game.modules.get(id).api;
@@ -194,12 +240,12 @@ try {
         }
         const memberCarries = member.items.some(i => i.type === type);
         // 3. taken out, then a drop on a member's sheet collects for their party
-        await api.uncollect(group, clue.id);
+        await api.uncollect(group, clue.id, { confirm: false });
         const gone = await wait(() => !api.entry(group, clue.id));
         const allowed2 = Hooks.call("dropActorSheetData", member, member.sheet, data);
         const byMemberDrop = await wait(() => !!api.entry(group, clue.id));
         // 4. the strip lists it once it is out, and Collect puts it back
-        await api.uncollect(group, clue.id);
+        await api.uncollect(group, clue.id, { confirm: false });
         await wait(() => !api.entry(group, clue.id));
         const win = api.openMysteries();
         await wait(() => win.rendered);
@@ -208,7 +254,39 @@ try {
         await win.close();
         await api.collect(clue, group, { how: "check" });
         const byCollect = !!api.entry(group, clue.id);
+        // 5. Take back asks first: Keep it leaves the entry, Take it out removes it
+        const dialogButton = async which => {
+          for (let i = 0; i < 30; i++) {
+            for (const app of foundry.applications.instances.values()) {
+              if (!(app instanceof foundry.applications.api.DialogV2)) continue;
+              const btn = app.element?.querySelector(`button[data-action="${which}"]`);
+              if (btn) return btn;
+            }
+            await new Promise(r => setTimeout(r, 100));
+          }
+          // No dialog came: close whatever dialog there is so the awaited promise settles.
+          for (const app of foundry.applications.instances.values()) {
+            if (app instanceof foundry.applications.api.DialogV2) await app.close();
+          }
+          return null;
+        };
+        // The dialog is closed rather than clicked: closing is "Keep it" (it resolves false).
+        const kept = api.uncollect(group, clue.id);
+        const asked = !!(await dialogButton("no"));
+        for (const app of foundry.applications.instances.values()) {
+          if (app instanceof foundry.applications.api.DialogV2) await app.close();
+        }
+        const keptResult = await Promise.race([kept, new Promise(r => setTimeout(() => r("pending"), 3000))]);
+        const stillThere = !!api.entry(group, clue.id);
+        const takenResult = await api.uncollect(group, clue.id, { confirm: false });
+        const nowGone = await wait(() => !api.entry(group, clue.id));
+        await api.collect(clue, group, { how: "check" });
         return {
+          asked,
+          keptResult,
+          stillThere,
+          takenResult,
+          nowGone,
           clueId: clue.id,
           allowed1,
           byPartyDrop,
@@ -235,6 +313,8 @@ try {
     assert(C.allowed2 === false && C.byMemberDrop, "a Clue dropped on a member's sheet is collected for their party");
     assert(C.inStrip, "an uncollected Clue shows in the GM strip");
     assert(C.byCollect, "Collect puts it back");
+    assert(C.asked && C.keptResult === false && C.stillThere, "Take back asks first, and Keep it leaves the entry");
+    assert(C.takenResult === true && C.nowGone, "Take it out removes it");
 
     // --- D. a player opens it in Mysteries: the read is marked ----------------------------
     console.log(`# D. a player (${readerName}) opens it in Mysteries`);
@@ -373,32 +453,7 @@ try {
     console.log("  written: 1-mysteries.png, 2-reader.png, 3-clue-sheet.png");
   }
 } finally {
-  if (fp) await fp.disconnect?.().catch(() => {});
-  if (scratchId || temp?.userId) {
-    await f
-      .evaluate(
-        async ({ id, groupId, scratchId, userId, had }) => {
-          const api = game.modules.get(id).api;
-          const group = game.actors.get(groupId);
-          if (scratchId) {
-            if (api.entry(group, scratchId)) await api.uncollect(group, scratchId);
-            await game.items.get(scratchId)?.delete();
-          }
-          if (userId) {
-            // The whole map, replaced: a deletion operator inside ownership fails its validation
-            // on v14, and a key left for a deleted user is litter on the party's actor.
-            const ownership = { ...group.ownership };
-            if (had === null) delete ownership[userId];
-            else ownership[userId] = had;
-            await group.update({ ownership }, { recursive: false, diff: false });
-            await game.users.get(userId)?.delete();
-          }
-        },
-        { id: MODULE_ID, groupId, scratchId, userId: temp?.userId ?? null, had: temp?.had ?? null }
-      )
-      .catch(err => console.log(`  cleanup: ${err?.message ?? err}`));
-  }
-  await f.disconnect?.().catch(() => {});
+  await cleanup();
 }
 
 // --- the console --------------------------------------------------------------------------

@@ -61,7 +61,7 @@ other dependencies; nothing of the family is required or detected.
 - `clueboard.changed(entry, what, detail, group)` fires when an entry changes: `reader`, `snapshot`, `notes`,
   `removed` (then `entry` is null and `detail` the entry as it was). An entry is a plain object: `id` (the Clue
   item's), `kind`, `source`, `snapshot`, `foundIn`, `readers` (keyed by actor), `notes`.
-- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group)`, `uncollect(group, id)`,
+- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group)`, `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
   `markRead(group, id)`, `openReader({ group, id })`, `openMysteries()`, `entries(group)`, `entry(group, id)`,
   `findEntry(id)`, `parties()`.
 

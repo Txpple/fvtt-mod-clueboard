@@ -8,8 +8,8 @@
 /** The item type the module declares (module id dot subtype, as Foundry names it). */
 export const CLUE_TYPE = "fvtt-mod-clueboard.clue";
 
-/** The kinds a Clue can be. Documents first; testimony and observation are phase 2 values. */
-export const KINDS = ["document"];
+/** The kinds a Clue can be: what the party found, read or heard. More are one line each. */
+export const KINDS = ["document", "object", "testimony"];
 
 /**
  * A Clue is an item of the module's own type. Nothing else is one.

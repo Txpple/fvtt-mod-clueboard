@@ -14,7 +14,9 @@
     "sheet": "Clue",
     "tab": "Mysteries",
     "kinds": {
-      "document": "Document"
+      "document": "Document",
+      "object": "Object",
+      "testimony": "Testimony"
     },
     "sheetFields": {
       "foundAt": "Found at",
@@ -29,6 +31,12 @@
       "done": "{name} is in {group}'s Mysteries.",
       "already": "{name} is already in {group}'s Mysteries.",
       "removed": "{name} was taken out of {group}'s Mysteries. The Clue is still in the Items directory.",
+      "confirmTitle": "Take it out of Mysteries?",
+      "confirm": "Take {name} out of {group}'s Mysteries? The Clue stays in the Items directory and can be collected again.",
+      "confirmReaders": "The party loses its note on it and the record that {readers} read it.",
+      "confirmNoReaders": "Nobody has read it yet; the party loses nothing but the card.",
+      "confirmYes": "Take it out",
+      "confirmNo": "Keep it",
       "gmOnly": "Only a GM collects a Clue.",
       "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor; make one and collect into it.",
       "pickParty": "Which party collects it?",
