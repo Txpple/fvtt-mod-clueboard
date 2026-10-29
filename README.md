@@ -28,7 +28,7 @@ Phase 1 is four things.
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
   their character; a GM's opening marks nothing. Nothing goes to chat, ever.
 - **Threads.** The party's own sorting. A thread is a question or a line of inquiry with a name, a colour and a
-  short *Where we stand*, open or answered; it is a tab in Mysteries beside *All* and *Unsorted*. Drag a card onto
+  short *Where we stand*, open or answered; it is a tab in Mysteries beside *All* and *Unassigned*. Drag a card onto
   a thread's tab to pin it there, onto another card inside the thread to order it; a clue can sit in as many threads
   as the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes threads, the GM
   included; deleting one unpins its clues and loses nothing else.
