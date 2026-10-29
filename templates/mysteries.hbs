@@ -52,6 +52,11 @@
                 <span class="clueboard-dot"></span>
                 <span class="clueboard-rail-name">{{ name }}</span>
                 <span class="clueboard-tab-count">{{ count }}</span>
+                {{#if answered}}
+                <i class="clueboard-rail-status solved fa-solid fa-circle-check" data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadAnswered" }}"></i>
+                {{else}}
+                <i class="clueboard-rail-status fa-regular fa-circle" data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadOpen" }}"></i>
+                {{/if}}
             </button>
             {{else}}
             <span class="clueboard-rail-none">{{ localize "fvtt-mod-clueboard.mysteries.noMysteries" }}</span>
