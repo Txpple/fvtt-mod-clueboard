@@ -472,6 +472,41 @@ try {
     assert(G2.before && G2.removed && !G2.after && !G2.pinLeft, "the GM deletes the thread and its pins go with it");
   }
 
+  // --- H. the export -----------------------------------------------------------------------
+  console.log("# H. the export (GM page, nothing written)");
+  const H = await f.evaluate(
+    ({ id, groupId }) => {
+      const api = game.modules.get(id).api;
+      const group = game.actors.get(groupId);
+      const data = api.exportData(group);
+      const entries = api.entries(group);
+      const first = data.clues[0];
+      return {
+        format: data.format,
+        party: data.party,
+        clues: data.clues.length,
+        entries: entries.length,
+        mysteries: data.mysteries.length,
+        threads: api.threads(group).length,
+        firstKeys: first ? Object.keys(first) : [],
+        firstPlain: first ? !/<[^>]+>/.test(first.text) && first.text.length > 0 : null,
+        kindsLabelled: data.clues.every(c => /^[A-Z]/.test(c.kind)),
+        json: (() => {
+          try {
+            return JSON.stringify(data).length > 0;
+          } catch {
+            return false;
+          }
+        })()
+      };
+    },
+    { id: MODULE_ID, groupId }
+  );
+  assert(H.format === "fvtt-mod-clueboard/mysteries" && H.party, `the export names its format and the party (${H.party})`);
+  assert(H.clues === H.entries && H.mysteries === H.threads, `the export carries every clue and mystery (${H.clues} clues, ${H.mysteries} mysteries)`);
+  assert(["id", "name", "kind", "foundAt", "foundIn", "text", "html", "revision", "readBy", "note", "mysteries"].every(k => H.firstKeys.includes(k)), "a clue carries its name, kind, found-at, text, html, readers, note and mysteries");
+  assert(H.firstPlain !== false && H.kindsLabelled && H.json, "the text is plain words, the kinds are labelled, the whole serialises");
+
   // --- F. screenshots, on the GM page ------------------------------------------------------
   if (shots) {
     console.log(`# F. screenshots into ${shots}`);

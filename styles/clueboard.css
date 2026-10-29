@@ -808,3 +808,12 @@
 .clueboard-stamp .clueboard-chip .clueboard-dot {
   margin-inline-end: 0.3rem;
 }
+
+.clueboard-section-head .clueboard-export {
+  flex: none;
+  opacity: 0.6;
+}
+
+.clueboard-section-head .clueboard-export:hover {
+  opacity: 1;
+}

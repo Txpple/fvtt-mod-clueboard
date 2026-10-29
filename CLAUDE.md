@@ -54,6 +54,9 @@ Clue Board and no `fvtt-mod-clueboard`; "Mysteries" appears only inside adventur
   thread's tab pins it (the window's own drag, a plain-text payload that is never a Foundry Item drop); dropped on a
   card inside a thread it goes before it; the whole order is rewritten in one write. The active tab is window state,
   per party.
+- **The export is what the party has** (`exportData`, `exportToFile`): the record as plain data, every clue's text
+  as plain words and HTML, readers, note, mysteries, and the mysteries with their theories; nothing of the DM's.
+  A button in the section head; anyone who can open the window can export.
 - **Read never posts.** The Reader writes nothing to chat, ever. A GM's opening marks nothing.
 - **Mysteries is a window, never a sidebar panel.** A spy button (`fa-user-secret`) is added to the sidebar's strip directly after
   Journal on `renderSidebar` (no `data-tab`, no `data-action`, so the sidebar never switches or expands for it);

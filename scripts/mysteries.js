@@ -397,6 +397,63 @@ const plainText = html => {
 
 const excerpt = html => plainText(html).slice(0, 180);
 
+/* -------------------------------------------------- */
+/*  The export                                        */
+/* -------------------------------------------------- */
+
+/**
+ * A party's Mysteries as plain data, for a file: every clue with its text (as HTML and as plain
+ * words), where and when it was found, who has read it, the party's note and the mysteries it is
+ * pinned to; then the mysteries themselves. Nothing of the DM's: it is what the party has.
+ */
+export function exportData(group) {
+  const threads = threadsOf(group);
+  const byId = Object.fromEntries(threads.map(th => [th.id, th]));
+  const entries = entriesOf(group);
+  const kindLabel = kind => t(`kinds.${kind ?? "document"}`);
+  return {
+    format: "fvtt-mod-clueboard/mysteries",
+    version: 1,
+    party: group.name,
+    world: game.world.title,
+    exportedAt: new Date().toISOString(),
+    clues: entries.map(e => ({
+      id: e.id,
+      name: e.snapshot.name,
+      kind: kindLabel(e.kind ?? e.snapshot.kind),
+      foundAt: e.snapshot.foundAt,
+      foundIn: { scene: e.foundIn.sceneName, calendarDate: e.foundIn.calendarDate, realDate: e.foundIn.realDate },
+      text: plainText(e.snapshot.html),
+      html: e.snapshot.html,
+      revision: e.snapshot.revision,
+      readBy: readerList(e.readers).map(r => ({ name: r.actorName, at: r.at })),
+      note: e.notes,
+      mysteries: Object.keys(e.threads ?? {})
+        .map(id => byId[id]?.name)
+        .filter(Boolean)
+    })),
+    mysteries: threads.map(th => ({
+      id: th.id,
+      name: th.name,
+      question: th.question,
+      status: th.status === "answered" ? "solved" : "unsolved",
+      whereWeStand: th.stand,
+      colour: th.colour,
+      clues: pinnedTo(entries, th.id).map(e => e.snapshot.name)
+    }))
+  };
+}
+
+/** The export written to a file the browser saves: `<party>-mysteries-<date>.json`. */
+export function exportToFile(group) {
+  const data = exportData(group);
+  const slug = (group.name || "party").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const name = `${slug}-mysteries-${data.exportedAt.slice(0, 10)}.json`;
+  foundry.utils.saveDataToFile(JSON.stringify(data, null, 2), "application/json", name);
+  ui.notifications.info(t("mysteries.exported", { name, count: data.clues.length }));
+  return name;
+}
+
 /** The character this user's reads count for, without asking: null for a GM or a user with none. */
 export function myReader(group) {
   if (game.user.isGM) return null;
@@ -490,6 +547,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       collect: MysteriesWindow.#onCollect,
       remove: MysteriesWindow.#onRemove,
       openItem: MysteriesWindow.#onOpenItem,
+      export: MysteriesWindow.#onExport,
       // Not "tab": ApplicationV2 handles that action itself, before any of ours, and throws.
       showTab: MysteriesWindow.#onShowTab,
       newThread: MysteriesWindow.#onNewThread,
@@ -772,6 +830,11 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     event.stopPropagation();
     const group = game.actors.get(target.dataset.group);
     if (group) await uncollect(group, target.dataset.id);
+  }
+
+  static async #onExport(_event, target) {
+    const group = game.actors.get(target.closest("[data-group]")?.dataset.group) ?? (await pickParty());
+    if (group) exportToFile(group);
   }
 
   static async #onOpenItem(event, target) {

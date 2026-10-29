@@ -34,6 +34,11 @@ Phase 1 is four things.
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
   included; deleting one unpins its clues and loses nothing else.
 
+**Export.** The file icon beside the count in Mysteries saves the party's clues as a JSON file, every clue with
+its text (as plain words and as HTML), where and when it was found, who has read it, the party's note and the
+mysteries it sits in, then the mysteries themselves with their questions and theories: something to hand to a
+player who wants to feed the case to an AI, or to keep. Anyone who can open Mysteries can export.
+
 The record is kept on the party's Group actor itself, out of sight: no journal, no folder, nothing in a directory
 or on a sheet. The players write their reads from their own clients (they own the party, as Party Stash needs),
 so a read is marked with no GM online. A world with several parties keeps one record per party; with none, there
@@ -73,7 +78,8 @@ other dependencies; nothing of the family is required or detected.
   `markRead(group, id)`, `openReader({ group, id })`, `openMysteries()`, `entries(group)`, `entry(group, id)`,
   `findEntry(id)`, `parties()`, `threads(group)`, `createThread(group, { name, question })`,
   `updateThread(group, id, changes)`, `removeThread(group, id, { confirm })`, `pin(group, clueId, threadId)`,
-  `unpin(group, clueId, threadId)`, `movePin(group, threadId, clueId, beforeId)`.
+  `unpin(group, clueId, threadId)`, `movePin(group, threadId, clueId, beforeId)`, `exportData(group)` (the plain
+  object), `exportToFile(group)` (the download).
 
 Every listener tolerates the hooks never firing; nothing in the family listens yet.
 

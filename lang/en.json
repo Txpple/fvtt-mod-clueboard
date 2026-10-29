@@ -50,6 +50,8 @@
     "mysteries": {
       "title": "Mysteries",
       "search": "Search the clues",
+      "export": "Export the clues as a JSON file",
+      "exported": "{name} saved: {count} clue(s).",
       "empty": "Nothing collected yet. When the DM collects a Clue it appears here.",
       "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor.",
       "unreadMine": "{count} unread by you",

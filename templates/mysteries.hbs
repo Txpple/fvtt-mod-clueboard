@@ -41,6 +41,8 @@
         <div class="clueboard-section-head">
             {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
             <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
+            <button type="button" class="clueboard-export ui-control plain icon fa-solid fa-file-export" data-action="export"
+                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.export" }}"></button>
         </div>
 
         <div class="clueboard-mysteries-band" data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.mysteriesHint" }}">

@@ -207,7 +207,9 @@ Hooks.once("ready", () => {
       updateThread: mysteries.updateThread,
       pin: mysteries.pinClue,
       unpin: mysteries.unpinClue,
-      movePin: mysteries.movePin
+      movePin: mysteries.movePin,
+      exportData: mysteries.exportData,
+      exportToFile: mysteries.exportToFile
     };
   }
 });
