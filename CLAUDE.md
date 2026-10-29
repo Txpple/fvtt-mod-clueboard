@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-29).** 1.1.0 is released and on prod (the rail, the JSON export, the solved/unsolved marks), after
+**State (2026-10-29).** 1.2.0 is released and on prod (`collect` takes `stamp: false`, which the MCP's `manage-clues` passes for a clue found earlier), after 1.1.0 (the rail, the JSON export, the solved/unsolved marks), after
 1.0.0, released and put on prod (Echoes of Halruaa: installed and
 enabled through the installer; the ten Session 02 documents migrated to Clues from their world originals, all kind
 Document for the user's audit, collected on the Party with no scene stamp, the stash copies and then, on the user's
