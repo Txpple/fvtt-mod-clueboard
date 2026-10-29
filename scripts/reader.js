@@ -62,7 +62,6 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
     context.name = entry.snapshot.name;
     context.img = entry.snapshot.img;
     context.html = await TextEditor.enrichHTML(entry.snapshot.html ?? "", { secrets: game.user.isGM, relativeTo: source ?? this.group });
-    context.kind = t(`kinds.${entry.kind}`);
     context.revision = entry.snapshot.revision > 1 ? t("read.revision", { n: entry.snapshot.revision }) : "";
     context.stamp = {
       foundAt: entry.snapshot.foundAt,

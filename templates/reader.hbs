@@ -16,27 +16,23 @@
 <div class="clueboard-stamp">
     <div class="clueboard-stamp-cell">
         <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.foundIn" }}</span>
-        {{#if stamp.foundAt}}<span>{{ stamp.foundAt }}</span>{{/if}}
-        <small>{{ stamp.foundIn }}</small>
-        {{#if stamp.calendarDate}}<small>{{ stamp.calendarDate }}</small>{{/if}}
-        {{#if stamp.realDate}}<small>{{ stamp.realDate }}</small>{{/if}}
+        <span class="clueboard-stamp-value">
+            {{#if stamp.foundAt}}<span>{{ stamp.foundAt }}</span>{{/if}}
+            <small>{{ stamp.foundIn }}{{#if stamp.calendarDate}} · {{ stamp.calendarDate }}{{/if}}{{#if stamp.realDate}} · {{ stamp.realDate }}{{/if}}</small>
+        </span>
     </div>
     <div class="clueboard-stamp-cell">
         <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.readBy" }}</span>
-        <span class="clueboard-chips">
+        <span class="clueboard-stamp-value clueboard-chips">
             {{#each stamp.readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
         </span>
     </div>
     <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.kind" }}</span>
-        <span>{{ kind }}</span>
-    </div>
-    {{#if stamp.notes}}
-    <div class="clueboard-stamp-cell clueboard-stamp-notes">
         <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.notesLabel" }}</span>
-        <span class="clueboard-notes">{{ stamp.notes }}</span>
+        <span class="clueboard-stamp-value">
+            {{#if stamp.notes}}<span class="clueboard-notes">{{ stamp.notes }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noNote" }}</span>{{/if}}
+        </span>
     </div>
-    {{/if}}
 </div>
 
 <footer class="clueboard-reader-footer">

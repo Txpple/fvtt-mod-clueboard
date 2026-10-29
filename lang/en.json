@@ -69,10 +69,10 @@
       "entryGone": "That entry is no longer in Mysteries."
     },
     "stamp": {
-      "notesLabel": "The party's note",
+      "notesLabel": "Note",
+      "noNote": "none yet",
       "foundIn": "Found",
-      "readBy": "Read by",
-      "kind": "Kind"
+      "readBy": "Read by"
     }
   }
 }
