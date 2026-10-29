@@ -437,6 +437,29 @@ try {
         await api.movePin(group, thread.id, other.id, clueId);
         await new Promise(r => setTimeout(r, 500));
         const cardsAfter = [...win.element.querySelectorAll(".clueboard-card[data-id]")].map(c => c.dataset.id);
+        // A pin keeps the place: on All Clues, scrolled down and searching, pin a clue to the
+        // thread; the view, the scroll and the search are what they were.
+        await win.showTab(group.id, "all");
+        win.setPosition({ height: 420 });
+        await new Promise(r => setTimeout(r, 300));
+        const main = () => win.element.querySelector(".clueboard-main");
+        const input = win.element.querySelector("input[name=search]");
+        input.value = "e";
+        input.dispatchEvent(new Event("input"));
+        main().scrollTop = 120;
+        const scrollBefore = main().scrollTop;
+        const third = api.entries(group).find(e => e.id !== clueId && e.id !== other.id);
+        await api.pin(group, third.id, thread.id);
+        await new Promise(r => setTimeout(r, 600));
+        const keptView = win.element.querySelector(".clueboard-tab.active")?.dataset.tab === "all";
+        const keptScroll = Math.abs(main().scrollTop - scrollBefore) < 4 && scrollBefore > 0;
+        const keptSearch = win.element.querySelector("input[name=search]").value === "e";
+        await api.unpin(group, third.id, thread.id);
+        win.element.querySelector("input[name=search]").value = "";
+        win.element.querySelector("input[name=search]").dispatchEvent(new Event("input"));
+        win.setPosition({ height: 760 });
+        // the unpin's redraw lands first; a click on a button it is about to replace goes nowhere
+        await new Promise(r => setTimeout(r, 600));
         win.element.querySelector('.clueboard-tab[data-tab="unsorted"]')?.click();
         await new Promise(r => setTimeout(r, 500));
         const clickedToUnsorted = win.element.querySelector(".clueboard-tab.active")?.dataset.tab === "unsorted";
@@ -444,7 +467,7 @@ try {
         await api.unpin(group, other.id, thread.id);
         const afterUnpin = Object.keys(api.entry(group, other.id).threads ?? {}).includes(thread.id);
         await win.close();
-        return { threadId: thread.id, colour: thread.colour, pinnedTwice, tabs, head, cardsBefore, cardsAfter, clickedToUnsorted, unsortedHasPinned, afterUnpin, otherId: other.id };
+        return { threadId: thread.id, colour: thread.colour, pinnedTwice, tabs, head, cardsBefore, cardsAfter, clickedToUnsorted, unsortedHasPinned, afterUnpin, otherId: other.id, keptView, keptScroll, keptSearch, scrollBefore };
       },
       { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId, name: THREAD }
     );
@@ -453,6 +476,7 @@ try {
     assert(G1.head === THREAD, `the thread's head shows its name ("${G1.head}")`);
     assert(G1.pinnedTwice && G1.cardsBefore.join() === [C.clueId, G1.otherId].join(), `two clues pinned, in pin order; a second pin is a no-op (${G1.cardsBefore.length} cards)`);
     assert(G1.cardsAfter.join() === [G1.otherId, C.clueId].join(), "a move before another card reorders the thread");
+    assert(G1.keptView && G1.keptScroll && G1.keptSearch, `a pin keeps the view, the scroll (${G1.scrollBefore}px) and the search`);
     assert(G1.clickedToUnsorted, "a click on a tab switches the window to it");
     assert(!G1.unsortedHasPinned, "a pinned clue is not in Unsorted");
     assert(!G1.afterUnpin, "an unpin takes the clue off the thread");

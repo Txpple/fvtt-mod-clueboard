@@ -1,12 +1,4 @@
 <div class="clueboard-mysteries-body{{#unless isGM}} clueboard-player{{/unless}}">
-<nav class="clueboard-views" aria-label="{{ localize "fvtt-mod-clueboard.mysteries.title" }}">
-    {{#each views}}
-    <button type="button" class="clueboard-tab{{#if active}} active{{/if}}" data-action="showTab" data-tab="{{ id }}">
-        {{ name }} <span class="clueboard-tab-count">{{ count }}</span>
-    </button>
-    {{/each}}
-</nav>
-
 <header class="clueboard-window-header">
     <search>
         <input type="search" name="search" autocomplete="off" value="{{ query }}"
@@ -38,93 +30,110 @@
 
     {{#each sections}}
     <section class="clueboard-section" data-group="{{ id }}" {{#if thread}}data-thread="{{ thread.id }}"{{/if}}>
-        <div class="clueboard-section-head">
-            {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
-            <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
-            <button type="button" class="clueboard-export ui-control plain icon fa-solid fa-file-export" data-action="export"
-                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.export" }}"></button>
-        </div>
 
-        <div class="clueboard-mysteries-band" data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.mysteriesHint" }}">
-            <span class="clueboard-band-key"><i class="fa-solid fa-user-secret" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.mysteriesLabel" }}</span>
+        {{!-- The rail: the clue views, then the party's mysteries. A card dropped on a mystery pins it there and the view stays put. --}}
+        <nav class="clueboard-rail" aria-label="{{ localize "fvtt-mod-clueboard.mysteries.title" }}">
+            {{#if ../several}}<h4 class="clueboard-rail-party">{{ name }}</h4>{{/if}}
+            <span class="clueboard-rail-key"><i class="fa-solid fa-layer-group" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.cluesLabel" }}</span>
+            {{#each views}}
+            <button type="button" class="clueboard-tab clueboard-rail-row clueboard-rail-view{{#if active}} active{{/if}}" data-action="showTab" data-tab="{{ id }}">
+                <i class="fa-solid {{#if (eq id "all")}}fa-list{{else}}fa-inbox{{/if}}" inert></i>
+                <span class="clueboard-rail-name">{{ name }}</span>
+                <span class="clueboard-tab-count">{{ count }}</span>
+            </button>
+            {{/each}}
+
+            <span class="clueboard-rail-key" data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.mysteriesHint" }}">
+                <i class="fa-solid fa-user-secret" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.mysteriesLabel" }}
+            </span>
             {{#each mysteries}}
-            <button type="button" class="clueboard-tab clueboard-thread-{{ colour }}{{#if active}} active{{/if}}{{#if answered}} answered{{/if}}"
+            <button type="button" class="clueboard-tab clueboard-rail-row clueboard-thread-{{ colour }}{{#if active}} active{{/if}}{{#if answered}} answered{{/if}}"
                     data-action="showTab" data-tab="{{ id }}" data-droppable="true">
-                <span class="clueboard-dot"></span>{{ name }} <span class="clueboard-tab-count">{{ count }}</span>
+                <span class="clueboard-dot"></span>
+                <span class="clueboard-rail-name">{{ name }}</span>
+                <span class="clueboard-tab-count">{{ count }}</span>
             </button>
             {{else}}
-            <span class="clueboard-band-none">{{ localize "fvtt-mod-clueboard.mysteries.noMysteries" }}</span>
+            <span class="clueboard-rail-none">{{ localize "fvtt-mod-clueboard.mysteries.noMysteries" }}</span>
             {{/each}}
             {{#if mayOrganise}}
             <button type="button" class="clueboard-tab clueboard-tab-new" data-action="newThread">
                 <i class="fa-solid fa-plus" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.newThread" }}
             </button>
             {{/if}}
-        </div>
+        </nav>
 
-        {{#if thread}}
-        <div class="clueboard-thread-head clueboard-thread-{{ thread.colour }}">
-            <h4><span class="clueboard-dot"></span>{{ thread.name }}</h4>
-            {{#if thread.question}}<span class="clueboard-thread-question">{{ thread.question }}</span>{{/if}}
-            {{#if mayOrganise}}
-            <span class="clueboard-thread-tools">
-                <button type="button" class="clueboard-thread-status{{#if thread.answered}} answered{{/if}}" data-action="toggleStatus" data-thread="{{ thread.id }}">
-                    {{#if thread.answered}}<i class="fa-solid fa-check" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.threadAnswered" }}{{else}}{{ localize "fvtt-mod-clueboard.mysteries.threadOpen" }}{{/if}}
-                </button>
-                <button type="button" class="ui-control plain icon fa-solid fa-pen" data-action="editThread" data-thread="{{ thread.id }}"
-                        data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadEdit" }}"></button>
-                <button type="button" class="ui-control plain icon fa-solid fa-trash" data-action="deleteThread" data-thread="{{ thread.id }}"
-                        data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadDelete" }}"></button>
-            </span>
-            {{/if}}
-            <div class="clueboard-thread-stand">
-                <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.mysteries.threadStand" }}</span>
-                {{#if mayOrganise}}
-                <textarea name="stand" placeholder="{{ localize "fvtt-mod-clueboard.mysteries.threadStandHint" }}">{{ thread.stand }}</textarea>
-                {{else}}
-                <span class="clueboard-thread-stand-text">{{#if thread.stand}}{{ thread.stand }}{{else}}—{{/if}}</span>
-                {{/if}}
+        <div class="clueboard-main">
+            <div class="clueboard-section-head">
+                <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
+                <button type="button" class="clueboard-export ui-control plain icon fa-solid fa-file-export" data-action="export"
+                        data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.export" }}"></button>
             </div>
-        </div>
-        {{/if}}
 
-        {{#unless entries.length}}
-        <p class="clueboard-empty">
-            {{#if thread}}{{ localize "fvtt-mod-clueboard.mysteries.threadEmpty" }}
-            {{else if (eq active "unsorted")}}{{ localize "fvtt-mod-clueboard.mysteries.unsortedEmpty" }}
-            {{else}}{{ localize "fvtt-mod-clueboard.mysteries.empty" }}{{/if}}
-        </p>
-        {{/unless}}
-
-        <div class="clueboard-cards">
-        {{#each entries}}
-        <article class="clueboard-card{{#if unread}} unread{{/if}}" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
-            {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
-            <div class="clueboard-card-body">
-                <h5 class="clueboard-card-title">{{ name }}</h5>
-                {{#if excerpt}}<p class="clueboard-card-excerpt">{{ excerpt }}</p>{{/if}}
-                <div class="clueboard-card-meta">
-                    <span><b>{{ localize "fvtt-mod-clueboard.mysteries.kind" }}</b> {{ kind }}</span>
-                    {{#if foundIn}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.found" }}</b> {{ foundIn }}{{#if calendarDate}} · {{ calendarDate }}{{/if}}</span>{{/if}}
-                    <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.read" }}</b>
-                        {{#each readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
-                    </span>
-                    <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.note" }}</b>{{#if notes}}<span class="clueboard-chip note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.hasNote" }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noNote" }}</span>{{/if}}</span>
-                    {{#if threads.length}}<span class="clueboard-card-threads">
-                        {{#each threads}}<span class="clueboard-chip clueboard-thread-{{ colour }}"><span class="clueboard-dot"></span>{{ name }}</span>{{/each}}
-                    </span>{{/if}}
+            {{#if thread}}
+            <div class="clueboard-thread-head clueboard-thread-{{ thread.colour }}">
+                <h4><span class="clueboard-dot"></span>{{ thread.name }}</h4>
+                {{#if thread.question}}<span class="clueboard-thread-question">{{ thread.question }}</span>{{/if}}
+                {{#if mayOrganise}}
+                <span class="clueboard-thread-tools">
+                    <button type="button" class="clueboard-thread-status{{#if thread.answered}} answered{{/if}}" data-action="toggleStatus" data-thread="{{ thread.id }}">
+                        {{#if thread.answered}}<i class="fa-solid fa-check" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.threadAnswered" }}{{else}}{{ localize "fvtt-mod-clueboard.mysteries.threadOpen" }}{{/if}}
+                    </button>
+                    <button type="button" class="ui-control plain icon fa-solid fa-pen" data-action="editThread" data-thread="{{ thread.id }}"
+                            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadEdit" }}"></button>
+                    <button type="button" class="ui-control plain icon fa-solid fa-trash" data-action="deleteThread" data-thread="{{ thread.id }}"
+                            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.threadDelete" }}"></button>
+                </span>
+                {{/if}}
+                <div class="clueboard-thread-stand">
+                    <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.mysteries.threadStand" }}</span>
+                    {{#if mayOrganise}}
+                    <textarea name="stand" placeholder="{{ localize "fvtt-mod-clueboard.mysteries.threadStandHint" }}">{{ thread.stand }}</textarea>
+                    {{else}}
+                    <span class="clueboard-thread-stand-text">{{#if thread.stand}}{{ thread.stand }}{{else}}—{{/if}}</span>
+                    {{/if}}
                 </div>
             </div>
-            {{#if ../thread}}{{#if ../mayOrganise}}
-            <button type="button" class="clueboard-card-unpin ui-control plain icon fa-solid fa-thumbtack-slash" data-action="unpin" data-id="{{ id }}" data-thread="{{ ../thread.id }}"
-                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.unpin" }}"></button>
-            {{/if}}{{/if}}
-            {{#if ../../isGM}}
-            <button type="button" class="clueboard-card-remove ui-control plain icon fa-solid fa-xmark" data-action="remove" data-group="{{ group }}" data-id="{{ id }}"
-                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.remove" }}"></button>
             {{/if}}
-        </article>
-        {{/each}}
+
+            {{#unless entries.length}}
+            <p class="clueboard-empty">
+                {{#if thread}}{{ localize "fvtt-mod-clueboard.mysteries.threadEmpty" }}
+                {{else if (eq active "unsorted")}}{{ localize "fvtt-mod-clueboard.mysteries.unsortedEmpty" }}
+                {{else}}{{ localize "fvtt-mod-clueboard.mysteries.empty" }}{{/if}}
+            </p>
+            {{/unless}}
+
+            <div class="clueboard-cards">
+            {{#each entries}}
+            <article class="clueboard-card{{#if unread}} unread{{/if}}" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
+                {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
+                <div class="clueboard-card-body">
+                    <h5 class="clueboard-card-title">{{ name }}</h5>
+                    {{#if excerpt}}<p class="clueboard-card-excerpt">{{ excerpt }}</p>{{/if}}
+                    <div class="clueboard-card-meta">
+                        <span><b>{{ localize "fvtt-mod-clueboard.mysteries.kind" }}</b> {{ kind }}</span>
+                        {{#if foundIn}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.found" }}</b> {{ foundIn }}{{#if calendarDate}} · {{ calendarDate }}{{/if}}</span>{{/if}}
+                        <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.read" }}</b>
+                            {{#each readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
+                        </span>
+                        <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.note" }}</b>{{#if notes}}<span class="clueboard-chip note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.hasNote" }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noNote" }}</span>{{/if}}</span>
+                        {{#if threads.length}}<span class="clueboard-card-threads">
+                            {{#each threads}}<span class="clueboard-chip clueboard-thread-{{ colour }}"><span class="clueboard-dot"></span>{{ name }}</span>{{/each}}
+                        </span>{{/if}}
+                    </div>
+                </div>
+                {{#if ../thread}}{{#if ../mayOrganise}}
+                <button type="button" class="clueboard-card-unpin ui-control plain icon fa-solid fa-thumbtack-slash" data-action="unpin" data-id="{{ id }}" data-thread="{{ ../thread.id }}"
+                        data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.unpin" }}"></button>
+                {{/if}}{{/if}}
+                {{#if ../../isGM}}
+                <button type="button" class="clueboard-card-remove ui-control plain icon fa-solid fa-xmark" data-action="remove" data-group="{{ group }}" data-id="{{ id }}"
+                        data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.remove" }}"></button>
+                {{/if}}
+            </article>
+            {{/each}}
+            </div>
         </div>
     </section>
     {{/each}}

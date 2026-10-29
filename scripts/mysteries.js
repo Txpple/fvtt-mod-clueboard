@@ -541,7 +541,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     id: "clueboard-mysteries",
     classes: ["clueboard-mysteries"],
     window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-user-secret", resizable: true },
-    position: { width: 760, height: 720 },
+    position: { width: 960, height: 760 },
     actions: {
       open: MysteriesWindow.#onOpen,
       collect: MysteriesWindow.#onCollect,
@@ -561,7 +561,9 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   static PARTS = {
     main: {
       template: `modules/${MODULE_ID}/templates/mysteries.hbs`,
-      scrollable: [".clueboard-entries"]
+      // Both keep their scroll through a redraw (a pin, a read, another client's write), so a
+      // player dragging clue after clue onto the rail never loses their place.
+      scrollable: [".clueboard-main", ".clueboard-rail"]
     }
   };
 
@@ -617,14 +619,6 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
     context.query = this.#query;
-    // The clue views, for the whole window: the counts summed over the parties shown.
-    const anyMystery = Object.keys(this.#tabs).length > 0;
-    context.views = ["all", "unsorted"].map(id => ({
-      id,
-      name: t(`mysteries.${id}`),
-      count: context.sections.reduce((n, s) => n + (s.views.find(v => v.id === id)?.count ?? 0), 0),
-      active: !anyMystery && this.#view === id
-    }));
     context.isGM = game.user.isGM;
     if (context.isGM) {
       // The strip: every world Clue no party has. With several parties, Collect asks which.

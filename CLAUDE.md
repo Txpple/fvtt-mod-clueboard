@@ -54,6 +54,11 @@ Clue Board and no `fvtt-mod-clueboard`; "Mysteries" appears only inside adventur
   thread's tab pins it (the window's own drag, a plain-text payload that is never a Foundry Item drop); dropped on a
   card inside a thread it goes before it; the whole order is rewritten in one write. The active tab is window state,
   per party.
+- **Layout A, the rail** (the user's pick of three, `prototypes/mysteries-layouts.html`): the search across the
+  top; per party a rail (the clue views, the mysteries, New mystery) beside `.clueboard-main` (the count, the open
+  mystery's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
+  `scrollable`s, so a redraw keeps their scroll, and the query is reapplied after each render; the live check
+  asserts the view, the scroll and the search survive a pin.
 - **The export is what the party has** (`exportData`, `exportToFile`): the record as plain data, every clue's text
   as plain words and HTML, readers, note, mysteries, and the mysteries with their theories; nothing of the DM's.
   A button in the section head; anyone who can open the window can export.

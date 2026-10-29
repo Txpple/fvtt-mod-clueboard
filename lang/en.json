@@ -70,6 +70,7 @@
       "all": "All Clues",
       "unsorted": "Unassigned Clues",
       "mysteriesLabel": "Mysteries",
+      "cluesLabel": "Clues",
       "mysteriesHint": "The questions the party is asking. Drag a clue onto one to pin it there.",
       "noMysteries": "none yet",
       "newThread": "New mystery",

@@ -27,6 +27,10 @@ Phase 1 is four things.
   search and a count of what the player has not read yet. A click opens the Reader, which shows the text, the stamp
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
   their character; a GM's opening marks nothing. Nothing goes to chat, ever.
+- **The window's layout.** The search runs across the top. Below it, a rail on the left lists *All Clues* and
+  *Unassigned Clues*, then the party's mysteries with their counts and *New mystery*; the cards fill the right
+  and scroll on their own. Dropping a card on a mystery in the rail pins it without leaving the view, so a player
+  can work down the list pinning clue after clue; the scroll and the search stay put.
 - **Mysteries the party names.** The party's own sorting. A mystery (a *thread* in the code) is a question or a
   line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All*
   and *Unassigned*. Drag a card onto
