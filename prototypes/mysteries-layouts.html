@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mysteries, three layouts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Signika:wght@400;600;700&family=Roboto+Condensed:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  :root{
+    --ground:#15171b; --canvas:#1e2126; --panel:#24272d; --panel-2:#2b2f36; --line:#3a3f48;
+    --ink:#e8e3d6; --ink-2:#b5b0a4; --ink-3:#7d7a72; --gold:#9f9275; --clue:#c9a24a;
+    --font:"Signika",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --cond:"Roboto Condensed","Signika",sans-serif;
+    --hand:"IM Fell English",Georgia,serif;
+    --c-gold:#c9a24a; --c-red:#c75050; --c-blue:#4f86c6; --c-green:#5aa36a; --c-violet:#9a6fc7; --c-teal:#3fa6a0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;color-scheme:dark}
+  .wrap{max-width:1500px;margin:0 auto;padding:22px 20px 40px}
+  header.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px}
+  header.top h1{margin:0;font-size:22px;font-weight:600}
+  header.top p{margin:0;color:var(--ink-2);max-width:84ch}
+  b{font-weight:600}
+  button{font:inherit}
+  .bar{display:flex;flex-wrap:wrap;gap:10px 22px;margin:12px 0 14px;align-items:center}
+  .grp{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .grp>span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-right:4px}
+  .grp button{font-size:12px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 10px;cursor:pointer}
+  .grp button[aria-pressed="true"]{color:var(--ink);background:var(--panel-2);border-color:var(--gold)}
+
+  .studio{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+  @media (max-width:1000px){.studio{grid-template-columns:1fr}}
+  .notes{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13px;color:var(--ink-2);position:sticky;top:12px}
+  .notes h3{margin:0 0 6px;font-size:13px;color:var(--ink);text-transform:uppercase;letter-spacing:.1em;font-family:var(--cond)}
+  .notes p{margin:0 0 8px}
+  .notes ul{margin:0 0 10px;padding-left:18px}
+  .notes .p[hidden]{display:none}
+  .notes .k{color:var(--ink);font-weight:600}
+  .notes .tag{display:inline-block;font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:3px;border:1px solid var(--clue);color:var(--clue);margin-right:4px}
+
+  /* the window */
+  .win{background:#23201d;border:1px solid var(--gold);border-radius:5px;box-shadow:0 4px 18px rgba(0,0,0,.6);overflow:hidden;min-height:760px;display:flex;flex-direction:column}
+  .ttl{display:flex;align-items:center;gap:8px;padding:5px 10px;background:#1d1a17;border-bottom:1px solid var(--gold);font-size:12px}
+  .ttl .x{margin-left:auto;color:var(--ink-3)}
+  .views{display:flex;gap:4px;padding:8px 12px 0}
+  .views .v{padding:5px 14px;border:1px solid var(--line);border-bottom:none;border-radius:5px 5px 0 0;background:rgba(255,255,255,.04);color:var(--ink-2);font-size:13px;cursor:pointer}
+  .views .v.on{background:rgba(255,255,255,.1);border-color:var(--clue);color:var(--ink);font-weight:600}
+  .views .v small{opacity:.6;margin-left:4px}
+  .search{margin:0 12px;padding:8px 0;border-top:1px solid var(--line)}
+  .search input{width:100%;font:inherit;font-size:13px;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:6px 10px}
+  .body{flex:1;min-height:0;display:flex;padding:0 12px 12px;gap:12px}
+
+  .dot{display:inline-block;width:.6rem;height:.6rem;border-radius:50%;background:var(--mc,var(--clue));box-shadow:0 0 0 1px rgba(0,0,0,.4);flex:none}
+  .m-gold{--mc:var(--c-gold)} .m-red{--mc:var(--c-red)} .m-blue{--mc:var(--c-blue)} .m-green{--mc:var(--c-green)} .m-violet{--mc:var(--c-violet)} .m-teal{--mc:var(--c-teal)}
+
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));grid-auto-rows:1fr;gap:8px;align-content:start;overflow:auto;flex:1;min-height:0}
+  .card{display:flex;gap:8px;padding:8px;background:#2a2622;border:1px solid var(--line);border-radius:4px;cursor:grab;align-items:flex-start;position:relative}
+  .card:hover{border-color:var(--gold)}
+  .card.unread{border-color:var(--clue);box-shadow:0 0 0 1px rgba(201,162,74,.35)}
+  .card.dragging{opacity:.4}
+  .card .ci{width:44px;height:44px;border-radius:3px;background:linear-gradient(135deg,#4a3f30,#2a2622);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);flex:none}
+  .card .cb{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .card h4{margin:0;font-size:13px;font-weight:600}
+  .card .meta{font-size:11px;color:var(--ink-2);display:flex;flex-direction:column;gap:2px}
+  .card .meta b{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600;margin-right:4px}
+  .chips{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .chip{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:0 8px;font-size:11px;color:var(--ink);display:inline-flex;align-items:center;gap:4px}
+  .chip.none{color:var(--ink-3);border-style:dashed}
+  .empty{padding:30px;text-align:center;color:var(--ink-3);font-size:12px;grid-column:1/-1}
+
+  /* A: the rail */
+  .rail{width:230px;flex:none;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);padding-right:10px;overflow:auto}
+  .rail .key{font-family:var(--cond);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--clue);margin:8px 0 2px;display:flex;align-items:center;gap:6px}
+  .rail .row{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid transparent;border-radius:4px;cursor:pointer;font-size:13px;color:var(--ink-2)}
+  .rail .row:hover{background:rgba(255,255,255,.05);color:var(--ink)}
+  .rail .row.on{background:color-mix(in srgb,var(--mc,#ffffff) 22%,transparent);border-color:var(--mc,var(--line));color:var(--ink);font-weight:600}
+  .rail .row.view.on{--mc:var(--clue)}
+  .rail .row.drop{outline:2px dashed var(--clue);outline-offset:-2px}
+  .rail .row.solved{text-decoration:line-through;text-decoration-color:rgba(255,255,255,.4)}
+  .rail .row .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rail .row small{color:var(--ink-3);font-size:11px}
+  .rail .new{margin-top:6px;border:1px dashed var(--clue);color:var(--clue);background:transparent;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+  .mhead{padding:8px 10px;border:1px solid var(--line);border-left:3px solid var(--mc,var(--clue));border-radius:4px;background:rgba(0,0,0,.15);display:grid;grid-template-columns:1fr auto;gap:2px 10px}
+  .mhead h4{margin:0;font-size:14px;display:flex;align-items:center;gap:6px}
+  .mhead .q{font-style:italic;color:var(--ink-2);font-size:12px}
+  .mhead .tools{grid-column:2;grid-row:1/span 2;display:flex;gap:4px;align-items:center}
+  .mhead .tools span{font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:3px;color:var(--ink-2)}
+  .mhead .stand{grid-column:1/-1;font-size:12px}
+  .mhead .stand .k{font-family:var(--cond);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);display:block}
+  .mhead .stand textarea{width:100%;min-height:44px;font:inherit;font-size:12px;background:rgba(0,0,0,.25);border:1px solid var(--line);color:var(--ink);border-radius:3px;padding:6px;resize:vertical}
+
+  /* B: two panes */
+  .pane{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .pane .ph{font-family:var(--cond);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--clue);display:flex;align-items:center;gap:8px}
+  .pane .ph select{font:inherit;font-size:12px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:3px;padding:2px 6px}
+  .pane.right{border-left:1px solid var(--line);padding-left:12px}
+  .pane.right .cards.drop{outline:2px dashed var(--clue);outline-offset:-4px}
+
+  /* C: lanes */
+  .lanes{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;overflow:auto}
+  .lane{border:1px solid var(--line);border-left:3px solid var(--mc,var(--clue));border-radius:4px;background:rgba(0,0,0,.12);padding:6px 8px;display:flex;gap:10px;align-items:flex-start}
+  .lane.drop{outline:2px dashed var(--clue);outline-offset:-2px}
+  .lane .lh{width:170px;flex:none;display:flex;flex-direction:column;gap:2px}
+  .lane .lh h4{margin:0;font-size:13px;display:flex;align-items:center;gap:6px}
+  .lane .lh .q{font-size:11px;font-style:italic;color:var(--ink-2)}
+  .lane .lh small{color:var(--ink-3);font-size:11px}
+  .lane .lh .st{font-size:10px;padding:1px 6px;border:1px solid var(--line);border-radius:3px;color:var(--ink-2);width:max-content}
+  .lane .thumbs{flex:1;display:flex;flex-wrap:wrap;gap:6px;min-height:52px}
+  .thumb{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 4px;background:#2a2622;border:1px solid var(--line);border-radius:4px;font-size:12px;cursor:grab;max-width:220px}
+  .thumb:hover{border-color:var(--gold)}
+  .thumb.unread{border-color:var(--clue)}
+  .thumb .ci{width:28px;height:28px;border-radius:3px;background:linear-gradient(135deg,#4a3f30,#2a2622);border:1px solid var(--line);display:grid;place-items:center;color:var(--ink-3);font-size:11px;flex:none}
+  .thumb .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .thumb .k{font-family:var(--cond);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .lane.tray{border-left-color:var(--ink-3);background:rgba(255,255,255,.03)}
+  .lane .lh .new{border:1px dashed var(--clue);color:var(--clue);background:transparent;border-radius:999px;padding:3px 8px;font-size:11px;cursor:pointer;width:max-content;margin-top:4px}
+  .toast{position:fixed;left:50%;top:12px;transform:translateX(-50%);background:rgb(70,120,170);color:#fff;padding:6px 14px;border-radius:3px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Mysteries: three layouts</h1>
+    <p>The same party record (the 21 clues on prod and three sample mysteries) in three shapes. In each, drag a card onto a mystery to pin it; click a mystery to open it. Which one lets you see the clues and the mysteries at the same time with the least fuss?</p>
+  </header>
+  <div class="bar">
+    <div class="grp" id="layout"><span>Layout</span>
+      <button data-l="A" aria-pressed="true">A · a rail of mysteries</button>
+      <button data-l="B" aria-pressed="false">B · two panes</button>
+      <button data-l="C" aria-pressed="false">C · lanes and a tray</button>
+    </div>
+    <div class="grp"><span>Seat</span><button id="seat" aria-pressed="true">Drew (Kartor)</button><button id="reset">Reset</button></div>
+  </div>
+
+  <div class="studio">
+    <div class="win">
+      <div class="ttl"><i class="fa-solid fa-user-secret"></i> Mysteries <span class="x">✕</span></div>
+      <div id="screen" class="body" style="padding-top:10px"></div>
+    </div>
+    <aside class="notes">
+      <h3>What you are looking at</h3>
+      <div class="p" data-l="A">
+        <p><span class="tag">A</span><span class="k">A rail of mysteries.</span> All Clues and Unassigned at the top of a left column, each mystery a row with its dot, count and solved mark, New mystery at the foot. The cards fill the right. Click a row to open it; the mystery's question and theory sit above its cards. Drag a card onto any row to pin it.</p>
+        <ul><li>Both halves always in view; no tabs, no band.</li><li>The full cards stay as they are.</li><li>The least change from today.</li></ul>
+      </div>
+      <div class="p" data-l="B" hidden>
+        <p><span class="tag">B</span><span class="k">Two panes.</span> Every clue on the left, the chosen mystery on the right with its head and its pinned cards. Drag left to right to pin. The right pane's picker chooses which mystery is open.</p>
+        <ul><li>Best for working one mystery hard.</li><li>Two grids of full cards: wants a wide window.</li></ul>
+      </div>
+      <div class="p" data-l="C" hidden>
+        <p><span class="tag">C</span><span class="k">Lanes and a tray.</span> Each mystery is a lane holding its clues as small tiles; the unassigned tray sits at the bottom. Drag a tile between lanes. Click a tile to open the Reader.</p>
+        <ul><li>The whole case on one screen.</li><li>The cards shrink to a name and a kind: the text, readers and notes live in the Reader only.</li></ul>
+      </div>
+      <h3>In all three</h3>
+      <ul>
+        <li>A clue can sit in several mysteries, and wears a dot for each.</li>
+        <li>Unread cards for this seat glow gold at the edge.</li>
+        <li>Nothing here is built; the data is prod's as of today.</li>
+      </ul>
+    </aside>
+  </div>
+</div>
+<script>
+const CLUES = [
+  ["The Townsfolk Under the Glass","Body","fa-skull",[]],["Someone Tychon Owes","Rumour","fa-comment-dots",[]],
+  ["The Chip of Spellfire","Object","fa-gem",[]],["Hollis and Brann","Body","fa-skull",[]],
+  ["Cecil's Door","Vision","fa-moon",[]],["Tychon's Door","Vision","fa-moon",[]],
+  ["The High Magister's Chair","Statement","fa-comment",[]],["The Chamber of Petitions","Statement","fa-comment",[]],
+  ["The Vanes' Warrants","Statement","fa-comment",[]],["The Listening Hall","Statement","fa-comment",[]],
+  ["Half-Carved Wooden Bird","Object","fa-dove",["Kartor"]],["Hollis's Note","Document","fa-scroll",["Kartor","Tychon"]],
+  ["Durgan's Unfinished Letter","Document","fa-envelope-open-text",["Kartor","Cecil"]],["The Wayhouse Ledger","Document","fa-book",["Cecil"]],
+  ["The Lady's Parcel","Document","fa-scroll",["Tychon"]],["The Lodging Board","Document","fa-chalkboard",["Tychon"]],
+  ["The Lost-Familiar Notice","Document","fa-feather",["Tychon"]],["The Wayhouse Strongbox","Object","fa-box",["Tychon"]],
+  ["Brann's Note","Document","fa-scroll",[]],["Ysolde's Key","Document","fa-map",["Kartor"]],["Brann's Tally","Object","fa-ring",["Tychon"]]
+];
+const ME = "Kartor";
+const WORLD = () => ({
+  clues: CLUES.map(([name, kind, icon, readers], i) => ({ id: "c" + i, name, kind, icon, readers, pins: [] })),
+  mysteries: [
+    { id: "m1", name: "Who is Ysolde?", colour: "gold", q: "She scouted the dogs and never came back. What is the key?", status: "unsolved", stand: "The key is her trail marks. Follow the strokes east past the glass." },
+    { id: "m2", name: "The scouts' last days", colour: "red", q: "What killed Hollis and Brann, and when?", status: "unsolved", stand: "" },
+    { id: "m3", name: "Halarahh", colour: "blue", q: "Four doors the nothic named. Which first?", status: "unsolved", stand: "" }
+  ]
+});
+const PINS = { m1: ["Ysolde's Key","Hollis's Note","Brann's Tally"], m2: ["Hollis and Brann","Brann's Note","Hollis's Note","The Wayhouse Ledger","Brann's Tally"], m3: ["The Listening Hall","The Vanes' Warrants","The Chamber of Petitions","The High Magister's Chair"] };
+let W, layout = "A", open = null, dragging = null;
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function reset() { W = WORLD(); for (const [m, names] of Object.entries(PINS)) for (const n of names) W.clues.find(c => c.name === n).pins.push(m); open = null; render(); }
+function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.append(d); setTimeout(() => d.remove(), 2200); }
+const byId = id => W.mysteries.find(m => m.id === id);
+const pinned = id => W.clues.filter(c => c.pins.includes(id));
+const unassigned = () => W.clues.filter(c => !c.pins.length);
+function pin(cid, mid) { const c = W.clues.find(x => x.id === cid); if (!c.pins.includes(mid)) { c.pins.push(mid); toast(`${c.name} pinned to ${byId(mid).name}.`); } render(); }
+function move(cid, from, to) { const c = W.clues.find(x => x.id === cid); c.pins = c.pins.filter(p => p !== from); if (to && !c.pins.includes(to)) c.pins.push(to); render(); }
+
+function card(c) {
+  const unread = !c.readers.includes(ME);
+  return `<article class="card${unread ? " unread" : ""}" draggable="true" data-id="${c.id}">
+    <span class="ci"><i class="fa-solid ${c.icon}"></i></span>
+    <div class="cb"><h4>${esc(c.name)}</h4>
+      <div class="meta"><span><b>Kind</b>${c.kind}</span>
+        <span class="chips"><b>Read</b>${c.readers.map(r => `<span class="chip">${r}</span>`).join("") || '<span class="chip none">nobody yet</span>'}</span>
+        ${c.pins.length ? `<span class="chips">${c.pins.map(p => `<span class="chip m-${byId(p).colour}"><span class="dot"></span>${esc(byId(p).name)}</span>`).join("")}</span>` : ""}
+      </div></div></article>`;
+}
+const thumb = c => `<span class="thumb${c.readers.includes(ME) ? "" : " unread"}" draggable="true" data-id="${c.id}"><span class="ci"><i class="fa-solid ${c.icon}"></i></span><span><span class="t">${esc(c.name)}</span><br><span class="k">${c.kind}</span></span></span>`;
+const mhead = m => `<div class="mhead m-${m.colour}"><h4><span class="dot"></span>${esc(m.name)}</h4><span class="q">${esc(m.q)}</span>
+  <span class="tools"><span>${m.status === "solved" ? "Solved" : "Unsolved"}</span><span><i class="fa-solid fa-pen"></i></span><span><i class="fa-solid fa-trash"></i></span></span>
+  <div class="stand"><span class="k">Where we stand</span><textarea placeholder="The party's current theory, in a few lines.">${esc(m.stand)}</textarea></div></div>`;
+
+function render() {
+  const s = $("#screen");
+  if (layout === "A") {
+    const list = open === "unassigned" ? unassigned() : open ? pinned(open) : W.clues;
+    s.innerHTML = `
+      <div class="rail">
+        <div class="key"><i class="fa-solid fa-layer-group"></i> Clues</div>
+        <div class="row view${!open ? " on" : ""}" data-open=""><i class="fa-solid fa-list"></i><span class="n">All Clues</span><small>${W.clues.length}</small></div>
+        <div class="row view${open === "unassigned" ? " on" : ""}" data-open="unassigned"><i class="fa-regular fa-circle"></i><span class="n">Unassigned</span><small>${unassigned().length}</small></div>
+        <div class="key"><i class="fa-solid fa-user-secret"></i> Mysteries</div>
+        ${W.mysteries.map(m => `<div class="row m-${m.colour}${open === m.id ? " on" : ""}${m.status === "solved" ? " solved" : ""}" data-open="${m.id}" data-drop="${m.id}"><span class="dot"></span><span class="n">${esc(m.name)}</span><small>${pinned(m.id).length}</small></div>`).join("")}
+        <button class="new"><i class="fa-solid fa-plus"></i> New mystery</button>
+      </div>
+      <div class="main">
+        ${open && open !== "unassigned" ? mhead(byId(open)) : ""}
+        <div class="cards">${list.map(card).join("") || '<div class="empty">Nothing here yet. Drag a clue onto this mystery in the rail.</div>'}</div>
+      </div>`;
+  } else if (layout === "B") {
+    const m = byId(open) ?? W.mysteries[0];
+    s.innerHTML = `
+      <div class="pane"><div class="ph"><i class="fa-solid fa-layer-group"></i> All clues <small style="opacity:.6">${W.clues.length}</small></div><div class="cards">${W.clues.map(card).join("")}</div></div>
+      <div class="pane right"><div class="ph"><i class="fa-solid fa-user-secret"></i> Mystery
+        <select id="pick">${W.mysteries.map(x => `<option value="${x.id}" ${x.id === m.id ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select>
+        <button class="new" style="margin-left:auto;border:1px dashed var(--clue);color:var(--clue);background:transparent;border-radius:999px;padding:2px 8px;font-size:11px;cursor:pointer"><i class="fa-solid fa-plus"></i> New</button></div>
+        ${mhead(m)}<div class="cards" data-drop="${m.id}">${pinned(m.id).map(card).join("") || '<div class="empty">Drag a clue from the left to pin it here.</div>'}</div></div>`;
+    $("#pick").addEventListener("change", ev => { open = ev.target.value; render(); });
+  } else {
+    s.innerHTML = `<div class="lanes">
+      ${W.mysteries.map(m => `<div class="lane m-${m.colour}" data-drop="${m.id}"><div class="lh"><h4><span class="dot"></span>${esc(m.name)}</h4><span class="q">${esc(m.q)}</span><span class="st">${m.status === "solved" ? "Solved" : "Unsolved"}</span><small>${pinned(m.id).length} clue(s)</small></div><div class="thumbs">${pinned(m.id).map(thumb).join("") || '<span style="color:var(--ink-3);font-size:12px;font-style:italic;align-self:center">drag a clue here</span>'}</div></div>`).join("")}
+      <div class="lane tray" data-drop="tray"><div class="lh"><h4><i class="fa-regular fa-circle"></i> Unassigned</h4><small>${unassigned().length} clue(s)</small><button class="new"><i class="fa-solid fa-plus"></i> New mystery</button></div><div class="thumbs">${unassigned().map(thumb).join("") || '<span style="color:var(--ink-3);font-size:12px;font-style:italic;align-self:center">every clue is pinned</span>'}</div></div>
+    </div>`;
+  }
+  wire();
+}
+function wire() {
+  const s = $("#screen");
+  for (const el of s.querySelectorAll("[data-open]")) el.addEventListener("click", () => { open = el.dataset.open || null; render(); });
+  for (const el of s.querySelectorAll("[draggable]")) {
+    el.addEventListener("dragstart", ev => { dragging = { id: el.dataset.id, from: el.closest("[data-drop]")?.dataset.drop ?? null }; el.classList.add("dragging"); ev.dataTransfer.setData("text/plain", el.dataset.id); });
+    el.addEventListener("dragend", () => { dragging = null; s.querySelectorAll(".drop").forEach(d => d.classList.remove("drop")); });
+    if (layout !== "C") el.addEventListener("click", () => toast(`The Reader opens on ${W.clues.find(c => c.id === el.dataset.id).name}.`));
+    else el.addEventListener("click", () => toast(`The Reader opens on ${W.clues.find(c => c.id === el.dataset.id).name}.`));
+  }
+  for (const t of s.querySelectorAll("[data-drop]")) {
+    t.addEventListener("dragover", ev => { if (!dragging) return; ev.preventDefault(); t.classList.add("drop"); });
+    t.addEventListener("dragleave", () => t.classList.remove("drop"));
+    t.addEventListener("drop", ev => { ev.preventDefault(); t.classList.remove("drop"); if (!dragging) return;
+      const to = t.dataset.drop; if (layout === "C") move(dragging.id, dragging.from === "tray" ? null : dragging.from, to === "tray" ? null : to); else pin(dragging.id, to); });
+  }
+  for (const b of s.querySelectorAll(".new")) b.addEventListener("click", () => { const name = prompt("The mystery's name"); if (!name) return; const colours = ["green","violet","teal"]; W.mysteries.push({ id: "m" + Date.now(), name, colour: colours[W.mysteries.length % 3], q: "", status: "unsolved", stand: "" }); render(); });
+  for (const p of document.querySelectorAll(".notes .p")) p.hidden = p.dataset.l !== layout;
+}
+$("#layout").addEventListener("click", ev => { const b = ev.target.closest("[data-l]"); if (!b) return; layout = b.dataset.l; for (const x of $("#layout").querySelectorAll("button")) x.setAttribute("aria-pressed", x === b); open = null; render(); });
+$("#reset").addEventListener("click", reset);
+reset();
+</script>
+</body>
+</html>
