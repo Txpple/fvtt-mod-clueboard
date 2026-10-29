@@ -119,7 +119,10 @@
       "notesLabel": "Note",
       "noNote": "none yet",
       "foundIn": "Found",
-      "readBy": "Read by"
+      "readBy": "Read by",
+      "kind": "Kind",
+      "mysteries": "Mysteries",
+      "noMysteries": "not pinned to any yet"
     }
   }
 }

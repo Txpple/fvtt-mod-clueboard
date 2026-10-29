@@ -15,6 +15,10 @@
 
 <div class="clueboard-stamp">
     <div class="clueboard-stamp-cell">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.kind" }}</span>
+        <span class="clueboard-stamp-value"><span>{{ stamp.kind }}</span></span>
+    </div>
+    <div class="clueboard-stamp-cell">
         <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.foundIn" }}</span>
         <span class="clueboard-stamp-value">
             {{#if stamp.foundAt}}<span>{{ stamp.foundAt }}</span>{{/if}}
@@ -25,6 +29,12 @@
         <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.readBy" }}</span>
         <span class="clueboard-stamp-value clueboard-chips">
             {{#each stamp.readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
+        </span>
+    </div>
+    <div class="clueboard-stamp-cell">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.mysteries" }}</span>
+        <span class="clueboard-stamp-value clueboard-chips">
+            {{#each stamp.threads}}<span class="clueboard-chip clueboard-thread-{{ colour }}{{#if answered}} answered{{/if}}"><span class="clueboard-dot"></span>{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noMysteries" }}</span>{{/each}}
         </span>
     </div>
     <div class="clueboard-stamp-cell">

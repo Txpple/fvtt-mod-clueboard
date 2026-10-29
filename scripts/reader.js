@@ -7,7 +7,7 @@
 
 import { log, MODULE_ID, t } from "./common.js";
 import { readerList } from "./decide/clue.js";
-import { entryOf, markRead } from "./mysteries.js";
+import { entryOf, markRead, threadOf } from "./mysteries.js";
 import * as store from "./store.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -64,6 +64,11 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
     context.html = await TextEditor.enrichHTML(entry.snapshot.html ?? "", { secrets: game.user.isGM, relativeTo: source ?? this.group });
     context.revision = entry.snapshot.revision > 1 ? t("read.revision", { n: entry.snapshot.revision }) : "";
     context.stamp = {
+      kind: t(`kinds.${entry.kind ?? entry.snapshot.kind ?? "document"}`),
+      threads: Object.keys(entry.threads ?? {})
+        .map(id => threadOf(this.group, id))
+        .filter(Boolean)
+        .map(th => ({ name: th.name, colour: th.colour, answered: th.status === "answered" })),
       foundAt: entry.snapshot.foundAt,
       foundIn: entry.foundIn.sceneName,
       calendarDate: entry.foundIn.calendarDate,
