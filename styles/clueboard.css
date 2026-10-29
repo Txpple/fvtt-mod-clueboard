@@ -533,65 +533,130 @@
 }
 
 /* -------------------------------------------------- */
-/*  Threads: the tabs, the head, the pins             */
+/*  The clue views, the Mysteries band, the pins      */
 /* -------------------------------------------------- */
 
-.clueboard-tabs {
+/* The two clue views, above the search: big, plain tabs. */
+.clueboard-views {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem 0;
+}
+
+.clueboard-views .clueboard-tab {
+  flex: none;
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--color-border-light-2, #555);
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: var(--font-size-13, 0.8125rem);
+  line-height: 1.4;
+  opacity: 0.75;
+}
+
+.clueboard-views .clueboard-tab:hover {
+  opacity: 1;
+}
+
+.clueboard-views .clueboard-tab.active {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--clueboard-mark, #c9a24a);
+  font-weight: 600;
+}
+
+.clueboard-views .clueboard-tab .clueboard-tab-count {
+  font-size: var(--font-size-11, 0.6875rem);
+  opacity: 0.6;
+}
+
+.clueboard-window-header {
+  border-top: 1px solid var(--color-border-light-2, #444);
+}
+
+/* The Mysteries band: a labelled row of the party's mysteries as coloured pills. */
+.clueboard-mysteries-band {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0 0 0.25rem;
-  border-bottom: 1px solid var(--color-border-light-2, #444);
+  gap: 0.35rem 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--color-border-light-2, #444);
+  border-radius: 4px;
+  background: rgba(201, 162, 74, 0.06);
 }
 
-.clueboard-tabs .clueboard-tab {
+.clueboard-mysteries-band .clueboard-band-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
+  font-size: var(--font-size-11, 0.6875rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--clueboard-mark, #c9a24a);
+  margin-inline-end: 0.25rem;
+}
+
+.clueboard-mysteries-band .clueboard-tab {
   flex: none;
   width: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid transparent;
-  border-radius: 4px 4px 0 0;
-  background: transparent;
+  padding: 0.15rem 0.7rem 0.15rem 0.5rem;
+  border: 1px solid var(--clueboard-thread, #c9a24a);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
   font-size: var(--font-size-12, 0.75rem);
   line-height: 1.4;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
-.clueboard-tabs .clueboard-tab:hover,
-.clueboard-tabs .clueboard-tab.drop-ok {
+.clueboard-mysteries-band .clueboard-tab:hover,
+.clueboard-mysteries-band .clueboard-tab.drop-ok {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.06);
+  background: color-mix(in srgb, var(--clueboard-thread, #c9a24a) 25%, transparent);
 }
 
-.clueboard-tabs .clueboard-tab.drop-ok {
-  outline: 2px dashed var(--clueboard-mark, #c9a24a);
-  outline-offset: -2px;
+.clueboard-mysteries-band .clueboard-tab.drop-ok {
+  outline: 2px dashed var(--clueboard-thread, #c9a24a);
+  outline-offset: 2px;
 }
 
-.clueboard-tabs .clueboard-tab.active {
+.clueboard-mysteries-band .clueboard-tab.active {
   opacity: 1;
-  border-color: var(--color-border-light-2, #555);
-  border-bottom-color: var(--color-cool-5, #1b1d24);
-  background: rgba(255, 255, 255, 0.08);
-  margin-bottom: -1px;
+  background: color-mix(in srgb, var(--clueboard-thread, #c9a24a) 40%, transparent);
+  box-shadow: 0 0 0 1px var(--clueboard-thread, #c9a24a);
+  font-weight: 600;
 }
 
-.clueboard-tabs .clueboard-tab.answered {
+.clueboard-mysteries-band .clueboard-tab.answered {
   text-decoration: line-through;
-  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-decoration-color: rgba(255, 255, 255, 0.5);
 }
 
-.clueboard-tabs .clueboard-tab .clueboard-tab-count {
+.clueboard-mysteries-band .clueboard-tab .clueboard-tab-count {
   font-size: var(--font-size-10, 0.625rem);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
-.clueboard-tabs .clueboard-tab-new {
+.clueboard-mysteries-band .clueboard-band-none {
+  font-style: italic;
+  opacity: 0.6;
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.clueboard-mysteries-band .clueboard-tab-new {
   margin-inline-start: auto;
-  opacity: 0.7;
+  border-style: dashed;
+  border-color: var(--clueboard-mark, #c9a24a);
+  --clueboard-thread: #c9a24a;
 }
 
 .clueboard-dot {
@@ -635,8 +700,7 @@
   gap: 0.25rem 0.75rem;
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--color-border-light-2, #444);
-  border-top: none;
-  border-radius: 0 0 4px 4px;
+  border-radius: 4px;
   background: rgba(0, 0, 0, 0.15);
   border-inline-start: 3px solid var(--clueboard-thread, #c9a24a);
 }

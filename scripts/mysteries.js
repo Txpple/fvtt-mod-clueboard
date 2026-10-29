@@ -425,6 +425,7 @@ export function sectionFor(group, query = "", tab = "all") {
     id: e.id,
     name: e.snapshot.name,
     img: e.snapshot.img,
+    kind: t(`kinds.${e.kind ?? e.snapshot.kind ?? "document"}`),
     excerpt: excerpt(e.snapshot.html),
     foundAt: e.snapshot.foundAt,
     foundIn: e.foundIn.sceneName,
@@ -439,24 +440,24 @@ export function sectionFor(group, query = "", tab = "all") {
     search: `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase()
   }));
   const unread = unreadCount(all, me?.id ?? null);
-  const tabs = [
-    { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all", fixed: true },
-    { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted", fixed: true },
-    ...threads.map(th => ({
-      id: th.id,
-      name: th.name,
-      colour: th.colour,
-      answered: th.status === "answered",
-      count: pinnedTo(all, th.id).length,
-      active: thread?.id === th.id,
-      droppable: true
-    }))
+  const views = [
+    { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all" },
+    { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted" }
   ];
+  const mysteries = threads.map(th => ({
+    id: th.id,
+    name: th.name,
+    colour: th.colour,
+    answered: th.status === "answered",
+    count: pinnedTo(all, th.id).length,
+    active: thread?.id === th.id
+  }));
   return {
     id: group.id,
     name: group.name,
     entries,
-    tabs,
+    views,
+    mysteries,
     active,
     thread: thread
       ? { ...thread, answered: thread.status === "answered", count: pinnedTo(all, thread.id).length }
@@ -529,12 +530,23 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 
   #query = "";
 
-  /** The active tab per party: "all", "unsorted" or a thread's id. */
+  /** The clue view, "all" or "unsorted", for the whole window. */
+  #view = "all";
+
+  /** The open mystery per party (a thread's id), or none: then the clue view shows. */
   #tabs = {};
 
-  /** Open a party's tab (the API's and the live check's way in). */
+  /**
+   * Show a party's mystery, or a clue view ("all", "unsorted"), which closes any open mystery
+   * (the API's and the live check's way in).
+   */
   showTab(groupId, tab) {
-    this.#tabs[groupId] = tab;
+    if (tab === "all" || tab === "unsorted") {
+      this.#view = tab;
+      this.#tabs = {};
+    } else {
+      this.#tabs[groupId] = tab;
+    }
     return this.rendered ? this.render() : Promise.resolve(this);
   }
 
@@ -542,11 +554,19 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     const list = groups().filter(g => g.testUserPermission(game.user, "OBSERVER"));
-    context.sections = list.map(g => sectionFor(g, "", this.#tabs[g.id] ?? "all"));
+    context.sections = list.map(g => sectionFor(g, "", this.#tabs[g.id] ?? this.#view));
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
     context.query = this.#query;
+    // The clue views, for the whole window: the counts summed over the parties shown.
+    const anyMystery = Object.keys(this.#tabs).length > 0;
+    context.views = ["all", "unsorted"].map(id => ({
+      id,
+      name: t(`mysteries.${id}`),
+      count: context.sections.reduce((n, s) => n + (s.views.find(v => v.id === id)?.count ?? 0), 0),
+      active: !anyMystery && this.#view === id
+    }));
     context.isGM = game.user.isGM;
     if (context.isGM) {
       // The strip: every world Clue no party has. With several parties, Collect asks which.
@@ -690,7 +710,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 
   static #onShowTab(_event, target) {
     const section = target.closest("[data-group]");
-    if (section) this.showTab(section.dataset.group, target.dataset.tab);
+    this.showTab(section?.dataset.group ?? null, target.dataset.tab);
   }
 
   static async #onNewThread(_event, target) {
