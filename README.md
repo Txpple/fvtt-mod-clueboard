@@ -5,7 +5,7 @@ each stamped with where it was found and who has read it. A **Clue** is an item 
 gear: it has no price, no weight and no place in anyone's inventory. The DM collects a Clue for the party, it
 appears in Mysteries at once, and a player's opening of it there marks the read.
 
-**Phase 1** (unreleased, 0.1.0). The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
+**1.0.0**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
 it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.html`.
 
 ## How it works
@@ -43,7 +43,7 @@ Phase 2: the board (cards, strings, leads, mysteries the players name, a timelin
 
 ## Installation
 
-Not yet released. When it is, paste the manifest URL into Foundry's *Install Module* dialog:
+Paste the manifest URL into Foundry's *Install Module* dialog:
 
 ```
 https://github.com/Txpple/fvtt-mod-clueboard/releases/latest/download/module.json

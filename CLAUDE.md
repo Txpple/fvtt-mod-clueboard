@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-29).** Phase 1 is built on `main` as 0.1.0, unreleased, in its third shape of the day on the
+**State (2026-10-29).** Phase 1 is released as 1.0.0 (the user's word), its third shape of the day on the
 user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
 the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
 the read marked when a player opens the card, the Mysteries window off a spy button on the sidebar's strip
@@ -20,8 +20,8 @@ all there; what follows is UI work. Gone the same day: the sidebar tab (it stuck
 journal per party (messy, leaky in the UI), the Clue loot subtype, the Read column and bookmark in the stash,
 held-by and the Party Stash logic. `npm run verify` is green (59 tests). Deployed to the sandbox and walked GREEN by
 `tools/live-check.mjs --walk` (45 checks); the sandbox's ten Session 02 documents are Clues built from the world
-originals and collected on the Party with their readers kept. The name is free on foundryvtt.com's package pages;
-the setup-screen `getPackages` check is owed before the first release. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
+originals and collected on the Party with their readers kept. The name is free: the setup-screen `getPackages` list (7,076 modules) has no
+Clue Board and no `fvtt-mod-clueboard`; "Mysteries" appears only inside adventure titles. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
 ## The rules this module keeps
 
