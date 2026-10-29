@@ -11,16 +11,21 @@ gathered the way an investigation game gathers them, by picking the thing up and
 
 ## How it will work
 
-- **Read, without posting.** A Read button on every inventory row, item card and item sheet opens the item as a
-  document and writes nothing to chat.
-- **Gather on read.** Reading a marked item the first time records it in the party's Case File, a journal the
-  players own: the text as read, the reader, the scene, the date, the holder.
-- **The holder follows the item.** A clue in the stash is everyone's to read; moved by Party Stash, the card's
-  holder flips with it; given to an NPC or lost, the card stays and says so.
-- **The DM's overlay.** The truths the clues add up to, each with how many clues it needs, and the nudge when the
-  party has two of three and has not put it together.
-- **Export.** The session's documents found, as Markdown, for the session record.
-- **Phase 2: the board.** Cards, strings, leads, threads the players name, and a timeline.
+Phase 1 is three things.
+
+- **The Clue type.** A new loot type, Clue, beside dnd5e's gear, treasure and junk. A loot item of type Clue is a
+  clue; nothing else marks one. The GM sets it in the item's own type field.
+- **Read, in the stash, without posting.** A Read button on every row of the party stash (a Group actor's
+  inventory) opens the item as a document and writes nothing to chat. Reading a Clue there the first time gathers
+  it: the text as read, the reader, the scene, the date, the holder. That is the one way into Mysteries; character
+  sheets, item cards and item sheets are untouched.
+- **Mysteries.** A sidebar tab directly after Journal opens the party's record: one entry per gathered clue, the
+  holder followed live (taken from the stash, the entry's holder flips; given to an NPC or lost, the entry stays and
+  says so), a note a player can leave, and a count of what nobody has read yet.
+
+Phase 2: Read on character sheets, item cards and item sheets; the board (cards, strings, leads, mysteries the
+players name, a timeline); the DM's side (the truths the clues add up to and the nudge when the party has two of
+three); testimony and observation; the export of the session's documents found.
 
 ## Installation
 
