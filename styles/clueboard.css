@@ -1,7 +1,6 @@
 /*
- * Clue Board: the Read column on the group sheet, the bookmark, the Reader and the Mysteries
- * window. Scoped to the module's own classes and the group sheet's column id;
- * no bare element or dnd5e class selector, so the system's sheets are untouched elsewhere.
+ * Clue Board: the Reader, the Mysteries window and the Clue's sheet. Scoped to the module's own
+ * classes; no bare element or dnd5e class selector, so the system's sheets are untouched.
  */
 
 /* The `ready` hook appends one of these, reads its computed flex-direction and removes it: the
@@ -9,54 +8,6 @@
 .clueboard-css-probe {
   display: none;
   flex-direction: column;
-}
-
-/* -------------------------------------------------- */
-/*  The Read column on the party stash                */
-/* -------------------------------------------------- */
-
-/* REQUIRED: a column id without a width rule collapses to zero. 84px, Party Stash's Take. */
-.dnd5e2.actor.group .items-section .items-header .item-clueboardRead,
-.dnd5e2.actor.group .items-section .item .item-clueboardRead {
-  width: 84px;
-  justify-content: center;
-}
-
-.dnd5e2.actor.group .items-section .item .item-clueboardRead .clueboard-read-button {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  flex: none;
-  width: auto;
-  margin: 0;
-  padding: 0.25rem 0.5rem;
-  line-height: 1.2;
-  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
-  font-size: var(--font-size-11, 0.6875rem);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  color: var(--color-text-light-highlight, #f0f0e0);
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--dnd5e-color-gold, #9f9275);
-  border-radius: 3px;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease;
-}
-
-.dnd5e2.actor.group .items-section .item .item-clueboardRead .clueboard-read-button:hover {
-  background: var(--dnd5e-color-gold, #9f9275);
-  color: var(--color-text-dark-primary, #1b1210);
-}
-
-/* The bookmark on a Clue's row. */
-.dnd5e2.actor.group .items-section .item .item-name .clueboard-mark {
-  color: var(--clueboard-mark, #c9a24a);
-  font-size: var(--font-size-11, 0.6875rem);
-  margin-inline-start: 0.35rem;
-  vertical-align: middle;
 }
 
 /* -------------------------------------------------- */
@@ -332,4 +283,198 @@
   gap: 0.15rem;
   font-size: var(--font-size-11, 0.6875rem);
   opacity: 0.85;
+}
+
+/* -------------------------------------------------- */
+/*  The GM strip and the drop target                  */
+/* -------------------------------------------------- */
+
+.clueboard-gm-strip {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--color-border-light-2, #444);
+  border-bottom: 1px solid var(--color-border-light-2, #444);
+  background: rgba(201, 162, 74, 0.08);
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.clueboard-strip-key {
+  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
+  font-size: var(--font-size-10, 0.625rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--clueboard-mark, #c9a24a);
+}
+
+.clueboard-strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0.2rem 0.1rem 0.4rem;
+  border: 1px solid var(--color-border-light-2, #555);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.clueboard-strip-item img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+  border: none;
+}
+
+.clueboard-strip-name {
+  cursor: pointer;
+}
+
+.clueboard-strip-name:hover {
+  text-decoration: underline;
+}
+
+.clueboard-gm-strip button.clueboard-strip-collect {
+  flex: none;
+  width: auto;
+  padding: 0.1rem 0.5rem;
+  font-size: var(--font-size-11, 0.6875rem);
+  border-color: var(--clueboard-mark, #c9a24a);
+}
+
+.clueboard-strip-none,
+.clueboard-strip-hint {
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.clueboard-strip-hint {
+  margin-inline-start: auto;
+}
+
+.clueboard-drop-ok .clueboard-mysteries-body {
+  outline: 2px dashed var(--clueboard-mark, #c9a24a);
+  outline-offset: -6px;
+}
+
+.clueboard-card {
+  position: relative;
+}
+
+.clueboard-card.unread {
+  border-inline-start: 3px solid var(--clueboard-mark, #c9a24a);
+}
+
+.clueboard-card .clueboard-card-remove {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  opacity: 0.5;
+}
+
+.clueboard-card .clueboard-card-remove:hover {
+  opacity: 1;
+  color: var(--color-level-error, #c66);
+}
+
+/* -------------------------------------------------- */
+/*  The Clue's sheet                                  */
+/* -------------------------------------------------- */
+
+.clueboard-clue-sheet .window-content {
+  padding: 0.75rem;
+}
+
+.clueboard-clue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clueboard-clue-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.clueboard-clue-image {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-light-2, #555);
+  cursor: pointer;
+}
+
+.clueboard-clue-names {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.clueboard-clue-names input[name="name"] {
+  font-size: var(--font-size-18, 1.125rem);
+}
+
+.clueboard-clue-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
+  font-size: var(--font-size-11, 0.6875rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--clueboard-mark, #c9a24a);
+}
+
+.clueboard-clue-type select {
+  width: auto;
+}
+
+.clueboard-clue-text prose-mirror {
+  min-height: 10rem;
+}
+
+.clueboard-doc-plain {
+  padding: 1rem 1.25rem;
+}
+
+.clueboard-clue-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border-light-2, #444);
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.clueboard-clue-holder {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.clueboard-clue-holder i {
+  color: var(--color-level-success, #6a6);
+}
+
+.clueboard-clue-footer button {
+  flex: none;
+  width: auto;
+}
+
+.clueboard-clue-footer .clueboard-clue-collect {
+  border-color: var(--clueboard-mark, #c9a24a);
+}
+
+.clueboard-clue-hint {
+  opacity: 0.7;
+  font-style: italic;
 }

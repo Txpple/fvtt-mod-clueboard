@@ -1,29 +1,28 @@
-// The live check of phase 1 on a real world (the local sandbox), Party Stash's verify in shape:
-// a GM page (the bridge user) and a temporary player page, every fact read from the world.
+// The live check on a real world (the local sandbox), Party Stash's verify in shape: a GM page
+// (the bridge user) and a temporary player page, every fact read from the world.
 //
-//   FOUNDRY_HOST=local node tools/live-check.mjs                     # registration and the party, nothing written
-//   FOUNDRY_HOST=local node tools/live-check.mjs --clues "A,B" --read "A" [--reader Kartor]
+//   FOUNDRY_HOST=local node tools/live-check.mjs                       # registration and the party, nothing written
+//   FOUNDRY_HOST=local node tools/live-check.mjs --walk [--reader Kartor] [--shots <dir>]
 //
-// With --clues, the named loot items in the party stash (and world items of the same names) take
-// the Clue type (a write the DM would make in the item sheet). With --read, a temporary player
-// user, assigned the --reader member and given Owner on the group for the run, reads each named
-// Clue through the module's own Reader, which gathers it; the check then moves the first one to
-// the reader's character and back on the GM page, so the holder is seen to follow. The temp user
-// and its ownership go in `finally`; the Clue types and the party's Mysteries entries (on the
-// Group actor) stay, which is the point: a world to look at.
+// With --walk, the GM page makes a scratch Clue in the world and collects it three ways (a drop
+// on the party, a drop on a member, Collect), proves a Clue can never land in an inventory, has a
+// temporary player (assigned the --reader member, given Owner on the group for the run) open it
+// in Mysteries so the read is marked, edits the Clue so the entry's snapshot moves to revision 2,
+// takes it out and collects it again. The scratch Clue, its entry, the temp user and its
+// ownership go in `finally`; the party's own record is never touched.
 import { Foundry, foundryConfig, loadEnv } from "fvtt-mcp-dnd5e/client";
 
 const env = loadEnv();
 const MODULE_ID = "fvtt-mod-clueboard";
+const CLUE_TYPE = `${MODULE_ID}.clue`;
 const TEMP_USER = "ZZ-CLUE Reader";
+const SCRATCH = "ZZ-CLUE Scratch";
 
 const arg = n => {
   const i = process.argv.indexOf(`--${n}`);
   return i >= 0 ? process.argv[i + 1] : null;
 };
-const list = s => (s ? s.split(",").map(x => x.trim()).filter(Boolean) : []);
-const clueNames = list(arg("clues"));
-const readNames = list(arg("read"));
+const walk = process.argv.includes("--walk");
 const readerName = arg("reader") ?? "Kartor";
 const shots = arg("shots");
 
@@ -42,7 +41,6 @@ function watch(f, label, sink) {
     if (type === "error" || type === "warning" || /clue ?board/i.test(text)) sink.push(`[${label} ${type}] ${text}`);
   });
   page.on("pageerror", err => sink.push(`[${label} pageerror] ${err?.message ?? err}`));
-  // A 404 says nothing in the console but its status; name the URL, and whether it is ours.
   page.on("response", res => {
     if (res.status() >= 400) sink.push(`[${label} http ${res.status()}] ${res.url()}`);
   });
@@ -62,11 +60,12 @@ watch(f, "gm", lines);
 let temp = null;
 let fp = null;
 let groupId = null;
+let scratchId = null;
 try {
   // --- A. registration --------------------------------------------------------------------
   console.log("# A. registration");
   const A = await f.evaluate(
-    async ({ id, pageType }) => {
+    async ({ id, type }) => {
       const m = game.modules.get(id);
       const strip = [...document.querySelectorAll("#sidebar nav.tabs menu > li > button")];
       const button = document.getElementById("clueboard-mysteries-button");
@@ -77,45 +76,58 @@ try {
       await new Promise(r => setTimeout(r, 800));
       const win = foundry.applications.instances.get("clueboard-mysteries");
       const rect = win?.element?.getBoundingClientRect();
-      const centred = rect
-        ? Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2) < window.innerWidth * 0.15
-        : false;
+      const centred = rect ? Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2) < window.innerWidth * 0.15 : false;
+      const gmStrip = !!win?.element?.querySelector(".clueboard-gm-strip");
       await win?.close();
+      const group = game.actors.find(a => a.type === "group");
+      await group?.sheet.render({ force: true });
+      await new Promise(r => setTimeout(r, 800));
+      const readColumn = !!group?.sheet.element?.querySelector(".item-clueboardRead, .clueboard-read-button, .clueboard-mark");
+      await group?.sheet.close();
       return {
         installed: !!m,
         active: !!m?.active,
         version: m?.version,
         api: !!m?.api,
-        lootClue: CONFIG.DND5E.lootTypes.clue?.label ?? null,
+        typeKnown: Item.TYPES.includes(type),
+        model: !!CONFIG.Item.dataModels[type],
+        sheet: Object.keys(CONFIG.Item.sheetClasses?.[type] ?? {}),
+        artwork: CONFIG.DND5E?.defaultArtwork?.Item?.[type] ?? null,
+        label: game.i18n.localize(`TYPES.Item.${type}`),
+        lootClue: CONFIG.DND5E.lootTypes.clue ?? null,
         afterJournal: at > 0 ? strip[at - 1]?.dataset.tab : null,
         noTab: !ui.mysteries && !("mysteries" in foundry.applications.sidebar.Sidebar.TABS),
         opened: !!win,
         centred,
+        gmStrip,
         sidebarStill: ui.sidebar.tabGroups.primary === before && ui.sidebar.expanded === expanded,
-        noPageType: !CONFIG.JournalEntryPage.dataModels[pageType] && !(game.documentTypes?.JournalEntryPage ?? []).includes(pageType),
-        noJournal: !game.journal.some(j => j.flags?.[id]) && !game.folders.some(fo => fo.flags?.[id]),
+        readColumn,
         isGM: game.user.isGM,
         user: game.user.name
       };
     },
-    { id: MODULE_ID, pageType: `${MODULE_ID}.clue` }
+    { id: MODULE_ID, type: CLUE_TYPE }
   );
   console.log(`  bridge user ${A.user} (GM=${A.isGM}); module ${A.installed ? `v${A.version} active=${A.active}` : "NOT INSTALLED"}`);
   assert(A.active, "the module is active");
   assert(A.api, "the API is on the module");
-  assert(A.lootClue === "Clue", `the Clue loot type is registered and localized (${A.lootClue})`);
+  assert(A.typeKnown && A.model, `the Clue item type is registered with its data model (${CLUE_TYPE})`);
+  assert(A.sheet.length > 0, `the Clue type has its sheet (${A.sheet.join(", ")})`);
+  assert(A.label === "Clue", `the type is labelled "Clue" (${A.label})`);
+  assert(!!A.artwork, `the type has its default artwork (${A.artwork})`);
+  assert(A.lootClue === null, "the Clue loot subtype is gone");
   assert(A.afterJournal === "journal", `the Mysteries button sits right after Journal (after "${A.afterJournal}")`);
   assert(A.noTab, "no sidebar tab is registered: nothing of the module's is drawn in the sidebar");
   assert(A.opened && A.centred, "the button opens the Mysteries window, centred");
+  assert(A.gmStrip, "the GM sees the strip of uncollected Clues");
   assert(A.sidebarStill, "the click left the sidebar's tab and its expansion as they were");
-  assert(A.noPageType, "no journal page type is registered");
-  assert(A.noJournal, "no journal and no folder of the module's in the world");
+  assert(!A.readColumn, "the party sheet has no Read column, button or bookmark");
   if (!A.active) throw new Error("module not active; enable it and restart the world");
 
   // --- B. the party and its record -------------------------------------------------------
   console.log("# B. the party");
   const B = await f.evaluate(
-    async ({ id }) => {
+    ({ id, type }) => {
       const primary = game.settings.get("dnd5e", "primaryParty")?.actor ?? null;
       const group = primary ?? game.actors.find(a => a.type === "group");
       if (!group) return { error: "no group actor" };
@@ -124,57 +136,108 @@ try {
         groupId: group.id,
         groupName: group.name,
         members: Array.from(group.system.members).map(m => ({ id: m.actor?.id, name: m.actor?.name })),
-        stash: group.items.map(i => ({
-          id: i.id,
-          name: i.name,
-          type: i.type,
-          loot: i.system?.type?.value ?? null,
-          qty: i.system?.quantity ?? 1,
-          clueId: i.flags?.[id]?.id ?? null
-        })),
         schema: group.flags?.[id]?.schema ?? null,
-        entries: entries.map(e => ({ name: e.snapshot.name, id: e.id, readers: Object.values(e.readers).map(r => r.actorName), holder: e.holder }))
+        entries: entries.map(e => ({ name: e.snapshot.name, id: e.id, readers: Object.values(e.readers).map(r => r.actorName), foundAt: e.snapshot.foundAt, scene: e.foundIn.sceneName })),
+        worldClues: game.items.filter(i => i.type === type).map(i => i.name),
+        stashClues: group.items.filter(i => i.type === type || (i.type === "loot" && i.system.type?.value === "clue")).length,
+        memberClues: Array.from(group.system.members).reduce((n, m) => n + (m.actor?.items.filter(i => i.type === type).length ?? 0), 0)
       };
     },
-    { id: MODULE_ID }
+    { id: MODULE_ID, type: CLUE_TYPE }
   );
   if (B.error) throw new Error(B.error);
   groupId = B.groupId;
   console.log(`  group "${B.groupName}" (${B.groupId}); members: ${B.members.map(m => m.name).join(", ")}`);
-  for (const i of B.stash) console.log(`    stash: ${i.name}  [${i.type}${i.loot ? `/${i.loot}` : ""}] x${i.qty}${i.clueId ? `  id=${i.clueId}` : ""}`);
-  for (const e of B.entries) console.log(`    entry: ${e.name}  readers=${e.readers.join(",")}  holder=${e.holder.left ? "left" : e.holder.actorName}`);
-  if (B.entries.length) assert(B.schema === 1, `the party's record carries its schema version (${B.schema})`);
+  console.log(`  world Clues: ${B.worldClues.length} (${B.worldClues.join(", ")})`);
+  for (const e of B.entries) console.log(`    entry: ${e.name}  readers=${e.readers.join(",")}  at="${e.foundAt.slice(0, 40)}"  scene=${e.scene}`);
+  if (B.entries.length) assert(B.schema === 2, `the party's record carries its schema version (${B.schema})`);
+  assert(B.stashClues === 0 && B.memberClues === 0, "no Clue sits in the stash or in a member's inventory");
 
-  // --- C. the Clue type --------------------------------------------------------------------
-  if (clueNames.length) {
-    console.log("# C. the Clue type on the named items");
+  if (walk) {
+    // --- C. a scratch Clue, collected three ways, never carried --------------------------
+    console.log("# C. a scratch Clue is collected, never carried (GM page)");
     const C = await f.evaluate(
-      async ({ groupId, names }) => {
+      async ({ id, type, groupId, name, readerName }) => {
+        const api = game.modules.get(id).api;
         const group = game.actors.get(groupId);
-        const done = [];
-        const missing = [];
-        for (const name of names) {
-          const targets = [
-            ...group.items.filter(i => i.type === "loot" && i.name === name),
-            ...game.items.filter(i => i.type === "loot" && i.name === name)
-          ];
-          if (!targets.length) missing.push(name);
-          for (const item of targets) {
-            if (item.system.type.value !== "clue") await item.update({ "system.type.value": "clue" });
-            done.push(`${name} (${item.parent ? "stash" : "world"})`);
+        const member = Array.from(group.system.members).map(m => m.actor).find(a => a?.name.startsWith(readerName));
+        const clue = await Item.implementation.create({
+          name,
+          type,
+          system: { kind: "document", text: "<p>A scrap for the <em>check</em>, nothing more.</p>", foundAt: "the check's desk" }
+        });
+        const wait = async pred => {
+          for (let i = 0; i < 30; i++) {
+            if (pred()) return true;
+            await new Promise(r => setTimeout(r, 200));
           }
+          return false;
+        };
+        const data = { type: "Item", uuid: clue.uuid };
+        // 1. a drop on the party's sheet
+        const allowed1 = Hooks.call("dropActorSheetData", group, group.sheet, data);
+        const byPartyDrop = await wait(() => !!api.entry(group, clue.id));
+        const entry1 = api.entry(group, clue.id);
+        const partyCarries = group.items.some(i => i.type === type);
+        // 2. a direct create on the group and on the member is refused
+        let createdOnGroup = null;
+        let createdOnMember = null;
+        try {
+          createdOnGroup = (await group.createEmbeddedDocuments("Item", [clue.toObject()])).length;
+        } catch (err) {
+          createdOnGroup = `threw: ${err.message}`;
         }
-        return { done, missing };
+        try {
+          createdOnMember = (await member.createEmbeddedDocuments("Item", [clue.toObject()])).length;
+        } catch (err) {
+          createdOnMember = `threw: ${err.message}`;
+        }
+        const memberCarries = member.items.some(i => i.type === type);
+        // 3. taken out, then a drop on a member's sheet collects for their party
+        await api.uncollect(group, clue.id);
+        const gone = await wait(() => !api.entry(group, clue.id));
+        const allowed2 = Hooks.call("dropActorSheetData", member, member.sheet, data);
+        const byMemberDrop = await wait(() => !!api.entry(group, clue.id));
+        // 4. the strip lists it once it is out, and Collect puts it back
+        await api.uncollect(group, clue.id);
+        await wait(() => !api.entry(group, clue.id));
+        const win = api.openMysteries();
+        await wait(() => win.rendered);
+        await new Promise(r => setTimeout(r, 300));
+        const inStrip = !!win.element.querySelector(`.clueboard-gm-strip [data-action="collect"][data-uuid="${clue.uuid}"]`);
+        await win.close();
+        await api.collect(clue, group, { how: "check" });
+        const byCollect = !!api.entry(group, clue.id);
+        return {
+          clueId: clue.id,
+          allowed1,
+          byPartyDrop,
+          stamp: entry1 ? { scene: entry1.foundIn.sceneName, foundAt: entry1.snapshot.foundAt, kind: entry1.kind } : null,
+          partyCarries,
+          createdOnGroup,
+          createdOnMember,
+          memberCarries,
+          gone,
+          allowed2,
+          byMemberDrop,
+          inStrip,
+          byCollect
+        };
       },
-      { groupId: B.groupId, names: clueNames }
+      { id: MODULE_ID, type: CLUE_TYPE, groupId: B.groupId, name: SCRATCH, readerName }
     );
-    for (const d of C.done) console.log(`    Clue: ${d}`);
-    assert(!C.missing.length, `every named item was found${C.missing.length ? ` (missing: ${C.missing.join(", ")})` : ""}`);
-  }
+    scratchId = C.clueId;
+    assert(C.allowed1 === false && C.byPartyDrop, "a Clue dropped on the party's sheet is collected, and the sheet is told no");
+    assert(C.stamp?.scene && C.stamp.foundAt === "the check's desk" && C.stamp.kind === "document", `the entry is stamped (scene "${C.stamp?.scene}", at "${C.stamp?.foundAt}", ${C.stamp?.kind})`);
+    assert(!C.partyCarries && !C.memberCarries, "no inventory holds the Clue");
+    assert(C.createdOnGroup === 0 && C.createdOnMember === 0, `a direct create on the group and on a member makes nothing (${C.createdOnGroup}, ${C.createdOnMember})`);
+    assert(C.gone, "Take back removes the entry (a forced deletion in the flags)");
+    assert(C.allowed2 === false && C.byMemberDrop, "a Clue dropped on a member's sheet is collected for their party");
+    assert(C.inStrip, "an uncollected Clue shows in the GM strip");
+    assert(C.byCollect, "Collect puts it back");
 
-  // --- D. a player reads in the stash ----------------------------------------------------
-  if (readNames.length) {
-    console.log(`# D. a player (${readerName}) reads in the stash`);
+    // --- D. a player opens it in Mysteries: the read is marked ----------------------------
+    console.log(`# D. a player (${readerName}) opens it in Mysteries`);
     temp = await f.evaluate(
       async ({ groupId, userName, readerName }) => {
         const group = game.actors.get(groupId);
@@ -198,162 +261,150 @@ try {
     await fp.connect();
     watch(fp, "player", lines);
 
-    for (const name of readNames) {
-      const D = await fp.evaluate(
-        async ({ id, groupId, name }) => {
-          const group = game.actors.get(groupId);
-          const item = group?.items.find(i => i.name === name);
-          if (!item) return { error: `no stash item named ${name}` };
-          const api = game.modules.get(id).api;
-          const app = await api.openReader({ item, group });
-          await new Promise(r => setTimeout(r, 300));
-          const rendered = !!app?.rendered;
-          const text = app?.element?.querySelector(".clueboard-doc-text")?.textContent?.trim().slice(0, 60) ?? null;
-          const stamp = !!app?.element?.querySelector(".clueboard-stamp");
-          const chat = game.messages.contents.slice(-1)[0]?.id ?? null;
-          await app?.close();
-          const entry = api.entry(group, item.getFlag(id, "id"));
-          return {
-            isOwnerOfGroup: group.isOwner,
-            clueId: item.getFlag(id, "id") ?? null,
-            rendered,
-            text,
-            stamp,
-            chat,
-            page: entry ? { name: entry.snapshot.name, readers: Object.values(entry.readers).map(r => r.actorName), holder: entry.holder.actorName, scene: entry.foundIn.sceneName, cal: entry.foundIn.calendarDate } : null,
-            inDirectory: game.journal.some(j => j.flags?.[id]) || game.folders.some(fo => fo.flags?.[id])
-          };
-        },
-        { id: MODULE_ID, groupId: B.groupId, name }
-      );
-      if (D.error) {
-        assert(false, D.error);
-        continue;
-      }
-      assert(D.isOwnerOfGroup, "the player owns the group");
-      assert(D.rendered && D.text, `the Reader opened on ${name}: "${D.text}"`);
-      assert(D.clueId, `the id flag was written (${D.clueId})`);
-      assert(D.page?.readers.includes(temp.readerName), `the entry exists and names the reader (${D.page?.readers.join(", ")})`);
-      assert(D.page?.holder === B.groupName, `the holder is the stash (${D.page?.holder})`);
-      assert(D.stamp, `the Reader shows the stamp (scene "${D.page?.scene}", ${D.page?.cal || "no calendar"})`);
-      assert(!D.inDirectory, "nothing of the record shows in the player's Journal directory");
-    }
+    const D = await fp.evaluate(
+      async ({ id, type, groupId, clueId }) => {
+        const api = game.modules.get(id).api;
+        const group = game.actors.get(groupId);
+        const worldClue = game.items.get(clueId) ?? null;
+        const win = api.openMysteries();
+        for (let i = 0; i < 50 && !win.rendered; i++) await new Promise(r => setTimeout(r, 100));
+        const strip = !!win.element.querySelector(".clueboard-gm-strip");
+        const removes = win.element.querySelectorAll('[data-action="remove"]').length;
+        const cardsBefore = win.element.querySelectorAll(".clueboard-card").length;
+        const unreadBefore = win.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
+        const card = win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
+        const wasUnread = card?.classList.contains("unread") ?? null;
+        card?.click();
+        await new Promise(r => setTimeout(r, 800));
+        const reader = [...foundry.applications.instances.values()].find(a => a.constructor.name === "Reader");
+        const text = reader?.element?.querySelector(".clueboard-doc-text")?.textContent?.trim() ?? null;
+        const stamp = !!reader?.element?.querySelector(".clueboard-stamp");
+        await reader?.close();
+        const entry = api.entry(group, clueId);
+        await new Promise(r => setTimeout(r, 400));
+        const nowUnread = win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`)?.classList.contains("unread") ?? null;
+        const unreadAfter = win.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
+        await win.close();
+        return {
+          ownsGroup: group.isOwner,
+          seesWorldClue: !!worldClue && worldClue.testUserPermission(game.user, "LIMITED"),
+          anyClueVisible: game.items.some(i => i.type === type && i.testUserPermission(game.user, "LIMITED")),
+          strip,
+          removes,
+          cardsBefore,
+          unreadBefore,
+          wasUnread,
+          text,
+          stamp,
+          readers: Object.values(entry?.readers ?? {}).map(r => r.actorName),
+          nowUnread,
+          unreadAfter
+        };
+      },
+      { id: MODULE_ID, type: CLUE_TYPE, groupId: B.groupId, clueId: C.clueId }
+    );
+    assert(D.ownsGroup, "the player owns the group");
+    assert(!D.seesWorldClue && !D.anyClueVisible, "the player sees no Clue item in the world");
+    assert(!D.strip && D.removes === 0, "the player sees no GM strip and no Remove");
+    assert(D.cardsBefore >= 1 && D.wasUnread === true, `the card is there and unread (${D.cardsBefore} cards; "${D.unreadBefore}")`);
+    assert(D.text?.includes("A scrap for the check"), `opening it shows the text: "${D.text}"`);
+    assert(D.stamp, "the Reader shows the stamp");
+    assert(D.readers.includes(temp.readerName), `the read is marked for the reader (${D.readers.join(", ")})`);
+    assert(D.nowUnread === false, `the card is read now ("${D.unreadAfter}")`);
 
     // the chat stayed quiet
-    const chatAfter = await f.evaluate(() => game.messages.contents.slice(-3).map(m => m.flavor || m.content?.slice(0, 60)));
+    const chatAfter = await f.evaluate(() => game.messages.contents.slice(-2).map(m => m.flavor || m.content?.slice(0, 60)));
     console.log(`  last chat lines: ${JSON.stringify(chatAfter)}`);
 
-    // the window, on the player page
-    const T = await fp.evaluate(async id => {
-      const app = game.modules.get(id).api.openMysteries();
-      for (let i = 0; i < 50 && !app.rendered; i++) await new Promise(r => setTimeout(r, 100));
-      const cards = app.element.querySelectorAll(".clueboard-card").length;
-      const count = app.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
-      await app.close();
-      return { cards, count };
-    }, MODULE_ID);
-    assert(T.cards >= readNames.length, `the Mysteries window lists the entries (${T.cards} cards; "${T.count}")`);
-
-    // --- E. the holder follows a move -----------------------------------------------------
-    console.log("# E. the holder follows a move (GM page: stash -> reader -> stash)");
+    // --- E. the DM edits the Clue: the entry moves to revision 2 --------------------------
+    console.log("# E. the DM edits the Clue (GM page)");
     const E = await f.evaluate(
-      async ({ id, groupId, readerId, name }) => {
-        const group = game.actors.get(groupId);
-        const reader = game.actors.get(readerId);
+      async ({ id, groupId, clueId }) => {
         const api = game.modules.get(id).api;
-        const item = group.items.find(i => i.name === name);
-        if (!item) return { error: `no stash item ${name}` };
-        const clueId = item.getFlag(id, "id");
-        const entry = () => api.entry(group, clueId);
-        const wait = async pred => {
-          for (let i = 0; i < 25; i++) {
-            if (pred()) return true;
-            await new Promise(r => setTimeout(r, 200));
-          }
-          return false;
-        };
-        const [copy] = await reader.createEmbeddedDocuments("Item", [item.toObject()]);
-        await item.delete();
-        const toReader = await wait(() => entry()?.holder.actorId === reader.id);
-        const holder1 = entry()?.holder.actorName;
-        const [back] = await group.createEmbeddedDocuments("Item", [copy.toObject()]);
-        await copy.delete();
-        const toStash = await wait(() => entry()?.holder.actorId === group.id);
-        const holder2 = entry()?.holder.actorName;
-        return { toReader, holder1, toStash, holder2, backId: back.id };
+        const group = game.actors.get(groupId);
+        const clue = game.items.get(clueId);
+        await clue.update({ "system.text": "<p>A scrap for the check, <strong>revised</strong>.</p>" });
+        for (let i = 0; i < 30 && (api.entry(group, clueId)?.snapshot.revision ?? 0) < 2; i++) await new Promise(r => setTimeout(r, 200));
+        const e = api.entry(group, clueId);
+        return { revision: e?.snapshot.revision, html: e?.snapshot.html ?? "", readers: Object.values(e?.readers ?? {}).length };
       },
-      { id: MODULE_ID, groupId: B.groupId, readerId: temp.readerId, name: readNames[0] }
+      { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId }
     );
-    if (E.error) assert(false, E.error);
-    else {
-      assert(E.toReader, `moved to ${temp.readerName}: the holder followed (${E.holder1})`);
-      assert(E.toStash, `moved back: the holder is the stash again (${E.holder2})`);
-    }
+    assert(E.revision === 2 && E.html.includes("revised"), `the entry's snapshot followed the edit (revision ${E.revision})`);
+    assert(E.readers === 1, "the readers survived the re-snapshot");
   }
-  // --- F. screenshots of the three places, on the GM page --------------------------------
+
+  // --- F. screenshots, on the GM page ------------------------------------------------------
   if (shots) {
     console.log(`# F. screenshots into ${shots}`);
     const { mkdirSync } = await import("node:fs");
     mkdirSync(shots, { recursive: true });
     await f.page.setViewportSize?.({ width: 1600, height: 1000 }).catch(() => {});
-    await f.evaluate(async ({ groupId }) => {
-      const group = game.actors.get(groupId);
-      await group.sheet.render({ force: true });
-      await new Promise(r => setTimeout(r, 800));
-      group.sheet.element?.querySelector('[data-tab="inventory"], .tabs [data-tab="inventory"]')?.click();
-      await new Promise(r => setTimeout(r, 600));
-    }, { groupId });
-    await f.page.screenshot({ path: `${shots}/1-stash.png` });
-    await f.evaluate(async ({ groupId }) => {
-      game.actors.get(groupId).sheet.close();
-      document.getElementById("clueboard-mysteries-button")?.click();
-      await new Promise(r => setTimeout(r, 800));
-    }, { groupId });
-    await f.page.screenshot({ path: `${shots}/2-mysteries.png` });
-    await f.evaluate(async ({ groupId, id }) => {
-      await foundry.applications.instances.get("clueboard-mysteries")?.close();
-      const api = game.modules.get(id).api;
-      const group = game.actors.get(groupId);
-      const [first] = api.entries(group);
-      if (first) await api.openReader({ group, id: first.id });
-      await new Promise(r => setTimeout(r, 800));
-    }, { groupId, id: MODULE_ID });
-    await f.page.screenshot({ path: `${shots}/3-reader.png` });
     await f.evaluate(async () => {
-      for (const app of foundry.applications.instances.values()) if (app.constructor.name === "Reader") await app.close();
+      document.getElementById("clueboard-mysteries-button")?.click();
+      await new Promise(r => setTimeout(r, 900));
     });
-    console.log("  written: 1-stash.png, 2-mysteries.png, 3-reader.png");
+    await f.page.screenshot({ path: `${shots}/1-mysteries.png` });
+    await f.evaluate(
+      async ({ id, groupId }) => {
+        await foundry.applications.instances.get("clueboard-mysteries")?.close();
+        const api = game.modules.get(id).api;
+        const group = game.actors.get(groupId);
+        const [first] = api.entries(group);
+        if (first) await api.openReader({ group, id: first.id });
+        await new Promise(r => setTimeout(r, 800));
+      },
+      { id: MODULE_ID, groupId }
+    );
+    await f.page.screenshot({ path: `${shots}/2-reader.png` });
+    await f.evaluate(
+      async ({ type, scratch }) => {
+        for (const app of foundry.applications.instances.values()) if (app.constructor.name === "Reader") await app.close();
+        const clue = game.items.find(i => i.type === type && i.name !== scratch) ?? game.items.find(i => i.type === type);
+        await clue?.sheet.render({ force: true });
+        await new Promise(r => setTimeout(r, 900));
+      },
+      { type: CLUE_TYPE, scratch: SCRATCH }
+    );
+    await f.page.screenshot({ path: `${shots}/3-clue-sheet.png` });
+    await f.evaluate(async type => {
+      for (const app of foundry.applications.instances.values()) if (app.document?.type === type) await app.close();
+    }, CLUE_TYPE);
+    console.log("  written: 1-mysteries.png, 2-reader.png, 3-clue-sheet.png");
   }
 } finally {
   if (fp) await fp.disconnect?.().catch(() => {});
-  if (temp?.userId) {
+  if (scratchId || temp?.userId) {
     await f
       .evaluate(
-        async ({ groupId, userId, had }) => {
+        async ({ id, groupId, scratchId, userId, had }) => {
+          const api = game.modules.get(id).api;
           const group = game.actors.get(groupId);
-          // The whole map, replaced: a deletion operator inside ownership fails its validation on
-          // v14, and a key left for a deleted user is litter on the party's actor.
-          const ownership = { ...group.ownership };
-          if (had === null) delete ownership[userId];
-          else ownership[userId] = had;
-          await group.update({ ownership }, { recursive: false, diff: false });
-          await game.users.get(userId)?.delete();
+          if (scratchId) {
+            if (api.entry(group, scratchId)) await api.uncollect(group, scratchId);
+            await game.items.get(scratchId)?.delete();
+          }
+          if (userId) {
+            // The whole map, replaced: a deletion operator inside ownership fails its validation
+            // on v14, and a key left for a deleted user is litter on the party's actor.
+            const ownership = { ...group.ownership };
+            if (had === null) delete ownership[userId];
+            else ownership[userId] = had;
+            await group.update({ ownership }, { recursive: false, diff: false });
+            await game.users.get(userId)?.delete();
+          }
         },
-        { groupId, userId: temp.userId, had: temp.had }
+        { id: MODULE_ID, groupId, scratchId, userId: temp?.userId ?? null, had: temp?.had ?? null }
       )
       .catch(err => console.log(`  cleanup: ${err?.message ?? err}`));
   }
   await f.disconnect?.().catch(() => {});
 }
 
+// --- the console --------------------------------------------------------------------------
 console.log("# console");
-if (!lines.length) console.log("  (nothing from the module, no errors)");
-for (const l of lines) console.log(`  ${l}`);
-const ours = lines.filter(l => /clue ?board/i.test(l));
-const errors = ours.filter(l => /error|http 4|http 5/i.test(l) && !/warning/i.test(l));
-const others = lines.filter(l => /pageerror|http 4|http 5/i.test(l) && !/clue ?board/i.test(l));
-assert(!errors.length, `no errors of the module's on either page (${errors.length})`);
-if (others.length) console.log(`  (${others.length} line(s) not the module's: resource 404s and other packages' errors, listed above)`);
-
-console.log(fails ? `\n${fails} FAIL` : "\nGREEN");
+const ours = lines.filter(l => /clue ?board/i.test(l) && !/http 404/.test(l) && /error|pageerror/.test(l));
+for (const l of lines.filter(l => !/http 404/.test(l)).slice(0, 40)) console.log(`  ${l}`);
+assert(ours.length === 0, `no errors of the module's on either page (${ours.length})`);
+console.log(fails ? `RED (${fails} failed)` : "GREEN");
 process.exit(fails ? 1 : 0);

@@ -1,61 +1,77 @@
 {
+  "TYPES": {
+    "Item": {
+      "fvtt-mod-clueboard.clue": "Clue"
+    }
+  },
   "fvtt-mod-clueboard": {
     "settings": {
       "enabled": {
         "name": "Enabled",
-        "hint": "Off leaves the group sheet and the sidebar exactly as Foundry and the system have them (no Read column, no Mysteries button); the parties' records stay on them."
-      },
-      "showMark": {
-        "name": "Show the mark to players",
-        "hint": "A Clue in the party stash wears a bookmark on its row, so a player knows it is worth reading. Off, only the GM sees it."
-      },
-      "countUngathered": {
-        "name": "Count the ungathered",
-        "hint": "Mysteries says how many Clues in the party's hands nobody has read yet."
+        "hint": "Off leaves the sidebar exactly as Foundry has it (no Mysteries button) and collects nothing; the Clue type, the Clues and the parties' records stay."
       }
     },
-    "lootType": "Clue",
+    "sheet": "Clue",
     "tab": "Mysteries",
+    "kinds": {
+      "document": "Document"
+    },
+    "sheetFields": {
+      "foundAt": "Found at",
+      "foundAtHint": "In the DM's words: where the party found it (optional)",
+      "collectedBy": "Collected by {group}, read by",
+      "collectFor": "Collect for {group}",
+      "takeBack": "Take back",
+      "notInWorld": "Import this Clue into the world to collect it: drag it onto the party, or onto Mysteries."
+    },
+    "collect": {
+      "folder": "Clues",
+      "done": "{name} is in {group}'s Mysteries.",
+      "already": "{name} is already in {group}'s Mysteries.",
+      "removed": "{name} was taken out of {group}'s Mysteries. The Clue is still in the Items directory.",
+      "gmOnly": "Only a GM collects a Clue.",
+      "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor; make one and collect into it.",
+      "pickParty": "Which party collects it?",
+      "neverCarried": "A Clue is never carried: it goes to the party's Mysteries. Drop it on the party, on a member, or on Mysteries.",
+      "failed": "Mysteries could not collect the Clue ({reason})."
+    },
     "mysteries": {
       "title": "Mysteries",
       "search": "Search the mysteries",
-      "empty": "Nothing gathered yet. Read a Clue in the party stash and it appears here.",
-      "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor, and reading a Clue in its stash is how one gets in.",
-      "ungathered": "{count} unread",
-      "ungatheredOne": "1 unread",
-      "gathered": "{gathered} of {total} gathered",
-      "held": "Held",
+      "empty": "Nothing collected yet. When the DM collects a Clue it appears here.",
+      "noParty": "No party yet. Mysteries keeps a record for each dnd5e Group actor.",
+      "unreadMine": "{count} unread by you",
+      "unreadAnyone": "{count} unread by anyone",
       "read": "Read",
       "found": "Found",
-      "left": "left the party",
-      "stash": "the party stash",
+      "foundAt": "At",
       "nobody": "nobody yet",
-      "markTooltip": "A Clue: reading it goes in Mysteries."
+      "uncollected": "GM · not yet collected",
+      "collect": "Collect",
+      "allCollected": "every Clue in the world is collected",
+      "dropHint": "or drop a Clue anywhere on this window",
+      "remove": "Take it out of Mysteries"
     },
     "read": {
-      "button": "Read",
-      "ariaLabel": "Read {name}",
-      "title": "{name}",
       "note": "Note",
       "notePrompt": "A note on {name}, in your words, for the whole party to see.",
-      "openItem": "Open the item",
-      "gathered": "{name} is in Mysteries, read by {reader}.",
-      "readAgain": "{reader} read {name}.",
-      "gmRead": "A GM read gathers nothing.",
-      "notClue": "Not a Clue: nothing is recorded.",
-      "noReader": "You have no character in this party, so the read is not recorded.",
+      "openItem": "Open the Clue",
+      "marked": "{reader} read {name}.",
+      "gmRead": "A GM's opening marks nothing.",
+      "noReader": "You have no character in this party, so the read is not marked.",
+      "notOwner": "You do not own {group}, so the read is not marked in its Mysteries.",
       "pickReader": "Who is reading?",
-      "pickReaderHint": "You own more than one member of the party. The read is recorded for the one you pick.",
-      "notOwner": "You do not own {group}, so the read is not recorded in its Mysteries.",
-      "failed": "Mysteries could not record the read ({reason}).",
-      "revision": "Revision {n}: the item changed while the party held it; this is the text as it reads now.",
-      "itemGone": "The item is gone; the entry keeps what was read."
+      "pickReaderHint": "You own more than one member of the party. The read is marked for the one you pick.",
+      "failed": "Mysteries could not mark the read ({reason}).",
+      "revision": "Revision {n}: the Clue changed since it was collected; this is the text as it reads now.",
+      "itemGone": "The Clue is gone from the world; the entry keeps what was collected.",
+      "entryGone": "That entry is no longer in Mysteries."
     },
     "stamp": {
       "notesLabel": "The party's note",
-      "foundIn": "Found in",
+      "foundIn": "Found",
       "readBy": "Read by",
-      "heldBy": "Held by"
+      "kind": "Kind"
     }
   }
 }

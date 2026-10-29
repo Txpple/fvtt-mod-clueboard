@@ -7,6 +7,22 @@
     </search>
 </header>
 
+{{#if isGM}}
+<div class="clueboard-gm-strip">
+    <span class="clueboard-strip-key">{{ localize "fvtt-mod-clueboard.mysteries.uncollected" }}</span>
+    {{#each uncollected}}
+    <span class="clueboard-strip-item">
+        <img src="{{ img }}" alt="">
+        <span class="clueboard-strip-name" data-action="openItem" data-uuid="{{ uuid }}">{{ name }}</span>
+        <button type="button" class="clueboard-strip-collect" data-action="collect" data-uuid="{{ uuid }}">{{ localize "fvtt-mod-clueboard.mysteries.collect" }}</button>
+    </span>
+    {{else}}
+    <span class="clueboard-strip-none">{{ localize "fvtt-mod-clueboard.mysteries.allCollected" }}</span>
+    {{/each}}
+    <span class="clueboard-strip-hint">{{ localize "fvtt-mod-clueboard.mysteries.dropHint" }}</span>
+</div>
+{{/if}}
+
 <div class="clueboard-entries">
     {{#if none}}
     <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.noParty" }}</p>
@@ -18,23 +34,27 @@
     <section class="clueboard-section">
         <div class="clueboard-section-head">
             {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
-            <span class="clueboard-count">{{ total }}{{#if ungathered}} · {{ ungatheredText }}{{/if}}</span>
+            <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
         </div>
         {{#each entries}}
-        <article class="clueboard-card" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
+        <article class="clueboard-card{{#if unread}} unread{{/if}}" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
             {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
             <div class="clueboard-card-body">
                 <h5 class="clueboard-card-title">{{ name }}</h5>
                 {{#if excerpt}}<p class="clueboard-card-excerpt">{{ excerpt }}</p>{{/if}}
                 {{#if notes}}<p class="clueboard-card-notes">“{{ notes }}”</p>{{/if}}
                 <div class="clueboard-card-meta">
+                    {{#if foundAt}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.foundAt" }}</b> {{ foundAt }}</span>{{/if}}
                     {{#if foundIn}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.found" }}</b> {{ foundIn }}{{#if calendarDate}} · {{ calendarDate }}{{/if}}</span>{{/if}}
-                    <span><b>{{ localize "fvtt-mod-clueboard.mysteries.held" }}</b> <span class="{{#if left}}clueboard-left{{/if}}">{{ holder }}</span></span>
                     <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.read" }}</b>
-                        {{#each readers}}<span class="clueboard-chip">{{ this }}</span>{{/each}}
+                        {{#each readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
                     </span>
                 </div>
             </div>
+            {{#if ../../isGM}}
+            <button type="button" class="clueboard-card-remove ui-control plain icon fa-solid fa-xmark" data-action="remove" data-group="{{ group }}" data-id="{{ id }}"
+                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.remove" }}"></button>
+            {{/if}}
         </article>
         {{/each}}
     </section>

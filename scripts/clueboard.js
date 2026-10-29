@@ -1,168 +1,119 @@
 /**
  * Open Roll 5e: Clue Board — the entry point (module.json's `esmodules`).
  *
- * Phase 1 is three things: a Clue loot type (a `CONFIG.DND5E.lootTypes` entry, the one signifier),
- * a Read button on the party stash's rows (the one trigger into Mysteries) and the Mysteries
- * window, opened from a scroll button on the sidebar's strip directly after Journal (a button, not
- * a sidebar tab: nothing of the module's is drawn inside the sidebar). Nothing here touches a character sheet, an item card or an
- * item sheet. The plan is the suite's docs/plans/clueboard.md.
+ * Three things: a Clue item type of the module's own (clue-item.js), collecting (a drop on the
+ * party, a member or the Mysteries window, or Collect on the sheet or in the window's GM strip),
+ * and the Mysteries window, opened from a scroll button on the sidebar's strip directly after
+ * Journal (a button, not a sidebar tab: nothing of the module's is drawn inside the sidebar).
+ * Nothing here touches an inventory, a character sheet or an item card. The plan is the suite's
+ * docs/plans/clueboard.md.
  *
- * The party's record lives on its Group actor (store.js), written by the reader's own client on a
- * party the players own; there is no journal, no document type and no GM chore. The kit
+ * The party's record lives on its Group actor (store.js); the GM collects, the reader's own client
+ * marks the read, on a party the players own; no elect, no journal, no GM chore. The kit
  * (scripts/kit/, byte-identical across the family) gives the module its logger (common.js).
  */
 
+import { registerClueItem } from "./clue-item.js";
 import { log, MODULE_ID, setting, t } from "./common.js";
-import { changesSnapshot, CLUE_TYPE, clueId, isClue } from "./decide/clue.js";
+import { changesSnapshot, CLUE_TYPE, isClue } from "./decide/clue.js";
 import * as mysteries from "./mysteries.js";
 import { openReader, refreshReaders } from "./reader.js";
 
 export { MODULE_ID, log, t, setting };
 
-const COLUMN_ID = "clueboardRead";
 const BUTTON_ID = "clueboard-mysteries-button";
 
 /* -------------------------------------------------- */
-/*  init: settings and the loot type                  */
+/*  init: the setting, the Clue type, the templates   */
 /* -------------------------------------------------- */
 
 Hooks.once("init", () => {
-  for (const [key, def] of Object.entries({ enabled: true, showMark: true, countUngathered: true })) {
-    game.settings.register(MODULE_ID, key, {
-      name: `${MODULE_ID}.settings.${key}.name`,
-      hint: `${MODULE_ID}.settings.${key}.hint`,
-      scope: "world",
-      config: true,
-      type: Boolean,
-      default: def,
-      requiresReload: key === "enabled"
-    });
-  }
+  game.settings.register(MODULE_ID, "enabled", {
+    name: `${MODULE_ID}.settings.enabled.name`,
+    hint: `${MODULE_ID}.settings.enabled.hint`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    requiresReload: true
+  });
+
+  // The Clue type exists whether or not the module is enabled, so a world that holds Clues never
+  // sees them as an unknown type.
+  registerClueItem(CLUE_TYPE);
 
   if (!setting("enabled")) return;
 
-  // The Clue loot type. dnd5e localizes every lootTypes label at i18nInit, ours with them.
-  if (CONFIG.DND5E?.lootTypes) {
-    CONFIG.DND5E.lootTypes[CLUE_TYPE] ??= { label: `${MODULE_ID}.lootType` };
-  } else {
-    log.error("CONFIG.DND5E.lootTypes not found: the Clue loot type is not registered (dnd5e 5.x required).");
-  }
-
   const load = foundry.applications?.handlebars?.loadTemplates ?? loadTemplates;
   load([
-    `modules/${MODULE_ID}/templates/read-column.hbs`,
     `modules/${MODULE_ID}/templates/reader.hbs`,
-    `modules/${MODULE_ID}/templates/mysteries.hbs`
+    `modules/${MODULE_ID}/templates/mysteries.hbs`,
+    `modules/${MODULE_ID}/templates/clue-item.hbs`
   ]).catch(err => log.error("preloading the templates failed", err));
 });
 
 /* -------------------------------------------------- */
-/*  setup: the Read column on the group sheet         */
+/*  A Clue dropped on an actor is collected, never carried */
 /* -------------------------------------------------- */
 
-Hooks.once("setup", () => {
-  if (!setting("enabled")) return;
-  const Group = globalThis.dnd5e?.applications?.actor?.GroupActorSheet;
-  if (!Group) {
-    log.error("dnd5e GroupActorSheet not found: no Read column (dnd5e 5.x required).");
-    return;
-  }
-  // Party Stash's way (its Take column, order 1100): appended to the sheet's own section
-  // columns so the system's grid lays it out, past the controls column, at priority 1000 so
-  // the system's own columns give way first as the sheet narrows. The width rule in
-  // clueboard.css is required: a column id without CSS collapses to zero width.
-  const origSections = Group.prototype._configureInventorySections;
-  Group.prototype._configureInventorySections = async function (sections) {
-    await origSections?.call(this, sections);
-    try {
-      const column = {
-        id: COLUMN_ID,
-        width: 84,
-        order: 1150,
-        priority: 1000,
-        label: "",
-        template: `modules/${MODULE_ID}/templates/read-column.hbs`
-      };
-      for (const s of sections) if (Array.isArray(s.columns)) s.columns = [...s.columns, column];
-    } catch (err) {
-      log.error("adding the Read column failed", err);
-    }
-  };
-});
-
-/** The Read buttons and the bookmark on a group sheet's rows. */
-Hooks.on("renderGroupActorSheet", (app, element) => {
+/**
+ * The actor sheet asks before it does anything with a drop. A Clue dropped on the party, or on
+ * a member, goes to the party's record; the sheet never sees it, so no inventory ever holds one.
+ * The DM's gesture; a player cannot see a world Clue to drag it.
+ */
+Hooks.on("dropActorSheetData", (actor, _sheet, data) => {
   try {
-    if (!setting("enabled")) return;
-    const group = app.document;
-    if (group?.type !== "group") return;
-    const root = element instanceof HTMLElement ? element : app.element;
-    const showMark = game.user.isGM || setting("showMark");
-    for (const row of root?.querySelectorAll(".item[data-item-id]") ?? []) {
-      const item = group.items.get(row.dataset.itemId);
-      if (!item) continue;
-      const button = row.querySelector("button.clueboard-read-button:not([data-wired])");
-      if (button) {
-        button.dataset.wired = "true";
-        button.addEventListener("click", ev => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          void openReader({ item, group });
-        });
-      }
-      if (showMark && isClue(item) && !row.querySelector(".clueboard-mark")) {
-        const title = row.querySelector(".item-name .name .title") ?? row.querySelector(".item-name .name");
-        if (title) {
-          const mark = document.createElement("i");
-          mark.className = "fa-solid fa-bookmark clueboard-mark";
-          mark.inert = true;
-          mark.dataset.tooltip = t("mysteries.markTooltip");
-          title.append(mark);
-        }
-      }
-    }
+    if (!setting("enabled") || data?.type !== "Item" || !data.uuid) return;
+    const doc = fromUuidSync(data.uuid);
+    if (doc?.type !== CLUE_TYPE) return;
+    void (async () => {
+      const item = await fromUuid(data.uuid);
+      const group = mysteries.partyOf(actor) ?? (await mysteries.pickParty());
+      if (item && group) await mysteries.collect(item, group, { how: "drop" });
+    })();
+    return false;
   } catch (err) {
-    log.error("wiring the group sheet failed", err);
+    log.error("handling a dropped Clue failed", err);
   }
 });
 
+/** Belt and braces: a Clue created inside any actor by another path is refused, with a word. */
+Hooks.on("preCreateItem", (item, _data, _options, userId) => {
+  if (!isClue(item) || !item.parent) return;
+  if (userId === game.user.id) ui.notifications.warn(t("collect.neverCarried"));
+  return false;
+});
+
 /* -------------------------------------------------- */
-/*  The holder follows the item; the snapshot follows the text */
+/*  The record follows the DM's Clue; the window and the Readers follow the record */
 /* -------------------------------------------------- */
 
-/** Only the client that made the change writes, so a move lands one write, not one per client. */
+/** Only the client that made the change writes, so an edit lands one write, not one per client. */
 const mine = userId => userId === game.user.id;
 
-Hooks.on("createItem", (item, _options, userId) => {
-  if (!mine(userId) || !setting("enabled")) return;
-  const id = isClue(item) ? clueId(item, MODULE_ID) : null;
-  if (!id || mysteries.isHandOffRow(item)) return;
-  mysteries.followHolder(id).catch(err => log.error("following a created Clue failed", err));
-});
-
-Hooks.on("deleteItem", (item, _options, userId) => {
-  if (!mine(userId) || !setting("enabled")) return;
-  const id = isClue(item) ? clueId(item, MODULE_ID) : null;
-  if (!id) return;
-  mysteries.followHolder(id, item.parent).catch(err => log.error("following a deleted Clue failed", err));
-});
-
 Hooks.on("updateItem", (item, changes, _options, userId) => {
-  if (!mine(userId) || !setting("enabled")) return;
-  const id = isClue(item) ? clueId(item, MODULE_ID) : null;
-  if (!id || !changesSnapshot(changes)) return;
-  mysteries.refreshSnapshot(id, item).catch(err => log.error("refreshing a Clue's snapshot failed", err));
+  if (!isClue(item) || item.parent) return;
+  if (mine(userId) && setting("enabled") && changesSnapshot(changes)) {
+    mysteries.refreshSnapshot(item).catch(err => log.error("refreshing a Clue's snapshot failed", err));
+  }
+  mysteries.MysteriesWindow.refresh();
 });
 
-/* -------------------------------------------------- */
-/*  The window and the Readers follow the record      */
-/* -------------------------------------------------- */
+/** The world's Clues changed: the GM strip follows. */
+for (const hook of ["createItem", "deleteItem"]) {
+  Hooks.on(hook, item => {
+    if (isClue(item) && !item.parent) mysteries.MysteriesWindow.refresh();
+  });
+}
 
 /** A party's record changed (on any client): redraw what shows it. */
 Hooks.on("updateActor", (actor, changes) => {
   if (actor.type !== "group" || !foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`)) return;
   mysteries.MysteriesWindow.refresh();
   refreshReaders(actor);
+  for (const app of foundry.applications.instances.values()) {
+    if (app.constructor.name === "ClueItemSheet" && app.rendered) app.render();
+  }
 });
 
 /** A party made or removed changes the window's sections. */
@@ -241,13 +192,15 @@ Hooks.once("ready", () => {
     module.api = {
       CLUE_TYPE,
       isClue,
-      clueId: item => clueId(item, MODULE_ID),
+      collect: mysteries.collect,
+      uncollect: mysteries.uncollect,
+      markRead: mysteries.markRead,
       openReader,
       openMysteries: () => mysteries.MysteriesWindow.open(),
-      gather: mysteries.gather,
       entries: mysteries.entriesOf,
       entry: mysteries.entryOf,
-      findEntry: mysteries.findEntry
+      findEntry: mysteries.findEntry,
+      parties: mysteries.groups
     };
   }
 });

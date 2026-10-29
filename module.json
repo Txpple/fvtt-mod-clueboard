@@ -1,7 +1,7 @@
 {
   "id": "fvtt-mod-clueboard",
   "title": "Open Roll 5e: Clue Board",
-  "description": "The party's Mysteries, built from what they read: a loot item of the Clue type, read from the party stash, becomes an entry stamped with who read it, where and when, and follows its item through the stash.",
+  "description": "The party's Mysteries, built from the Clues the DM collects for them: a Clue is an item type of its own, never carried, and a player's opening of it in Mysteries marks the read.",
   "version": "0.1.0",
   "authors": [
     {
@@ -41,5 +41,14 @@
   "manifest": "https://github.com/Txpple/fvtt-mod-clueboard/releases/latest/download/module.json",
   "download": "https://github.com/Txpple/fvtt-mod-clueboard/releases/download/v0.1.0/fvtt-mod-clueboard.zip",
   "readme": "https://github.com/Txpple/fvtt-mod-clueboard#readme",
-  "license": "MIT"
+  "license": "MIT",
+  "documentTypes": {
+    "Item": {
+      "clue": {
+        "htmlFields": [
+          "text"
+        ]
+      }
+    }
+  }
 }

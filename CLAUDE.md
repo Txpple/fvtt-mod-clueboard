@@ -1,66 +1,68 @@
 # fvtt-mod-clueboard — working notes for sessions in this repo
 
-**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's Mysteries, built from what they
-read. A loot item of the Clue type, read in the party stash, becomes an entry stamped with reader, place and
-time; the entry follows its item through the stash and stays when the item leaves. Part of Open Roll 5e (the
-suite repo is `..`, its CLAUDE.md has the family's conventions; the plan this is built from is
-`../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib, MIT.
+**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's Mysteries, the Clues the DM has
+collected for them, each stamped with where it was found and who has read it. A Clue is an item type of the
+module's own, never carried; collecting puts it on the party's record, and a player's opening of it in Mysteries
+marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has the family's conventions; the plan
+this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
+MIT.
 
-**State (2026-10-29).** Phase 1 is built on `main` as 0.1.0, unreleased: the Clue loot type, Read on the party
-stash's rows (the one trigger into Mysteries; player inventories untouched), the Mysteries window opened centred
-from a scroll button on the sidebar's strip directly after Journal (the user's ruling after the sidebar panel stuck
-the sidebar), the party's record on its Group actor (no journal, no document type, the user's ruling the same
-morning), the holder and snapshot following the item. `npm run verify` is green (59 tests). Deployed to the sandbox and enabled there, walked GREEN by
-`tools/live-check.mjs` (a GM page and a temporary player page): the sandbox's Session 02 documents are Clues and
-four are gathered on the Party. The name is free on foundryvtt.com's package pages; the setup-screen `getPackages` check is
-owed before the first release. Phase 2 (Read everywhere else, the board, testimony, the export; no GM secrets, ever)
-waits on the plan, after a trial of Sargas Investigation Board on the sandbox.
+**State (2026-10-29).** Phase 1 is built on `main` as 0.1.0, unreleased, in its third shape of the day on the
+user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
+the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
+the read marked when a player opens the card, and the Mysteries window off a scroll button on the sidebar's strip
+after Journal, the record on the Group actor. Gone the same day: the sidebar tab (it stuck the sidebar), the
+journal per party (messy, leaky in the UI), the Clue loot subtype, the Read column and bookmark in the stash,
+held-by and the Party Stash logic. `npm run verify` is green (55 tests). Deployed to the sandbox and walked GREEN by
+`tools/live-check.mjs --walk` (33 checks); the sandbox's ten Session 02 documents are Clues built from the world
+originals and collected on the Party with their readers kept. The name is free on foundryvtt.com's package pages;
+the setup-screen `getPackages` check is owed before the first release. Phase 2 (the board, testimony and
+observation as kinds, the export; no GM secrets, ever) waits on the plan.
 
 ## The rules this module keeps
 
-- **Read never posts.** The Reader writes nothing to chat, ever.
-- **Only Clues gather, and only from the stash.** A Clue is a loot item of type `clue`, nothing of the module's on
-  it until it is read; Read on anything else is just reading. Phase 1 adds nothing to a character sheet, an item
-  card or an item sheet.
-- **The clue's identity is a flag id written at the first gather**, never a uuid: a Party Stash move is a copy
-  then a delete.
+- **A Clue is an item type of the module's own**, declared in `module.json` (`documentTypes.Item.clue`), its model
+  `ClueItemModel` (`kind`, `text`, `foundAt`) and sheet `ClueItemSheet` registered at `init` whether or not the
+  module is enabled, so a world that holds Clues never sees an unknown type. Its icon is a row in
+  `CONFIG.DND5E.defaultArtwork.Item`. `kind` is the seam for phase 2: "document" today, testimony and observation
+  later, the sheet and the cards reading it.
+- **A Clue is never carried.** dnd5e refuses a non-physical item on a Group; `dropActorSheetData` turns a Clue
+  dropped on any actor's sheet into a collect and tells the sheet no; `preCreateItem` refuses a Clue inside any
+  actor by any other path. Nothing of the module's touches an inventory, a character sheet or an item card.
 - **A party's record lives on its Group actor and nowhere else** (`scripts/store.js`): the module's flags,
-  `entries.<clueId>` and a `schema` version, each entry validated by the module's own `MysteryEntry` data model. No
-  journal, no folder, no document type: nothing shows in a directory or on a sheet, and the window, the Reader and
-  the API are the only ways in. No party, no record: Read lives only in a Group's stash.
-- **The reader's client writes**, on a party the players own (Party Stash needs the same); a player who does not
-  own it is told the read is not recorded. Every write names the narrowest key (an entry, `readers.<actorId>`, the
-  holder, the note), so two reads at once never overwrite each other, and passes `render: false` so the stash
-  does not redraw under its reader. No elect anywhere (Party Stash's lesson: a GM absent must lose nothing).
-- **No GM secrets.** Anyone who can see the party can read its flags, and nothing the module stores is hidden
-  from players: the user's ruling, phase 2 included.
-- **The moving client writes the holder** (`createItem`/`deleteItem`, `userId === game.user.id`), so a move
-  lands one write; a Party Stash hand-off row (`giveTo`) is not a carrier until it lands.
+  `entries.<itemId>` (keyed by the world Clue it was collected from) and a `schema` version (2), each entry
+  validated by `MysteryEntry`. No journal, no folder, nothing in a directory or on a sheet; the window, the Reader
+  and the API are the only ways in. No party, no record.
+- **The DM collects; the reader's client marks the read.** Collect is GM-only (a player cannot see a world Clue).
+  A compendium Clue is imported into the world first (a "Clues" folder, flagged) so the entry has a master to
+  follow. The read is written by the player's own client on a party the players own (Party Stash needs the same);
+  a player who does not own it is told. Every write names the narrowest key (an entry, `readers.<actorId>`, the
+  snapshot, the note) with `render: false`; a removal is a `ForcedDeletion` on the entry's key. No elect anywhere.
+- **No GM secrets.** Anyone who can see the party can read its flags; nothing the module stores is hidden from
+  players: the user's ruling, phase 2 included.
+- **Read never posts.** The Reader writes nothing to chat, ever. A GM's opening marks nothing.
 - **Mysteries is a window, never a sidebar panel.** A scroll button is added to the sidebar's strip directly after
   Journal on `renderSidebar` (no `data-tab`, no `data-action`, so the sidebar never switches or expands for it);
   it opens `MysteriesWindow`, one per client, centred. Nothing is registered on `Sidebar.TABS` or `CONFIG.ui`: a
-  tab's panel lives inside the sidebar's layout, and one there stuck the sidebar.
-- **No class patches.** The loot type is a `CONFIG.DND5E` entry; the group sheet's column goes through
-  `_configureInventorySections` (Party Stash's way, order 1150, priority 1000, its CSS width rule required); the
-  button is a DOM addition on the strip.
-- **A Handlebars part renders one root element** (the Reader and the window are wrapped); a world on the stock
-  Simplified Gregorian calendar gets no calendar date in its stamp.
+  tab's panel lives inside the sidebar's layout, and one there stuck the sidebar. For the GM the window carries the
+  strip of uncollected world Clues and is a drop target.
+- **No class patches.** The type is a Foundry declaration; the drops are hooks; the button is a DOM addition.
+- **A Handlebars part renders one root element**; a world on the stock Simplified Gregorian calendar gets no
+  calendar date in its stamp; card text is plain text escaped once by the template.
 
 ## How the code is laid out
 
-- `scripts/decide/clue.js` (`// @ts-check`, pure, no Foundry): `isClue`, `clueId`, `snapshotOf`,
-  `changesSnapshot`, `resolveHolder`, `entryList`, `readerList`, `sortAndFilter`, `countUngathered`. Tested in
-  `tests/clue.test.js`.
-- `scripts/common.js`: the id, the logger, `t`, `setting`; imported by every other file, imports none
-  of them (no cycle).
-- `scripts/clueboard.js`: the entry point; settings and the loot type at `init`; the column at `setup`; the
-  strip's button on `renderSidebar`; the row wiring on `renderGroupActorSheet`; the item hooks; the redraws on a
-  record change (`updateActor`);
-  the stylesheet probe; `module.api`.
+- `scripts/decide/clue.js` (`// @ts-check`, pure, no Foundry): `CLUE_TYPE`, `KINDS`, `isClue`, `snapshotOf`,
+  `changesSnapshot`, `partyFor`, `defaultParty`, `entryList`, `readerList`, `sortAndFilter`, `unreadCount`. Tested
+  in `tests/clue.test.js`.
+- `scripts/common.js`: the id, the logger, `t`, `setting`; imported by every other file, imports none of them.
+- `scripts/clueboard.js`: the entry point; the setting and the type at `init`; the drop and create hooks; the
+  record and window refreshes; the strip's button on `renderSidebar`; the stylesheet probe; `module.api`.
+- `scripts/clue-item.js`: `ClueItemModel`, `ClueItemSheet` (Collect for a party, Take back), `registerClueItem`.
 - `scripts/store.js`: `MysteryEntry`, the reads and the narrow writes on a party's record.
-- `scripts/mysteries.js`: the party helpers, the stamp, the reader picker, `gather`, the holder and
-  snapshot followers, the window's context, `MysteriesWindow`.
-- `scripts/reader.js`: `Reader` (on a party and a clue id, read live), `openReader`, `refreshReaders`.
-- `templates/`: `read-column.hbs`, `reader.hbs`, `mysteries.hbs`.
-- `tools/live-check.mjs`: the sandbox walk (`FOUNDRY_HOST=local`; `--clues`, `--read`, `--reader`, `--shots`).
-- `prototypes/`: the HTML mock-up the design was ruled on; never shipped.
+- `scripts/mysteries.js`: the party helpers and pickers, the stamp, `collect`, `uncollect`, `refreshSnapshot`,
+  `markRead`, the window's context, `MysteriesWindow`.
+- `scripts/reader.js`: `Reader` (on a party and a Clue id, read live), `openReader`, `refreshReaders`.
+- `templates/`: `clue-item.hbs`, `reader.hbs`, `mysteries.hbs`.
+- `tools/live-check.mjs`: the sandbox walk (`FOUNDRY_HOST=local`; `--walk`, `--reader`, `--shots`).
+- `prototypes/`: the HTML mock-ups the design was ruled on; never shipped.

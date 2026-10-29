@@ -1,122 +1,94 @@
 import { describe, expect, it } from "vitest";
 import {
   changesSnapshot,
-  clueId,
-  countUngathered,
+  CLUE_TYPE,
+  defaultParty,
+  entryList,
   isClue,
-  resolveHolder,
-  snapshotOf,
+  KINDS,
+  partyFor,
   readerList,
+  snapshotOf,
   sortAndFilter,
-  entryList
+  unreadCount
 } from "../scripts/decide/clue.js";
 
-const loot = (value, extra = {}) => ({ type: "loot", system: { type: { value } }, ...extra });
-
-describe("a Clue", () => {
-  it("is a loot item of the clue type and nothing else", () => {
-    expect(isClue(loot("clue"))).toBe(true);
-    expect(isClue(loot("gear"))).toBe(false);
-    expect(isClue({ type: "weapon", system: { type: { value: "clue" } } })).toBe(false);
+describe("what a Clue is", () => {
+  it("is an item of the module's own type, nothing else", () => {
+    expect(isClue({ type: CLUE_TYPE })).toBe(true);
+    expect(isClue({ type: "loot", system: { type: { value: "clue" } } })).toBe(false);
     expect(isClue(null)).toBe(false);
   });
 
-  it("has an id only once the flag is written", () => {
-    expect(clueId(loot("clue"), "fvtt-mod-clueboard")).toBe(null);
-    expect(
-      clueId(loot("clue", { flags: { "fvtt-mod-clueboard": { id: "abc" } } }), "fvtt-mod-clueboard")
-    ).toBe("abc");
-    expect(
-      clueId(loot("clue", { flags: { "fvtt-mod-clueboard": { id: "" } } }), "fvtt-mod-clueboard")
-    ).toBe(null);
-  });
-});
-
-describe("the snapshot", () => {
-  const letter = {
-    name: "Durgan's Unfinished Letter",
-    img: "icons/letter.webp",
-    system: {
-      identified: false,
-      description: { value: "<p>Sadric. You rode off…</p>" },
-      unidentified: { name: "A sealed letter", description: "<p>Red wax, an axe.</p>" }
-    }
-  };
-
-  it("takes the item's face as the reader sees it", () => {
-    const seen = snapshotOf(letter, { identified: true, at: "2026-10-27T20:00:00.000Z" });
-    expect(seen).toEqual({
-      name: "Durgan's Unfinished Letter",
-      img: "icons/letter.webp",
-      html: "<p>Sadric. You rode off…</p>",
-      at: "2026-10-27T20:00:00.000Z"
+  it("snapshots the name, image, text, found-at and kind, with a default kind", () => {
+    const item = {
+      name: "Hollis's Note",
+      img: "icons/x.webp",
+      system: { kind: "document", text: "<p>Marit.</p>", foundAt: "the child's bed" }
+    };
+    expect(snapshotOf(item, { at: "2026-10-29T12:00:00Z" })).toEqual({
+      name: "Hollis's Note",
+      img: "icons/x.webp",
+      html: "<p>Marit.</p>",
+      foundAt: "the child's bed",
+      kind: "document",
+      at: "2026-10-29T12:00:00Z"
     });
+    expect(snapshotOf({ name: "x", system: { kind: "rumour" } }).kind).toBe(KINDS[0]);
+    expect(snapshotOf({ name: "x", system: { text: 3 } }).html).toBe("");
   });
 
-  it("takes the mask when the item is unidentified to the reader", () => {
-    const seen = snapshotOf(letter, { identified: false, at: "x" });
-    expect(seen.name).toBe("A sealed letter");
-    expect(seen.html).toBe("<p>Red wax, an axe.</p>");
-  });
-
-  it("survives an item with no description", () => {
-    expect(snapshotOf({ name: "A shoe" }, { at: "x" })).toEqual({
-      name: "A shoe",
-      img: "",
-      html: "",
-      at: "x"
-    });
-  });
-
-  it("knows which changes touch it", () => {
-    expect(changesSnapshot({ system: { description: { value: "x" } } })).toBe(true);
-    expect(changesSnapshot({ name: "y" })).toBe(true);
-    expect(changesSnapshot({ system: { quantity: 2 } })).toBe(false);
-    expect(changesSnapshot({ flags: { a: 1 } })).toBe(false);
+  it("knows which changes touch the snapshot", () => {
+    expect(changesSnapshot({ name: "x" })).toBe(true);
+    expect(changesSnapshot({ img: "x" })).toBe(true);
+    expect(changesSnapshot({ system: { text: "<p>x</p>" } })).toBe(true);
+    expect(changesSnapshot({ system: { foundAt: "x" } })).toBe(true);
+    expect(changesSnapshot({ system: { kind: "document" } })).toBe(true);
+    expect(changesSnapshot({ sort: 1 })).toBe(false);
+    expect(changesSnapshot({ flags: { x: 1 } })).toBe(false);
     expect(changesSnapshot(null)).toBe(false);
   });
 });
 
-describe("the holder", () => {
-  it("is the stash when the stash carries it, whatever else does", () => {
-    const h = resolveHolder([
-      { actorId: "k", actorName: "Kartor" },
-      { actorId: "g", actorName: "Echoes of Halruaa", isGroup: true }
-    ]);
-    expect(h).toEqual({ actorId: "g", actorName: "Echoes of Halruaa", left: false });
+describe("which party a drop lands in", () => {
+  const groups = [
+    { id: "party", memberIds: ["kartor", "cecil"] },
+    { id: "rivals", memberIds: ["vex"] }
+  ];
+
+  it("takes the group itself, else the member's group", () => {
+    expect(partyFor({ id: "rivals", isGroup: true }, groups)).toBe("rivals");
+    expect(partyFor({ id: "cecil", isGroup: false }, groups)).toBe("party");
+    expect(partyFor({ id: "vex", isGroup: false }, groups)).toBe("rivals");
   });
 
-  it("is the member who carries it otherwise", () => {
-    expect(resolveHolder([{ actorId: "k", actorName: "Kartor" }])).toEqual({
-      actorId: "k",
-      actorName: "Kartor",
-      left: false
-    });
-  });
-
-  it("has left the party when nobody carries it, remembering the last holder", () => {
-    expect(resolveHolder([], { actorId: "k", actorName: "Kartor" })).toEqual({
-      left: true,
-      lastHolder: "Kartor"
-    });
-    expect(resolveHolder([])).toEqual({ left: true, lastHolder: "" });
+  it("falls back to the primary party, then the only party, else nothing", () => {
+    expect(partyFor({ id: "npc", isGroup: false }, groups, "rivals")).toBe("rivals");
+    expect(partyFor({ id: "npc", isGroup: false }, groups, "gone")).toBe(null);
+    expect(partyFor({ id: "npc", isGroup: false }, groups)).toBe(null);
+    expect(partyFor({ id: "npc", isGroup: false }, [groups[0]])).toBe("party");
+    expect(defaultParty([], null)).toBe(null);
   });
 });
 
 describe("the Mysteries list", () => {
-  const entry = (name, at, html = "", notes = "") => ({
+  const entry = (name, at, html = "", notes = "", readers = {}) => ({
     id: name.toLowerCase().replace(/\W+/g, "-"),
-    snapshot: { name, html, at },
+    snapshot: { name, html, foundAt: "" },
+    foundIn: { realDate: at },
+    readers,
     notes
   });
-  const names = list => list.map(e => e.snapshot.name);
   const entries = [
     entry("The Luck Shoe", "2026-10-27T19:00:00Z", "<p>a pick inside a ring</p>"),
-    entry("The Wayhouse Ledger", "2026-10-27T21:00:00Z", "<p>27 Tarsakh 1385</p>", "two hands"),
-    entry("Ysolde's Key", "2026-10-27T18:00:00Z")
+    entry("The Wayhouse Ledger", "2026-10-27T21:00:00Z", "<p>27 Tarsakh 1385</p>", "two hands", {
+      cecil: { actorId: "cecil" }
+    }),
+    entry("Ysolde's Key", "2026-10-27T18:00:00Z", "", "", { kartor: { actorId: "kartor" } })
   ];
+  const names = list => list.map(e => e.snapshot.name);
 
-  it("lists the newest gather first", () => {
+  it("lists the newest collection first", () => {
     expect(names(sortAndFilter(entries))).toEqual([
       "The Wayhouse Ledger",
       "The Luck Shoe",
@@ -150,9 +122,10 @@ describe("the Mysteries list", () => {
     expect(readerList(null)).toEqual([]);
   });
 
-  it("counts the ungathered once per id, and every unread Clue without one", () => {
-    const clues = [{ id: null }, { id: null }, { id: "a" }, { id: "a" }, { id: "b" }];
-    expect(countUngathered(clues, new Set(["b"]))).toBe(3);
-    expect(countUngathered([], new Set())).toBe(0);
+  it("counts the unread by a character, or by anyone", () => {
+    expect(unreadCount(entries, "kartor")).toBe(2);
+    expect(unreadCount(entries, "cecil")).toBe(2);
+    expect(unreadCount(entries, null)).toBe(1);
+    expect(unreadCount([], "kartor")).toBe(0);
   });
 });

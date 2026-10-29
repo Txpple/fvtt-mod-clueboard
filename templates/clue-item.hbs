@@ -1,0 +1,50 @@
+<div class="clueboard-clue-body">
+<header class="clueboard-clue-header">
+    <img class="clueboard-clue-image" src="{{ img }}" alt="{{ name }}" data-edit="img" data-action="editImage">
+    <div class="clueboard-clue-names">
+        <input type="text" name="name" value="{{ name }}" placeholder="{{ localize "Name" }}" {{#unless editable}}disabled{{/unless}}>
+        <div class="clueboard-clue-type">
+            <span>{{ localize "TYPES.Item.fvtt-mod-clueboard.clue" }}</span>
+            <select name="system.kind" {{#unless editable}}disabled{{/unless}}>
+                {{#each kinds}}<option value="{{ value }}" {{#if selected}}selected{{/if}}>{{ label }}</option>{{/each}}
+            </select>
+        </div>
+    </div>
+</header>
+
+<div class="form-group clueboard-clue-found">
+    <label>{{ localize "fvtt-mod-clueboard.sheetFields.foundAt" }}</label>
+    <div class="form-fields">
+        <input type="text" name="system.foundAt" value="{{ foundAt }}" placeholder="{{ localize "fvtt-mod-clueboard.sheetFields.foundAtHint" }}" {{#unless editable}}disabled{{/unless}}>
+    </div>
+</div>
+
+<div class="clueboard-clue-text">
+    {{#if editable}}
+    <prose-mirror name="system.text" value="{{ text }}" data-document-uuid="{{ uuid }}" toggled>{{{ textHTML }}}</prose-mirror>
+    {{else}}
+    <div class="clueboard-doc clueboard-doc-plain">{{{ textHTML }}}</div>
+    {{/if}}
+</div>
+
+{{#if canCollect}}
+<footer class="clueboard-clue-footer">
+    {{#if inWorld}}
+        {{#each holders}}
+        <span class="clueboard-clue-holder">
+            <i class="fa-solid fa-check" inert></i>
+            {{ localize "fvtt-mod-clueboard.sheetFields.collectedBy" group=groupName }}
+            <span class="clueboard-chips">{{#each readers}}<span class="clueboard-chip">{{ this }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}</span>
+            <button type="button" class="clueboard-clue-uncollect" data-action="uncollect" data-group="{{ groupId }}">{{ localize "fvtt-mod-clueboard.sheetFields.takeBack" }}</button>
+        </span>
+        {{/each}}
+        {{#each parties}}
+        <button type="button" class="clueboard-clue-collect" data-action="collect" data-group="{{ id }}"><i class="fa-solid fa-users" inert></i> {{ localize "fvtt-mod-clueboard.sheetFields.collectFor" group=name }}</button>
+        {{/each}}
+        {{#unless holders.length}}{{#unless parties.length}}<span class="clueboard-clue-hint">{{ localize "fvtt-mod-clueboard.collect.noParty" }}</span>{{/unless}}{{/unless}}
+    {{else}}
+        <span class="clueboard-clue-hint">{{ localize "fvtt-mod-clueboard.sheetFields.notInWorld" }}</span>
+    {{/if}}
+</footer>
+{{/if}}
+</div>
