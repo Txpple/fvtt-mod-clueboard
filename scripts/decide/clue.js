@@ -73,32 +73,6 @@ export function resolveHolder(carriers, last = null) {
 }
 
 /**
- * A copy of an ordered object with one entry placed right after a given key (or at the end when
- * that key is absent). The sidebar's tab table is one of these.
- * @template T
- * @param {Record<string, T>} table
- * @param {string} afterKey
- * @param {string} key
- * @param {T} value
- * @returns {Record<string, T>}
- */
-export function insertAfter(table, afterKey, key, value) {
-  /** @type {Record<string, T>} */
-  const out = {};
-  let placed = false;
-  for (const [k, v] of Object.entries(table)) {
-    if (k === key) continue;
-    out[k] = v;
-    if (k === afterKey) {
-      out[key] = value;
-      placed = true;
-    }
-  }
-  if (!placed) out[key] = value;
-  return out;
-}
-
-/**
  * The entries of a Mysteries journal, newest gather first, filtered by a search string over
  * name, text and notes.
  * @param {Array<{ name: string, system: { snapshot?: { html?: string, at?: string }, notes?: string } }>} entries

@@ -8,7 +8,7 @@
     "settings": {
       "enabled": {
         "name": "Enabled",
-        "hint": "Off leaves the group sheet, the sidebar and the journals exactly as Foundry and the system have them."
+        "hint": "Off leaves the group sheet, the sidebar and the journals exactly as Foundry and the system have them (no Read column, no Mysteries button)."
       },
       "showMark": {
         "name": "Show the mark to players",
@@ -28,7 +28,6 @@
       "journalNameWorld": "Mysteries",
       "folder": "Clue Board",
       "search": "Search the mysteries",
-      "popout": "Open as a window",
       "empty": "Nothing gathered yet. Read a Clue in the party stash and it appears here.",
       "noJournal": "No Mysteries journal yet: a GM has to be online once for the party's journal to be made.",
       "ungathered": "{count} unread",

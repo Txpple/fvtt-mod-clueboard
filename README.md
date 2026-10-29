@@ -21,9 +21,9 @@ Phase 1 is three things.
   nothing to chat. Reading a Clue there the first time gathers it: the text as read (the item's mask if it is
   unidentified), the reader, the scene, the date, the holder. That is the one way into Mysteries. Character
   sheets, item cards and item sheets are untouched.
-- **Mysteries.** A sidebar tab directly after Journal (a scroll) lists the party's entries, newest first, with a
-  search and a count of the Clues nobody has read yet; a click opens the entry in the Reader, and the tab pops
-  out as a window. Behind the tab is a journal the players own, *Mysteries: \<party\>* in a *Clue Board* folder,
+- **Mysteries.** A scroll button on the sidebar's strip, directly after Journal, opens Mysteries as its own window
+  in the middle of the screen (the sidebar itself never changes): the party's entries as cards, newest first,
+  with a search and a count of the Clues nobody has read yet; a click on a card opens the entry in the Reader. Behind the window is a journal the players own, *Mysteries: \<party\>* in a *Clue Board* folder,
   made by the GM's client the first time it is needed; each entry is a page of the module's own type, so
   Foundry's search, export and permissions apply, and an owner can edit the party's note on the page.
 
@@ -65,7 +65,7 @@ other dependencies. Party Stash is detected when present (the Read column sits b
 - `clueboard.gathered(page, reader, item)` fires on the gathering client when an entry is made.
 - `clueboard.changed(page, what, detail)` fires when an entry changes: `reader`, `holder`, `snapshot`, `notes`.
 - `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `clueId(item)`, `openReader({ item, group })` or
-  `openReader({ page })`, `gather(item, group)`, `journalFor(group)`, `ensureJournals()`.
+  `openReader({ page })`, `openMysteries()`, `gather(item, group)`, `journalFor(group)`, `ensureJournals()`.
 
 Every listener tolerates the hooks never firing; nothing in the family listens yet.
 
@@ -74,16 +74,16 @@ Every listener tolerates the hooks never firing; nothing in the family listens y
 ```
 module.json                    the Foundry manifest (the Clue page type is declared here)
 scripts/
-  clueboard.js                 the entry point: settings, the loot type, the column, the tab, the hooks
+  clueboard.js                 the entry point: settings, the loot type, the column, the button, the hooks
   common.js                    the id, the logger, the elect, the strings
-  mysteries.js                 the journals, the gather, the holder, the sidebar tab
+  mysteries.js                 the journals, the gather, the holder, the Mysteries window
   reader.js                    the Reader window
   clue-page.js                 the entry's data model and page sheet
   decide/clue.js               the decisions that need no Foundry (tested)
   kit/                         the Open Roll 5e kit: elect.js, receipt.js, log.js, the same
                                bytes in every module that holds it (the suite keeps them)
-templates/                     the column cell, the Reader, the tab, the page (view and edit)
-styles/clueboard.css           the column width, the mark, the Reader, the tab, the page
+templates/                     the column cell, the Reader, the window, the page (view and edit)
+styles/clueboard.css           the column width, the mark, the Reader, the window, the page
 lang/en.json                   every word a player reads
 tools/live-check.mjs           the live check on the sandbox (a GM page and a player page)
 prototypes/phase-1.html        the clickable prototype the design was ruled on

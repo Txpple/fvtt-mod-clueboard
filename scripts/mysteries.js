@@ -1,5 +1,5 @@
 /**
- * Mysteries: the party's record, and the sidebar tab that shows it.
+ * Mysteries: the party's record, and the window that shows it.
  *
  * One JournalEntry per party (a dnd5e Group actor), in a "Clue Board" folder, default ownership
  * Owner for every player, made by the elect (players cannot create journals). Each gathered Clue
@@ -10,8 +10,7 @@
 import { log, MODULE_ID, setting, t } from "./common.js";
 import { clueId, countUngathered, isClue, PAGE_TYPE, resolveHolder, snapshotOf, sortAndFilter } from "./decide/clue.js";
 
-const { HandlebarsApplicationMixin } = foundry.applications.api;
-const AbstractSidebarTab = foundry.applications.sidebar.AbstractSidebarTab;
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /* -------------------------------------------------- */
 /*  The party                                         */
@@ -255,7 +254,7 @@ export async function refreshSnapshot(id, item) {
 }
 
 /* -------------------------------------------------- */
-/*  What the tab shows                                */
+/*  What the window shows                             */
 /* -------------------------------------------------- */
 
 /** The text a holder reads as. */
@@ -272,7 +271,7 @@ const excerpt = html =>
     .escapeHTML(String(html ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim())
     .slice(0, 180);
 
-/** One journal's section of the tab: its entries as cards, and its count of the unread. */
+/** One journal's section of the window: its entries as cards, and its count of the unread. */
 export function sectionFor(journal, query = "") {
   const group = game.actors.get(journal.getFlag(MODULE_ID, "group"));
   const pages = entriesOf(journal);
@@ -307,28 +306,55 @@ export function sectionFor(journal, query = "") {
 }
 
 /* -------------------------------------------------- */
-/*  The sidebar tab                                   */
+/*  The window                                        */
 /* -------------------------------------------------- */
 
-export class MysteriesTab extends HandlebarsApplicationMixin(AbstractSidebarTab) {
-  static tabName = "mysteries";
-
+/**
+ * Mysteries is a window of its own, opened centred from the sidebar's scroll button (clueboard.js)
+ * or the API. Never a sidebar panel: a tab's content lives inside the sidebar's layout, and a
+ * panel of cards there left the sidebar stuck. One window per client, reused.
+ */
+export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
+    id: "clueboard-mysteries",
     classes: ["clueboard-mysteries"],
-    window: { title: `${MODULE_ID}.mysteries.title` },
+    window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-scroll", resizable: true },
+    position: { width: 760, height: 720 },
     actions: {
-      open: MysteriesTab.#onOpen,
-      popout: MysteriesTab.#onPopout,
-      openJournal: MysteriesTab.#onOpenJournal
+      open: MysteriesWindow.#onOpen,
+      openJournal: MysteriesWindow.#onOpenJournal
     }
   };
 
   static PARTS = {
     main: {
-      template: `modules/${MODULE_ID}/templates/mysteries-tab.hbs`,
+      template: `modules/${MODULE_ID}/templates/mysteries.hbs`,
       scrollable: [".clueboard-entries"]
     }
   };
+
+  /** The one open window, so the button and the API reuse it. */
+  static current = null;
+
+  /** Open the window centred, or bring it to the front when it is already open. */
+  static open() {
+    MysteriesWindow.current ??= new MysteriesWindow();
+    const app = MysteriesWindow.current;
+    if (app.rendered) {
+      app.bringToFront();
+      return app;
+    }
+    app.render({ force: true });
+    return app;
+  }
+
+  /** Re-render when open: the journals changed. The search survives the render. */
+  static refresh() {
+    const app = MysteriesWindow.current;
+    if (app?.rendered) app.render();
+  }
+
+  #query = "";
 
   /** @override */
   async _prepareContext(options) {
@@ -338,8 +364,8 @@ export class MysteriesTab extends HandlebarsApplicationMixin(AbstractSidebarTab)
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
-    context.isPopout = this.isPopout;
     context.isGM = game.user.isGM;
+    context.query = this.#query;
     return context;
   }
 
@@ -348,9 +374,11 @@ export class MysteriesTab extends HandlebarsApplicationMixin(AbstractSidebarTab)
     super._onRender(context, options);
     const input = this.element.querySelector("input[name=search]");
     input?.addEventListener("input", ev => this.#filter(ev.currentTarget.value));
+    if (this.#query) this.#filter(this.#query);
   }
 
   #filter(query) {
+    this.#query = query;
     const q = query.trim().toLowerCase();
     for (const card of this.element.querySelectorAll("[data-search]")) {
       card.hidden = Boolean(q) && !card.dataset.search.includes(q);
@@ -360,10 +388,6 @@ export class MysteriesTab extends HandlebarsApplicationMixin(AbstractSidebarTab)
   static async #onOpen(_event, target) {
     const page = await fromUuid(target.dataset.uuid);
     if (page) await openReaderFor(page);
-  }
-
-  static #onPopout() {
-    this.renderPopout();
   }
 
   static async #onOpenJournal(_event, target) {

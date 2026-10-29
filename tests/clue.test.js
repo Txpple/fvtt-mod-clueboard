@@ -3,7 +3,6 @@ import {
   changesSnapshot,
   clueId,
   countUngathered,
-  insertAfter,
   isClue,
   resolveHolder,
   snapshotOf,
@@ -99,36 +98,6 @@ describe("the holder", () => {
       lastHolder: "Kartor"
     });
     expect(resolveHolder([])).toEqual({ left: true, lastHolder: "" });
-  });
-});
-
-describe("the sidebar's tab table", () => {
-  const tabs = { chat: 1, journal: 2, tables: 3 };
-
-  it("takes the new tab right after Journal", () => {
-    expect(Object.keys(insertAfter(tabs, "journal", "mysteries", 9))).toEqual([
-      "chat",
-      "journal",
-      "mysteries",
-      "tables"
-    ]);
-  });
-
-  it("appends when the anchor is missing and never duplicates", () => {
-    expect(Object.keys(insertAfter({ chat: 1 }, "journal", "mysteries", 9))).toEqual([
-      "chat",
-      "mysteries"
-    ]);
-    expect(
-      Object.keys(
-        insertAfter(insertAfter(tabs, "journal", "mysteries", 9), "journal", "mysteries", 9)
-      )
-    ).toEqual(["chat", "journal", "mysteries", "tables"]);
-  });
-
-  it("leaves the original untouched", () => {
-    insertAfter(tabs, "journal", "mysteries", 9);
-    expect(Object.keys(tabs)).toEqual(["chat", "journal", "tables"]);
   });
 });
 

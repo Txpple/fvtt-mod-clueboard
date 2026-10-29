@@ -67,21 +67,32 @@ try {
   // --- A. registration --------------------------------------------------------------------
   console.log("# A. registration");
   const A = await f.evaluate(
-    ({ id, pageType }) => {
+    async ({ id, pageType }) => {
       const m = game.modules.get(id);
-      const tabs = Object.keys(foundry.applications.sidebar.Sidebar.TABS);
-      const button = document.querySelector(`#sidebar nav.tabs [data-tab="mysteries"]`);
+      const strip = [...document.querySelectorAll("#sidebar nav.tabs menu > li > button")];
+      const button = document.getElementById("clueboard-mysteries-button");
+      const at = strip.indexOf(button);
+      const before = ui.sidebar.tabGroups.primary;
+      const expanded = ui.sidebar.expanded;
+      button?.click();
+      await new Promise(r => setTimeout(r, 800));
+      const win = foundry.applications.instances.get("clueboard-mysteries");
+      const rect = win?.element?.getBoundingClientRect();
+      const centred = rect
+        ? Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2) < window.innerWidth * 0.15
+        : false;
+      await win?.close();
       return {
         installed: !!m,
         active: !!m?.active,
         version: m?.version,
         api: !!m?.api,
         lootClue: CONFIG.DND5E.lootTypes.clue?.label ?? null,
-        tabs,
-        afterJournal: tabs[tabs.indexOf("journal") + 1],
-        uiTab: !!ui.mysteries,
-        tabButton: !!button,
-        tabHidden: button?.closest("li")?.hidden ?? null,
+        afterJournal: at > 0 ? strip[at - 1]?.dataset.tab : null,
+        noTab: !ui.mysteries && !("mysteries" in foundry.applications.sidebar.Sidebar.TABS),
+        opened: !!win,
+        centred,
+        sidebarStill: ui.sidebar.tabGroups.primary === before && ui.sidebar.expanded === expanded,
         pageModel: !!CONFIG.JournalEntryPage.dataModels[pageType],
         sheet: Object.keys(CONFIG.JournalEntryPage.sheetClasses?.[pageType] ?? {}),
         isGM: game.user.isGM,
@@ -94,8 +105,10 @@ try {
   assert(A.active, "the module is active");
   assert(A.api, "the API is on the module");
   assert(A.lootClue === "Clue", `the Clue loot type is registered and localized (${A.lootClue})`);
-  assert(A.afterJournal === "mysteries", `the Mysteries tab sits right after Journal (${A.tabs.join(" ")})`);
-  assert(A.uiTab && A.tabButton && A.tabHidden === false, "the tab is instantiated and its button rendered");
+  assert(A.afterJournal === "journal", `the Mysteries button sits right after Journal (after "${A.afterJournal}")`);
+  assert(A.noTab, "no sidebar tab is registered: nothing of the module's is drawn in the sidebar");
+  assert(A.opened && A.centred, "the button opens the Mysteries window, centred");
+  assert(A.sidebarStill, "the click left the sidebar's tab and its expansion as they were");
   assert(A.pageModel, "the Clue page type has its data model");
   assert(A.sheet.length > 0, `the Clue page type has a sheet (${A.sheet.join(", ")})`);
   if (!A.active) throw new Error("module not active; enable it and restart the world");
@@ -234,14 +247,16 @@ try {
     const chatAfter = await f.evaluate(() => game.messages.contents.slice(-3).map(m => m.flavor || m.content?.slice(0, 60)));
     console.log(`  last chat lines: ${JSON.stringify(chatAfter)}`);
 
-    // the tab, on the player page
-    const T = await fp.evaluate(async () => {
-      await ui.mysteries.render({ force: true });
-      const cards = ui.mysteries.element.querySelectorAll(".clueboard-card").length;
-      const count = ui.mysteries.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
+    // the window, on the player page
+    const T = await fp.evaluate(async id => {
+      const app = game.modules.get(id).api.openMysteries();
+      for (let i = 0; i < 50 && !app.rendered; i++) await new Promise(r => setTimeout(r, 100));
+      const cards = app.element.querySelectorAll(".clueboard-card").length;
+      const count = app.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
+      await app.close();
       return { cards, count };
-    });
-    assert(T.cards >= readNames.length, `the Mysteries tab lists the entries (${T.cards} cards; "${T.count}")`);
+    }, MODULE_ID);
+    assert(T.cards >= readNames.length, `the Mysteries window lists the entries (${T.cards} cards; "${T.count}")`);
 
     // --- E. the holder follows a move -----------------------------------------------------
     console.log("# E. the holder follows a move (GM page: stash -> reader -> stash)");
@@ -292,32 +307,34 @@ try {
       await new Promise(r => setTimeout(r, 800));
       group.sheet.element?.querySelector('[data-tab="inventory"], .tabs [data-tab="inventory"]')?.click();
       await new Promise(r => setTimeout(r, 600));
-      ui.sidebar.changeTab("mysteries", "primary");
-      if (!ui.sidebar.expanded) ui.sidebar.expand();
-      await new Promise(r => setTimeout(r, 600));
     }, { groupId });
-    await f.page.screenshot({ path: `${shots}/1-stash-and-tab.png` });
-    await f.evaluate(async ({ groupId, id }) => {
+    await f.page.screenshot({ path: `${shots}/1-stash.png` });
+    await f.evaluate(async ({ groupId }) => {
       game.actors.get(groupId).sheet.close();
+      document.getElementById("clueboard-mysteries-button")?.click();
+      await new Promise(r => setTimeout(r, 800));
+    }, { groupId });
+    await f.page.screenshot({ path: `${shots}/2-mysteries.png` });
+    await f.evaluate(async ({ groupId, id }) => {
+      await foundry.applications.instances.get("clueboard-mysteries")?.close();
       const api = game.modules.get(id).api;
       const journal = api.journalFor(game.actors.get(groupId));
       const page = journal.pages.find(p => p.type === `${id}.clue`);
       await api.openReader({ page });
       await new Promise(r => setTimeout(r, 800));
     }, { groupId, id: MODULE_ID });
-    await f.page.screenshot({ path: `${shots}/2-reader.png` });
+    await f.page.screenshot({ path: `${shots}/3-reader.png` });
     await f.evaluate(async ({ groupId, id }) => {
       for (const app of foundry.applications.instances.values()) if (app.constructor.name === "Reader") await app.close();
       const journal = game.modules.get(id).api.journalFor(game.actors.get(groupId));
       await journal.sheet.render({ force: true });
       await new Promise(r => setTimeout(r, 1000));
     }, { groupId, id: MODULE_ID });
-    await f.page.screenshot({ path: `${shots}/3-journal.png` });
+    await f.page.screenshot({ path: `${shots}/4-journal.png` });
     await f.evaluate(async ({ groupId, id }) => {
       game.modules.get(id).api.journalFor(game.actors.get(groupId)).sheet.close();
-      ui.sidebar.changeTab("chat", "primary");
     }, { groupId, id: MODULE_ID });
-    console.log("  written: 1-stash-and-tab.png, 2-reader.png, 3-journal.png");
+    console.log("  written: 1-stash.png, 2-mysteries.png, 3-reader.png, 4-journal.png");
   }
 } finally {
   if (fp) await fp.disconnect?.().catch(() => {});
@@ -326,9 +343,12 @@ try {
       .evaluate(
         async ({ groupId, userId, had }) => {
           const group = game.actors.get(groupId);
-          const gone = foundry.data.operators?.ForcedDeletion ? new foundry.data.operators.ForcedDeletion() : null;
-          if (had === null) await group.update(gone ? { [`ownership.${userId}`]: gone } : { [`ownership.-=${userId}`]: null });
-          else await group.update({ [`ownership.${userId}`]: had });
+          // The whole map, replaced: a deletion operator inside ownership fails its validation on
+          // v14, and a key left for a deleted user is litter on the party's actor.
+          const ownership = { ...group.ownership };
+          if (had === null) delete ownership[userId];
+          else ownership[userId] = had;
+          await group.update({ ownership }, { recursive: false, diff: false });
           await game.users.get(userId)?.delete();
         },
         { groupId, userId: temp.userId, had: temp.had }

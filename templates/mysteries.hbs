@@ -1,12 +1,7 @@
 <div class="clueboard-mysteries-body">
-<header class="clueboard-tab-header directory-header">
-    <h3 class="clueboard-tab-title"><i class="fa-solid fa-scroll" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.title" }}</h3>
-    {{#unless isPopout}}
-    <button type="button" class="ui-control plain icon fa-solid fa-up-right-from-square" data-action="popout"
-            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.popout" }}"></button>
-    {{/unless}}
+<header class="clueboard-window-header">
     <search>
-        <input type="search" name="search" autocomplete="off"
+        <input type="search" name="search" autocomplete="off" value="{{ query }}"
                placeholder="{{ localize "fvtt-mod-clueboard.mysteries.search" }}"
                aria-label="{{ localize "fvtt-mod-clueboard.mysteries.search" }}">
     </search>

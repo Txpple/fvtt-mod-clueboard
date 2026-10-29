@@ -3,7 +3,8 @@
  *
  * Phase 1 is three things: a Clue loot type (a `CONFIG.DND5E.lootTypes` entry, the one signifier),
  * a Read button on the party stash's rows (the one trigger into Mysteries) and the Mysteries
- * sidebar tab, directly after Journal. Nothing here touches a character sheet, an item card or an
+ * window, opened from a scroll button on the sidebar's strip directly after Journal (a button, not
+ * a sidebar tab: nothing of the module's is drawn inside the sidebar). Nothing here touches a character sheet, an item card or an
  * item sheet. The plan is the suite's docs/plans/clueboard.md.
  *
  * The kit (scripts/kit/, byte-identical across the family) gives the module its logger and its
@@ -13,17 +14,17 @@
 
 import { ClueModel, ClueSheet } from "./clue-page.js";
 import { elect, log, MODULE_ID, setting, t } from "./common.js";
-import { changesSnapshot, CLUE_TYPE, clueId, insertAfter, isClue, PAGE_TYPE } from "./decide/clue.js";
+import { changesSnapshot, CLUE_TYPE, clueId, isClue, PAGE_TYPE } from "./decide/clue.js";
 import * as mysteries from "./mysteries.js";
 import { openReader } from "./reader.js";
 
 export { MODULE_ID, log, elect, t, setting };
 
 const COLUMN_ID = "clueboardRead";
-const TAB_ID = "mysteries";
+const BUTTON_ID = "clueboard-mysteries-button";
 
 /* -------------------------------------------------- */
-/*  init: settings, the loot type, the page type, the tab */
+/*  init: settings, the loot type, the page type      */
 /* -------------------------------------------------- */
 
 Hooks.once("init", () => {
@@ -58,24 +59,11 @@ Hooks.once("init", () => {
     log.error("CONFIG.DND5E.lootTypes not found: the Clue loot type is not registered (dnd5e 5.x required).");
   }
 
-  // The sidebar tab, directly after Journal. Sidebar builds its PARTS from TABS at render, and
-  // the game instantiates every CONFIG.ui class at setup, so both edits land before either.
-  const Sidebar = foundry.applications?.sidebar?.Sidebar;
-  if (Sidebar?.TABS && CONFIG.ui) {
-    Sidebar.TABS = insertAfter(Sidebar.TABS, "journal", TAB_ID, {
-      tooltip: `${MODULE_ID}.tab`,
-      icon: "fa-solid fa-scroll"
-    });
-    CONFIG.ui[TAB_ID] = mysteries.MysteriesTab;
-  } else {
-    log.error("the sidebar's tab table was not found: no Mysteries tab (Foundry 13+ required).");
-  }
-
   const load = foundry.applications?.handlebars?.loadTemplates ?? loadTemplates;
   load([
     `modules/${MODULE_ID}/templates/read-column.hbs`,
     `modules/${MODULE_ID}/templates/reader.hbs`,
-    `modules/${MODULE_ID}/templates/mysteries-tab.hbs`,
+    `modules/${MODULE_ID}/templates/mysteries.hbs`,
     `modules/${MODULE_ID}/templates/clue-page-view.hbs`,
     `modules/${MODULE_ID}/templates/clue-page-edit.hbs`
   ]).catch(err => log.error("preloading the templates failed", err));
@@ -194,7 +182,7 @@ Hooks.on("createActor", (actor, _options, userId) => {
   mysteries.ensureJournals().catch(err => log.error("making a Mysteries journal failed", err));
 });
 
-/** The tab follows the journals. */
+/** The window follows the journals. */
 for (const hook of [
   "createJournalEntryPage",
   "updateJournalEntryPage",
@@ -203,12 +191,44 @@ for (const hook of [
   "deleteJournalEntry",
   "updateJournalEntry"
 ]) {
-  Hooks.on(hook, () => {
-    const tab = ui[TAB_ID];
-    if (tab?.rendered) tab.render();
-    tab?.popout?.render();
-  });
+  Hooks.on(hook, () => mysteries.MysteriesWindow.refresh());
 }
+
+/* -------------------------------------------------- */
+/*  The scroll button on the sidebar's strip          */
+/* -------------------------------------------------- */
+
+/**
+ * One button on the sidebar's strip, directly after Journal, that opens the Mysteries window in
+ * the middle of the screen. It is not a tab: no `data-tab`, no `data-action`, so the sidebar
+ * never switches, expands or draws anything for it. The strip is drawn on the sidebar's first
+ * render; a later render finds the button already there.
+ */
+Hooks.on("renderSidebar", app => {
+  try {
+    if (!setting("enabled")) return;
+    const menu = app.element?.querySelector("#sidebar-tabs menu, nav.tabs menu");
+    if (!menu || menu.querySelector(`#${BUTTON_ID}`)) return;
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = BUTTON_ID;
+    button.className = "ui-control plain icon fa-solid fa-scroll";
+    button.dataset.tooltip = "";
+    button.setAttribute("aria-label", t("tab"));
+    button.addEventListener("click", ev => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      mysteries.MysteriesWindow.open();
+    });
+    li.append(button);
+    const journal = menu.querySelector('[data-tab="journal"]')?.closest("li");
+    if (journal) journal.after(li);
+    else menu.lastElementChild?.before(li);
+  } catch (err) {
+    log.error("adding the Mysteries button failed", err);
+  }
+});
 
 /* -------------------------------------------------- */
 /*  ready: the stylesheet probe and the API           */
@@ -246,6 +266,7 @@ Hooks.once("ready", () => {
       isClue,
       clueId: item => clueId(item, MODULE_ID),
       openReader,
+      openMysteries: () => mysteries.MysteriesWindow.open(),
       gather: mysteries.gather,
       journalFor: mysteries.journalFor,
       ensureJournals: mysteries.ensureJournals

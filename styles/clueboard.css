@@ -1,5 +1,5 @@
 /*
- * Clue Board: the Read column on the group sheet, the bookmark, the Reader, the Mysteries tab
+ * Clue Board: the Read column on the group sheet, the bookmark, the Reader, the Mysteries window
  * and the entry's page. Scoped to the module's own classes and the group sheet's column id;
  * no bare element or dnd5e class selector, so the system's sheets are untouched elsewhere.
  */
@@ -198,10 +198,14 @@
 }
 
 /* -------------------------------------------------- */
-/*  The Mysteries tab                                 */
+/*  The Mysteries window                              */
 /* -------------------------------------------------- */
 
-.clueboard-mysteries,
+.clueboard-mysteries .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+
 .clueboard-mysteries-body {
   display: flex;
   flex-direction: column;
@@ -209,33 +213,20 @@
   min-height: 0;
 }
 
-.clueboard-tab-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
-  padding: 0.5rem 0.5rem 0.25rem;
+.clueboard-window-header {
+  flex: none;
+  padding: 0.75rem 0.75rem 0.5rem;
 }
 
-.clueboard-tab-header .clueboard-tab-title {
-  flex: 1;
-  margin: 0;
-  border: none;
-  font-size: var(--font-size-16, 1rem);
-}
-
-.clueboard-tab-header search {
-  flex-basis: 100%;
-}
-
-.clueboard-tab-header search input {
+.clueboard-window-header search input {
   width: 100%;
 }
 
 .clueboard-entries {
   flex: 1;
+  min-height: 0;
   overflow: auto;
-  padding: 0 0.5rem 0.5rem;
+  padding: 0 0.75rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -249,12 +240,13 @@
 }
 
 .clueboard-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.5rem;
 }
 
 .clueboard-section-head {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -283,6 +275,10 @@
   cursor: pointer;
 }
 
+.clueboard-card[hidden] {
+  display: none;
+}
+
 .clueboard-card:hover,
 .clueboard-card:focus-visible {
   border-color: var(--clueboard-mark, #c9a24a);
@@ -290,8 +286,8 @@
 
 .clueboard-card-image {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   object-fit: cover;
   border-radius: 3px;
   border: 1px solid var(--color-border-light-2, #555);
