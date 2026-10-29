@@ -367,6 +367,39 @@
   border-inline-start: 3px solid var(--clueboard-mark, #c9a24a);
 }
 
+/* A player's unread card: the whole edge glows gold and breathes, slow and soft, never a flash;
+   the inside stays as it is. The DM's "unread by anyone" keeps the quiet bar above, since a
+   board of ten would all be breathing. */
+.clueboard-player .clueboard-card.unread {
+  border-color: var(--clueboard-mark, #c9a24a);
+  animation: clueboard-breathe 3.6s ease-in-out infinite;
+}
+
+.clueboard-player .clueboard-card.unread:hover,
+.clueboard-player .clueboard-card.unread:focus-visible {
+  animation-play-state: paused;
+}
+
+@keyframes clueboard-breathe {
+  0%,
+  100% {
+    border-color: rgba(201, 162, 74, 0.45);
+    box-shadow: 0 0 0 0 rgba(201, 162, 74, 0);
+  }
+  50% {
+    border-color: rgba(201, 162, 74, 1);
+    box-shadow:
+      0 0 0 1px rgba(201, 162, 74, 0.5),
+      0 0 12px rgba(201, 162, 74, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clueboard-player .clueboard-card.unread {
+    animation: none;
+  }
+}
+
 .clueboard-card .clueboard-card-remove {
   position: absolute;
   top: 0.25rem;
