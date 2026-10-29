@@ -11,11 +11,15 @@ MIT.
 user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
 the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
 the read marked when a player opens the card, the Mysteries window off a spy button on the sidebar's strip
-after Journal, the record on the Group actor, and threads: the party's own sorting, a tab per named question a
-clue can be pinned to many of (the user's pick over lanes and a corkboard). Gone the same day: the sidebar tab (it stuck the sidebar), the
+after Journal, the record on the Group actor, and threads (a *mystery* in every word a player reads): the party's
+own sorting, a pill per named question a clue can be pinned to many of (the user's pick over lanes and a
+corkboard), Unsolved or Solved, with a *Where we stand* line. The window: All Clues and Unassigned Clues above the
+search, the labelled Mysteries band below it, cards one height with Kind, Found, Read, Note and the mystery dots;
+the Reader with Kind, Found, Read by, Mysteries, Note. The user's word at the day's end: the data elements are
+all there; what follows is UI work. Gone the same day: the sidebar tab (it stuck the sidebar), the
 journal per party (messy, leaky in the UI), the Clue loot subtype, the Read column and bookmark in the stash,
 held-by and the Party Stash logic. `npm run verify` is green (59 tests). Deployed to the sandbox and walked GREEN by
-`tools/live-check.mjs --walk` (44 checks); the sandbox's ten Session 02 documents are Clues built from the world
+`tools/live-check.mjs --walk` (45 checks); the sandbox's ten Session 02 documents are Clues built from the world
 originals and collected on the Party with their readers kept. The name is free on foundryvtt.com's package pages;
 the setup-screen `getPackages` check is owed before the first release. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
