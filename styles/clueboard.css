@@ -122,6 +122,11 @@
   border-color: var(--clueboard-mark, #c9a24a);
 }
 
+.clueboard-chip.note {
+  font-style: italic;
+  opacity: 0.85;
+}
+
 .clueboard-left {
   color: var(--color-level-error, #c66);
 }
@@ -268,13 +273,6 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-
-.clueboard-card-notes {
-  margin: 0;
-  font-size: var(--font-size-11, 0.6875rem);
-  font-style: italic;
-  opacity: 0.85;
 }
 
 .clueboard-card-meta {

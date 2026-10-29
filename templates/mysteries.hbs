@@ -42,13 +42,12 @@
             <div class="clueboard-card-body">
                 <h5 class="clueboard-card-title">{{ name }}</h5>
                 {{#if excerpt}}<p class="clueboard-card-excerpt">{{ excerpt }}</p>{{/if}}
-                {{#if notes}}<p class="clueboard-card-notes">“{{ notes }}”</p>{{/if}}
                 <div class="clueboard-card-meta">
-                    {{#if foundAt}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.foundAt" }}</b> {{ foundAt }}</span>{{/if}}
                     {{#if foundIn}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.found" }}</b> {{ foundIn }}{{#if calendarDate}} · {{ calendarDate }}{{/if}}</span>{{/if}}
                     <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.read" }}</b>
                         {{#each readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
                     </span>
+                    {{#if notes}}<span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.note" }}</b><span class="clueboard-chip note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.hasNote" }}</span></span>{{/if}}
                 </div>
             </div>
             {{#if ../../isGM}}
