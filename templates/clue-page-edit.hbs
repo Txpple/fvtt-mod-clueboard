@@ -1,0 +1,11 @@
+{{!-- The entry in edit mode: the record is read-only (it is what was read), the party's note is
+      the one field. `submitOnChange` writes it. --}}
+<section class="clueboard-page-content">
+    {{> "modules/fvtt-mod-clueboard/templates/clue-page-view.hbs" }}
+    <div class="form-group clueboard-page-notes">
+        <label for="{{ rootId }}-notes">{{ localize "fvtt-mod-clueboard.page.notesLabel" }}</label>
+        <div class="form-fields">
+            <textarea id="{{ rootId }}-notes" name="system.notes" rows="4">{{ notes }}</textarea>
+        </div>
+    </div>
+</section>

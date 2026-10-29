@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
+    "fvtt-mcp-dnd5e": "file:../fvtt-mcp-dnd5e",
     "vitest": "~3.2.6"
   },
   "engines": {

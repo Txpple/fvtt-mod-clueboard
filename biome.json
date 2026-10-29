@@ -1,6 +1,10 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
     "includes": [
       "**",
@@ -12,7 +16,9 @@
       "!module.json"
     ]
   },
-  "assist": { "enabled": false },
+  "assist": {
+    "enabled": false
+  },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -59,7 +65,9 @@
       "loadTemplates",
       "Handlebars",
       "libWrapper",
-      "User"
+      "User",
+      "JournalEntry",
+      "JournalEntryPage"
     ]
   },
   "linter": {
@@ -67,7 +75,12 @@
     "rules": {
       "preset": "recommended",
       "suspicious": {
-        "noConsole": { "level": "warn", "options": { "allow": ["warn", "error"] } },
+        "noConsole": {
+          "level": "warn",
+          "options": {
+            "allow": ["warn", "error"]
+          }
+        },
         "noExplicitAny": "off",
         "noAssignInExpressions": "warn",
         "useIterableCallbackReturn": "warn"
@@ -78,26 +91,38 @@
         "noUnusedVariables": "warn",
         "noUnusedFunctionParameters": "warn"
       },
-      "nursery": { "noFloatingPromises": "error" },
+      "nursery": {
+        "noFloatingPromises": "error"
+      },
       "style": {
         "noNonNullAssertion": "off",
         "useImportType": "off",
         "useTemplate": "off"
       },
-      "complexity": { "useOptionalChain": "warn", "noThisInStatic": "off" }
+      "complexity": {
+        "useOptionalChain": "warn",
+        "noThisInStatic": "off"
+      }
     }
   },
   "overrides": [
     {
       "includes": ["scripts/**", "tools/**"],
-      "formatter": { "enabled": false }
+      "formatter": {
+        "enabled": false
+      }
     },
     {
       "includes": ["tools/**"],
       "linter": {
         "rules": {
-          "suspicious": { "noConsole": "off", "noAssignInExpressions": "off" },
-          "nursery": { "noFloatingPromises": "off" }
+          "suspicious": {
+            "noConsole": "off",
+            "noAssignInExpressions": "off"
+          },
+          "nursery": {
+            "noFloatingPromises": "off"
+          }
         }
       }
     }

@@ -1,7 +1,7 @@
 {
   "id": "fvtt-mod-clueboard",
   "title": "Open Roll 5e: Clue Board",
-  "description": "The case file the party builds by reading: every letter, ledger, notice and heirloom they read becomes a clue card stamped with who read it, where and when, follows its item through the party stash, and lines up on a board the players own.",
+  "description": "The party's Mysteries, built from what they read: a loot item of the Clue type, read from the party stash, becomes an entry stamped with who read it, where and when, and follows its item through the stash.",
   "version": "0.1.0",
   "authors": [
     {
@@ -11,6 +11,9 @@
   "esmodules": [
     "scripts/clueboard.js"
   ],
+  "styles": [
+    "styles/clueboard.css"
+  ],
   "languages": [
     {
       "lang": "en",
@@ -18,6 +21,16 @@
       "path": "lang/en.json"
     }
   ],
+  "documentTypes": {
+    "JournalEntryPage": {
+      "clue": {
+        "htmlFields": [
+          "snapshot.html",
+          "notes"
+        ]
+      }
+    }
+  },
   "compatibility": {
     "minimum": "13",
     "verified": "14"

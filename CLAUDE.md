@@ -1,19 +1,19 @@
 # fvtt-mod-clueboard — working notes for sessions in this repo
 
-**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's case file, built from what they
-read. A clue is a view onto a document the party has read; reading gathers it, stamped with reader, place and
-time; the card follows its item through the party stash and stays when the item leaves. Part of Open Roll 5e
-(the suite repo is `..`, its CLAUDE.md has the family's conventions; the plan this is built from is
+**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's Mysteries, built from what they
+read. A loot item of the Clue type, read in the party stash, becomes an entry stamped with reader, place and
+time; the entry follows its item through the stash and stays when the item leaves. Part of Open Roll 5e (the
+suite repo is `..`, its CLAUDE.md has the family's conventions; the plan this is built from is
 `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib, MIT.
 
-**State (2026-10-29).** Scaffolded from the family template with the plan and the phase 1 prototype
-(`prototypes/phase-1.html`); nothing of the module is built. `scripts/clueboard.js` is the template's entry point
-under this id. The name is free on foundryvtt.com's package pages; the setup-screen `getPackages` check is owed
-before the first release. Phase 1 is three things, cut down on the user's word: the Clue loot type (a
-`CONFIG.DND5E.lootTypes` entry, the one signifier), Read on the party stash's rows only (the one trigger into
-Mysteries; player inventories untouched), and the Mysteries sidebar tab directly after Journal (the window named
-Mysteries, not Case File); phase 2 Read everywhere else, the board, the DM's side, testimony and the export, after
-a trial of Sargas Investigation Board on the sandbox.
+**State (2026-10-29).** Phase 1 is built on `main` as 0.1.0, unreleased: the Clue loot type, Read on the party
+stash's rows (the one trigger into Mysteries; player inventories untouched), the Mysteries sidebar tab directly
+after Journal with its window, the journal and page type behind it, the holder and snapshot following the item.
+`npm run verify` is green (60 tests). Deployed to the sandbox and enabled there, walked GREEN by
+`tools/live-check.mjs` (a GM page and a temporary player page): the sandbox's Session 02 documents are Clues and
+three are gathered. The name is free on foundryvtt.com's package pages; the setup-screen `getPackages` check is
+owed before the first release. Phase 2 (Read everywhere else, the board, the DM's side, testimony, the export)
+waits on the plan, after a trial of Sargas Investigation Board on the sandbox.
 
 ## The rules this module keeps
 
@@ -23,20 +23,33 @@ a trial of Sargas Investigation Board on the sandbox.
   card or an item sheet.
 - **The clue's identity is a flag id written at the first gather**, never a uuid: a Party Stash move is a copy
   then a delete.
-- **The reader's client writes**, on a journal the players own. No elect in the write path (Party Stash's
+- **The reader's client writes**, on a journal the players own (default ownership Owner). The elect's one chore
+  is making the journal (players cannot create journals); no elect in any other write path (Party Stash's
   lesson: a GM absent must lose nothing).
-- **Mysteries is a sidebar tab**, registered on `CONFIG.ui` and placed directly after Journal; the journal behind
-  it is storage. Players never see the DM's side (phase 2), not even that it exists.
+- **The moving client writes the holder** (`createItem`/`deleteItem`, `userId === game.user.id`), so a move
+  lands one write; a Party Stash hand-off row (`giveTo`) is not a carrier until it lands.
+- **Mysteries is a sidebar tab**, registered on `CONFIG.ui` and placed directly after Journal by rebuilding
+  `Sidebar.TABS` at init; the journal behind it is storage. Players never see the DM's side (phase 2), not even
+  that it exists.
 - **No class patches.** The loot type is a `CONFIG.DND5E` entry; the group sheet's column goes through
-  `_configureInventorySections` (Party Stash's way, order 1100, priority 1000); the sidebar tab through `CONFIG.ui`.
-- **Detection, never `requires`**: Party Stash, Loot Shelf, By the Books, the Session Scribe.
+  `_configureInventorySections` (Party Stash's way, order 1150, priority 1000, its CSS width rule required); the
+  sidebar tab through `CONFIG.ui`.
+- **A Handlebars part renders one root element** (the Reader and the tab are wrapped); a world on the stock
+  Simplified Gregorian calendar gets no calendar date in its stamp.
 
-## How the code will be laid out
+## How the code is laid out
 
-- `scripts/decide/` (`// @ts-check`, pure, no Foundry): the holder resolution, the snapshot diff, the export's
-  Markdown, the nudge rule. Tested in `tests/`.
-- `scripts/clueboard.js`: the entry point; settings; the hooks.
-- `scripts/reader.js`, `scripts/mysteries.js`: the two applications of phase 1 (the Reader; the sidebar tab and
-  its window). Phase 2 adds `scripts/board.js` and `scripts/overlay.js`.
-- `contracts/case.json`: the clue page schema, versioned; the Session Scribe consumes it in phase 2.
-- `prototypes/`: HTML mock-ups the design was ruled on; never shipped.
+- `scripts/decide/clue.js` (`// @ts-check`, pure, no Foundry): `isClue`, `clueId`, `snapshotOf`,
+  `changesSnapshot`, `resolveHolder`, `insertAfter` (the tab table), `sortAndFilter`, `countUngathered`. Tested in
+  `tests/clue.test.js`.
+- `scripts/common.js`: the id, the logger, the elect, `t`, `setting`; imported by every other file, imports none
+  of them (no cycle).
+- `scripts/clueboard.js`: the entry point; settings; the loot type, the page type and sheet, the tab at `init`;
+  the column at `setup`; the row wiring on `renderGroupActorSheet`; the item hooks; the elect's journal chore;
+  the stylesheet probe; `module.api`.
+- `scripts/mysteries.js`: the party helpers, the journals, the stamp, the reader picker, `gather`, the holder and
+  snapshot followers, the tab's context, `MysteriesTab`.
+- `scripts/reader.js`: `Reader` and `openReader`. `scripts/clue-page.js`: `ClueModel` and `ClueSheet`.
+- `templates/`: `read-column.hbs`, `reader.hbs`, `mysteries-tab.hbs`, `clue-page-view.hbs`, `clue-page-edit.hbs`.
+- `tools/live-check.mjs`: the sandbox walk (`FOUNDRY_HOST=local`; `--clues`, `--read`, `--reader`, `--shots`).
+- `prototypes/`: the HTML mock-up the design was ruled on; never shipped.

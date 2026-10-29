@@ -1,0 +1,52 @@
+<div class="clueboard-reader-body">
+<div class="clueboard-doc">
+    {{#if img}}
+    <img class="clueboard-doc-image" src="{{ img }}" alt="{{ name }}">
+    {{/if}}
+    <h2 class="clueboard-doc-title">{{ name }}</h2>
+    <div class="clueboard-doc-text">{{{ html }}}</div>
+    {{#if revision}}
+    <p class="clueboard-doc-revision">{{ revision }}</p>
+    {{/if}}
+</div>
+
+{{#if stamp}}
+<div class="clueboard-stamp">
+    <div class="clueboard-stamp-cell">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.page.foundIn" }}</span>
+        <span>{{ stamp.foundIn }}</span>
+        {{#if stamp.calendarDate}}<small>{{ stamp.calendarDate }}</small>{{/if}}
+        {{#if stamp.realDate}}<small>{{ stamp.realDate }}</small>{{/if}}
+    </div>
+    <div class="clueboard-stamp-cell">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.page.readBy" }}</span>
+        <span class="clueboard-chips">
+            {{#each stamp.readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{/each}}
+        </span>
+    </div>
+    <div class="clueboard-stamp-cell">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.page.heldBy" }}</span>
+        <span class="{{#if stamp.left}}clueboard-left{{/if}}">{{ stamp.holder }}</span>
+    </div>
+    {{#if stamp.notes}}
+    <div class="clueboard-stamp-cell clueboard-stamp-notes">
+        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.page.notesLabel" }}</span>
+        <span class="clueboard-notes">{{ stamp.notes }}</span>
+    </div>
+    {{/if}}
+</div>
+{{/if}}
+
+<footer class="clueboard-reader-footer">
+    <span class="clueboard-reader-hint">
+        {{#if gmSilent}}{{ localize "fvtt-mod-clueboard.read.gmRead" }}{{/if}}
+        {{#if notClue}}{{ localize "fvtt-mod-clueboard.read.notClue" }}{{/if}}
+    </span>
+    {{#if canNote}}
+    <button type="button" data-action="note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.read.note" }}</button>
+    {{/if}}
+    {{#if canOpenItem}}
+    <button type="button" data-action="openItem"><i class="fa-solid fa-arrow-up-right-from-square" inert></i> {{ localize "fvtt-mod-clueboard.read.openItem" }}</button>
+    {{/if}}
+</footer>
+</div>

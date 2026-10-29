@@ -1,0 +1,52 @@
+<div class="clueboard-mysteries-body">
+<header class="clueboard-tab-header directory-header">
+    <h3 class="clueboard-tab-title"><i class="fa-solid fa-scroll" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.title" }}</h3>
+    {{#unless isPopout}}
+    <button type="button" class="ui-control plain icon fa-solid fa-up-right-from-square" data-action="popout"
+            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.popout" }}"></button>
+    {{/unless}}
+    <search>
+        <input type="search" name="search" autocomplete="off"
+               placeholder="{{ localize "fvtt-mod-clueboard.mysteries.search" }}"
+               aria-label="{{ localize "fvtt-mod-clueboard.mysteries.search" }}">
+    </search>
+</header>
+
+<div class="clueboard-entries">
+    {{#if none}}
+    <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.noJournal" }}</p>
+    {{else if empty}}
+    <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.mysteries.empty" }}</p>
+    {{/if}}
+
+    {{#each sections}}
+    <section class="clueboard-section">
+        <div class="clueboard-section-head">
+            {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
+            <span class="clueboard-count">{{ total }}{{#if ungathered}} · {{ ungatheredText }}{{/if}}</span>
+            {{#if ../isGM}}
+            <button type="button" class="ui-control plain icon fa-solid fa-book" data-action="openJournal" data-uuid="{{ uuid }}"
+                    data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.openJournal" }}"></button>
+            {{/if}}
+        </div>
+        {{#each entries}}
+        <article class="clueboard-card" data-action="open" data-uuid="{{ uuid }}" data-search="{{ search }}" role="button" tabindex="0">
+            {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
+            <div class="clueboard-card-body">
+                <h5 class="clueboard-card-title">{{ name }}</h5>
+                {{#if excerpt}}<p class="clueboard-card-excerpt">{{ excerpt }}</p>{{/if}}
+                {{#if notes}}<p class="clueboard-card-notes">“{{ notes }}”</p>{{/if}}
+                <div class="clueboard-card-meta">
+                    {{#if foundIn}}<span><b>{{ localize "fvtt-mod-clueboard.mysteries.found" }}</b> {{ foundIn }}{{#if calendarDate}} · {{ calendarDate }}{{/if}}</span>{{/if}}
+                    <span><b>{{ localize "fvtt-mod-clueboard.mysteries.held" }}</b> <span class="{{#if left}}clueboard-left{{/if}}">{{ holder }}</span></span>
+                    <span class="clueboard-chips"><b>{{ localize "fvtt-mod-clueboard.mysteries.read" }}</b>
+                        {{#each readers}}<span class="clueboard-chip">{{ this }}</span>{{/each}}
+                    </span>
+                </div>
+            </div>
+        </article>
+        {{/each}}
+    </section>
+    {{/each}}
+</div>
+</div>

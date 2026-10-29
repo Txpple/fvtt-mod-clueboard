@@ -1,11 +1,74 @@
 {
+  "TYPES": {
+    "JournalEntryPage": {
+      "fvtt-mod-clueboard.clue": "Clue"
+    }
+  },
   "fvtt-mod-clueboard": {
     "settings": {
       "enabled": {
         "name": "Enabled",
-        "hint": "Off leaves the world exactly as Foundry and the system have it."
+        "hint": "Off leaves the group sheet, the sidebar and the journals exactly as Foundry and the system have them."
+      },
+      "showMark": {
+        "name": "Show the mark to players",
+        "hint": "A Clue in the party stash wears a bookmark on its row, so a player knows it is worth reading. Off, only the GM sees it."
+      },
+      "countUngathered": {
+        "name": "Count the ungathered",
+        "hint": "Mysteries says how many Clues in the party's hands nobody has read yet."
       }
     },
-    "elected": "This client acts for the table."
+    "elected": "This client keeps the Mysteries journals.",
+    "lootType": "Clue",
+    "tab": "Mysteries",
+    "mysteries": {
+      "title": "Mysteries",
+      "journalName": "Mysteries: {group}",
+      "journalNameWorld": "Mysteries",
+      "folder": "Clue Board",
+      "search": "Search the mysteries",
+      "popout": "Open as a window",
+      "empty": "Nothing gathered yet. Read a Clue in the party stash and it appears here.",
+      "noJournal": "No Mysteries journal yet: a GM has to be online once for the party's journal to be made.",
+      "ungathered": "{count} unread",
+      "ungatheredOne": "1 unread",
+      "gathered": "{gathered} of {total} gathered",
+      "held": "Held",
+      "read": "Read",
+      "found": "Found",
+      "left": "left the party",
+      "stash": "the party stash",
+      "nobody": "nobody yet",
+      "markTooltip": "A Clue: reading it goes in Mysteries.",
+      "openJournal": "Open the journal"
+    },
+    "read": {
+      "button": "Read",
+      "ariaLabel": "Read {name}",
+      "title": "{name}",
+      "note": "Note",
+      "notePrompt": "A note on {name}, in your words, for the whole party to see.",
+      "openItem": "Open the item",
+      "gathered": "{name} is in Mysteries, read by {reader}.",
+      "readAgain": "{reader} read {name}.",
+      "gmRead": "A GM read gathers nothing.",
+      "notClue": "Not a Clue: nothing is recorded.",
+      "noReader": "You have no character in this party, so the read is not recorded.",
+      "pickReader": "Who is reading?",
+      "pickReaderHint": "You own more than one member of the party. The read is recorded for the one you pick.",
+      "noJournal": "Mysteries has no journal for this party yet: a GM has to be online once. The read is not recorded.",
+      "failed": "Mysteries could not record the read ({reason}).",
+      "revision": "Revision {n}: the item changed while the party held it; this is the text as it reads now.",
+      "itemGone": "The item is gone; the entry keeps what was read."
+    },
+    "page": {
+      "notesLabel": "The party's note",
+      "foundIn": "Found in",
+      "readBy": "Read by",
+      "heldBy": "Held by",
+      "source": "The item",
+      "sheet": "Clue (Mysteries entry)"
+    }
   }
 }
