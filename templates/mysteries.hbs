@@ -36,6 +36,7 @@
             {{#if ../several}}<h4>{{ name }}</h4>{{/if}}
             <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
         </div>
+        <div class="clueboard-cards">
         {{#each entries}}
         <article class="clueboard-card{{#if unread}} unread{{/if}}" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0">
             {{#if img}}<img class="clueboard-card-image" src="{{ img }}" alt="">{{/if}}
@@ -56,6 +57,7 @@
             {{/if}}
         </article>
         {{/each}}
+        </div>
     </section>
     {{/each}}
 </div>
