@@ -437,13 +437,14 @@ try {
         await api.movePin(group, thread.id, other.id, clueId);
         await new Promise(r => setTimeout(r, 500));
         const cardsAfter = [...win.element.querySelectorAll(".clueboard-card[data-id]")].map(c => c.dataset.id);
-        win.showTab(group.id, "unsorted");
-        await new Promise(r => setTimeout(r, 400));
+        win.element.querySelector('.clueboard-tab[data-tab="unsorted"]')?.click();
+        await new Promise(r => setTimeout(r, 500));
+        const clickedToUnsorted = win.element.querySelector(".clueboard-tab.active")?.dataset.tab === "unsorted";
         const unsortedHasPinned = !!win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
         await api.unpin(group, other.id, thread.id);
         const afterUnpin = Object.keys(api.entry(group, other.id).threads ?? {}).includes(thread.id);
         await win.close();
-        return { threadId: thread.id, colour: thread.colour, pinnedTwice, tabs, head, cardsBefore, cardsAfter, unsortedHasPinned, afterUnpin, otherId: other.id };
+        return { threadId: thread.id, colour: thread.colour, pinnedTwice, tabs, head, cardsBefore, cardsAfter, clickedToUnsorted, unsortedHasPinned, afterUnpin, otherId: other.id };
       },
       { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId, name: THREAD }
     );
@@ -452,6 +453,7 @@ try {
     assert(G1.head === THREAD, `the thread's head shows its name ("${G1.head}")`);
     assert(G1.pinnedTwice && G1.cardsBefore.join() === [C.clueId, G1.otherId].join(), `two clues pinned, in pin order; a second pin is a no-op (${G1.cardsBefore.length} cards)`);
     assert(G1.cardsAfter.join() === [G1.otherId, C.clueId].join(), "a move before another card reorders the thread");
+    assert(G1.clickedToUnsorted, "a click on a tab switches the window to it");
     assert(!G1.unsortedHasPinned, "a pinned clue is not in Unsorted");
     assert(!G1.afterUnpin, "an unpin takes the clue off the thread");
 

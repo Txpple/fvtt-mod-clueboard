@@ -38,7 +38,7 @@
         <nav class="clueboard-tabs" aria-label="{{ localize "fvtt-mod-clueboard.mysteries.title" }}">
             {{#each tabs}}
             <button type="button" class="clueboard-tab{{#if active}} active{{/if}}{{#if answered}} answered{{/if}}{{#if colour}} clueboard-thread-{{ colour }}{{/if}}"
-                    data-action="tab" data-tab="{{ id }}" {{#if droppable}}data-droppable="true"{{/if}}>
+                    data-action="showTab" data-tab="{{ id }}" {{#if droppable}}data-droppable="true"{{/if}}>
                 {{#if colour}}<span class="clueboard-dot"></span>{{/if}}{{ name }} <span class="clueboard-tab-count">{{ count }}</span>
             </button>
             {{/each}}

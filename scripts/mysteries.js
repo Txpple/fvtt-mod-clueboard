@@ -489,7 +489,8 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       collect: MysteriesWindow.#onCollect,
       remove: MysteriesWindow.#onRemove,
       openItem: MysteriesWindow.#onOpenItem,
-      tab: MysteriesWindow.#onTab,
+      // Not "tab": ApplicationV2 handles that action itself, before any of ours, and throws.
+      showTab: MysteriesWindow.#onShowTab,
       newThread: MysteriesWindow.#onNewThread,
       editThread: MysteriesWindow.#onEditThread,
       deleteThread: MysteriesWindow.#onDeleteThread,
@@ -534,7 +535,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   /** Open a party's tab (the API's and the live check's way in). */
   showTab(groupId, tab) {
     this.#tabs[groupId] = tab;
-    if (this.rendered) this.render();
+    return this.rendered ? this.render() : Promise.resolve(this);
   }
 
   /** @override */
@@ -687,7 +688,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  static #onTab(_event, target) {
+  static #onShowTab(_event, target) {
     const section = target.closest("[data-group]");
     if (section) this.showTab(section.dataset.group, target.dataset.tab);
   }
