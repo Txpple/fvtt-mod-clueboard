@@ -10,22 +10,21 @@ MIT.
 **State (2026-10-29).** Phase 1 is built on `main` as 0.1.0, unreleased, in its third shape of the day on the
 user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
 the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
-the read marked when a player opens the card, and the Mysteries window off a scroll button on the sidebar's strip
+the read marked when a player opens the card, and the Mysteries window off a spy button on the sidebar's strip
 after Journal, the record on the Group actor. Gone the same day: the sidebar tab (it stuck the sidebar), the
 journal per party (messy, leaky in the UI), the Clue loot subtype, the Read column and bookmark in the stash,
 held-by and the Party Stash logic. `npm run verify` is green (55 tests). Deployed to the sandbox and walked GREEN by
 `tools/live-check.mjs --walk` (33 checks); the sandbox's ten Session 02 documents are Clues built from the world
 originals and collected on the Party with their readers kept. The name is free on foundryvtt.com's package pages;
-the setup-screen `getPackages` check is owed before the first release. Phase 2 (the board, testimony and
-observation as kinds, the export; no GM secrets, ever) waits on the plan.
+the setup-screen `getPackages` check is owed before the first release. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
 ## The rules this module keeps
 
 - **A Clue is an item type of the module's own**, declared in `module.json` (`documentTypes.Item.clue`), its model
   `ClueItemModel` (`kind`, `text`, `foundAt`) and sheet `ClueItemSheet` registered at `init` whether or not the
   module is enabled, so a world that holds Clues never sees an unknown type. Its icon is a row in
-  `CONFIG.DND5E.defaultArtwork.Item`. `kind` is the seam for phase 2: "document" today, testimony and observation
-  later, the sheet and the cards reading it.
+  `CONFIG.DND5E.defaultArtwork.Item`. `kind` is one of `KINDS` (document, object, statement, location, body, rumour,
+  vision); a new kind is a line there and a string in `lang/en.json`.
 - **A Clue is never carried.** dnd5e refuses a non-physical item on a Group; `dropActorSheetData` turns a Clue
   dropped on any actor's sheet into a collect and tells the sheet no; `preCreateItem` refuses a Clue inside any
   actor by any other path. Nothing of the module's touches an inventory, a character sheet or an item card.
@@ -41,7 +40,7 @@ observation as kinds, the export; no GM secrets, ever) waits on the plan.
 - **No GM secrets.** Anyone who can see the party can read its flags; nothing the module stores is hidden from
   players: the user's ruling, phase 2 included.
 - **Read never posts.** The Reader writes nothing to chat, ever. A GM's opening marks nothing.
-- **Mysteries is a window, never a sidebar panel.** A scroll button is added to the sidebar's strip directly after
+- **Mysteries is a window, never a sidebar panel.** A spy button (`fa-user-secret`) is added to the sidebar's strip directly after
   Journal on `renderSidebar` (no `data-tab`, no `data-action`, so the sidebar never switches or expands for it);
   it opens `MysteriesWindow`, one per client, centred. Nothing is registered on `Sidebar.TABS` or `CONFIG.ui`: a
   tab's panel lives inside the sidebar's layout, and one there stuck the sidebar. For the GM the window carries the

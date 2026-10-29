@@ -34,7 +34,7 @@ describe("what a Clue is", () => {
       kind: "document",
       at: "2026-10-29T12:00:00Z"
     });
-    expect(snapshotOf({ name: "x", system: { kind: "rumour" } }).kind).toBe(KINDS[0]);
+    expect(snapshotOf({ name: "x", system: { kind: "gossip" } }).kind).toBe(KINDS[0]);
     expect(snapshotOf({ name: "x", system: { text: 3 } }).html).toBe("");
   });
 

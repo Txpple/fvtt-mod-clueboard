@@ -13,8 +13,8 @@ it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.ht
 Phase 1 is three things.
 
 - **The Clue.** A new item type, Clue, in the Create Item dialog beside dnd5e's own. Its sheet is plain: name,
-  image, the text, an optional *Found at* line in the DM's words, and the kind (documents first; testimony and
-  observation are phase 2). The DM makes Clues in the Items directory or keeps them in a compendium. A Clue cannot
+  image, the text, an optional *Found at* line in the DM's words, and the kind: Document, Object, Statement,
+  Location, Body, Rumour or Vision. The DM makes Clues in the Items directory or keeps them in a compendium. A Clue cannot
   be carried: dropped on a character it goes to the party's Mysteries instead, and dnd5e refuses it on a party's
   stash.
 - **Collecting.** The DM drags a Clue onto the Party sheet, onto a member's sheet or onto the Mysteries window, or
@@ -22,7 +22,7 @@ Phase 1 is three things.
   table is viewing and the calendar date when the world has one, and copies the text as it reads. The Clue stays in
   the Items directory as the DM's master; an edit there updates the party's copy and marks the revision. *Take
   back* (on the sheet, or the ✕ on a card) takes it out again.
-- **Mysteries.** A scroll button on the sidebar's strip, directly after Journal, opens Mysteries as its own window
+- **Mysteries.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Mysteries as its own window
   in the middle of the screen (the sidebar itself never changes): the party's Clues as cards, newest first, with a
   search and a count of what the player has not read yet. A click opens the Reader, which shows the text, the stamp
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
@@ -33,8 +33,7 @@ or on a sheet. The players write their reads from their own clients (they own th
 so a read is marked with no GM online. A world with several parties keeps one record per party; with none, there
 is nowhere to collect to.
 
-Phase 2: the board (cards, strings, leads, mysteries the players name, a timeline); testimony and observation as
-kinds of Clue; the export of the session's documents found. There are no GM secrets in Mysteries, in any phase.
+Phase 2: the board (cards, strings, leads, mysteries the players name, a timeline); the export of the session's documents found. There are no GM secrets in Mysteries, in any phase.
 
 ## Installation
 

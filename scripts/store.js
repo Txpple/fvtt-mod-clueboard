@@ -98,8 +98,9 @@ export const removeEntry = (group, id) => write(group, { [path(id)]: new foundry
 /** One more reader on an entry (keyed by the actor, so a second read by the same one is a no-op). */
 export const addReader = (group, id, reader) => write(group, { [path(id, `readers.${reader.actorId}`)]: reader });
 
-/** The snapshot, whole. */
-export const setSnapshot = (group, id, snapshot) => write(group, { [path(id, "snapshot")]: snapshot });
+/** The snapshot, whole, and the kind it carries (a Clue's kind can change after collecting). */
+export const setSnapshot = (group, id, snapshot) =>
+  write(group, { [path(id, "snapshot")]: snapshot, [path(id, "kind")]: snapshot.kind });
 
 /** The party's note. */
 export const setNotes = (group, id, notes) => write(group, { [path(id, "notes")]: String(notes ?? "") });

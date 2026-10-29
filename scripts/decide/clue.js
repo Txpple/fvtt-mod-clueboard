@@ -9,7 +9,7 @@
 export const CLUE_TYPE = "fvtt-mod-clueboard.clue";
 
 /** The kinds a Clue can be: what the party found, read or heard. More are one line each. */
-export const KINDS = ["document", "object", "testimony"];
+export const KINDS = ["document", "object", "statement", "location", "body", "rumour", "vision"];
 
 /**
  * A Clue is an item of the module's own type. Nothing else is one.

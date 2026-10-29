@@ -3,7 +3,7 @@
  *
  * Three things: a Clue item type of the module's own (clue-item.js), collecting (a drop on the
  * party, a member or the Mysteries window, or Collect on the sheet or in the window's GM strip),
- * and the Mysteries window, opened from a scroll button on the sidebar's strip directly after
+ * and the Mysteries window, opened from a spy button on the sidebar's strip directly after
  * Journal (a button, not a sidebar tab: nothing of the module's is drawn inside the sidebar).
  * Nothing here touches an inventory, a character sheet or an item card. The plan is the suite's
  * docs/plans/clueboard.md.
@@ -124,7 +124,7 @@ for (const hook of ["createActor", "deleteActor"]) {
 }
 
 /* -------------------------------------------------- */
-/*  The scroll button on the sidebar's strip          */
+/*  The spy button on the sidebar's strip             */
 /* -------------------------------------------------- */
 
 /**
@@ -142,7 +142,7 @@ Hooks.on("renderSidebar", app => {
     const button = document.createElement("button");
     button.type = "button";
     button.id = BUTTON_ID;
-    button.className = "ui-control plain icon fa-solid fa-scroll";
+    button.className = "ui-control plain icon fa-solid fa-user-secret";
     button.dataset.tooltip = "";
     button.setAttribute("aria-label", t("tab"));
     button.addEventListener("click", ev => {

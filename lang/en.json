@@ -16,7 +16,11 @@
     "kinds": {
       "document": "Document",
       "object": "Object",
-      "testimony": "Testimony"
+      "statement": "Statement",
+      "location": "Location",
+      "body": "Body",
+      "rumour": "Rumour",
+      "vision": "Vision"
     },
     "sheetFields": {
       "foundAt": "Found at",

@@ -147,7 +147,7 @@ export async function uncollect(group, id, { confirm = true } = {}) {
       ? t("collect.confirmReaders", { readers: readers.join(", ") })
       : t("collect.confirmNoReaders");
     const ok = await foundry.applications.api.DialogV2.confirm({
-      window: { title: t("collect.confirmTitle"), icon: "fa-solid fa-scroll" },
+      window: { title: t("collect.confirmTitle"), icon: "fa-solid fa-user-secret" },
       content: `<p>${t("collect.confirm", { name: foundry.utils.escapeHTML(entry.snapshot.name), group: foundry.utils.escapeHTML(group.name) })}</p><p>${foundry.utils.escapeHTML(detail)}</p>`,
       yes: { label: t("collect.confirmYes"), icon: "fa-solid fa-xmark", default: false },
       no: { label: t("collect.confirmNo"), default: true },
@@ -293,7 +293,7 @@ export function sectionFor(group, query = "") {
 /* -------------------------------------------------- */
 
 /**
- * Mysteries is a window of its own, opened centred from the sidebar's scroll button (clueboard.js)
+ * Mysteries is a window of its own, opened centred from the sidebar's spy button (clueboard.js)
  * or the API. Never a sidebar panel: a tab's content lives inside the sidebar's layout, and a
  * panel of cards there left the sidebar stuck. One window per client, reused. For the GM it is
  * also the place to collect: a strip of the world's uncollected Clues, and a drop target.
@@ -302,7 +302,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: "clueboard-mysteries",
     classes: ["clueboard-mysteries"],
-    window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-scroll", resizable: true },
+    window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-user-secret", resizable: true },
     position: { width: 760, height: 720 },
     actions: {
       open: MysteriesWindow.#onOpen,
