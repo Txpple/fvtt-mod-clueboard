@@ -15,13 +15,16 @@
 
 import { registerClueItem } from "./clue-item.js";
 import { log, MODULE_ID, setting, t } from "./common.js";
-import { changesSnapshot, CLUE_TYPE, isClue } from "./decide/clue.js";
+import { changesSnapshot, CLUE_TYPE, frameShape, isClue } from "./decide/clue.js";
 import * as mysteries from "./mysteries.js";
 import { openReader, refreshReaders } from "./reader.js";
 
 export { MODULE_ID, log, t, setting };
 
 const BUTTON_ID = "clueboard-mysteries-button";
+
+/** The pictures framed by their shape: the cards' and the clue sheet's. */
+const FRAMED = ".clueboard-thumb img, .clueboard-clue-image";
 
 /* -------------------------------------------------- */
 /*  init: the setting, the Clue type, the templates   */
@@ -50,6 +53,18 @@ Hooks.once("init", () => {
     `modules/${MODULE_ID}/templates/mysteries.hbs`,
     `modules/${MODULE_ID}/templates/clue-item.hbs`
   ]).catch(err => log.error("preloading the templates failed", err));
+
+  // A card's picture is tagged with its shape once it loads, so the stylesheet crops a portrait
+  // from the top and shows a scroll or a panorama whole. A load never bubbles: this listens on the
+  // way down.
+  document.addEventListener(
+    "load",
+    event => {
+      const img = event.target;
+      if (img instanceof HTMLImageElement && img.matches(FRAMED)) img.dataset.shape = frameShape(img.naturalWidth, img.naturalHeight);
+    },
+    true
+  );
 });
 
 /* -------------------------------------------------- */

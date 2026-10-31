@@ -25,8 +25,10 @@ on the Group actor, and threads (a *mystery* in every word a player reads): the 
 question a clue can be pinned to many of (the user's pick over lanes and a corkboard), Unsolved or Solved, with a
 *Where we stand* line. Gone: the sidebar tab (it stuck the sidebar), the journal per party (messy, leaky in the UI),
 the Clue loot subtype, the Read column and bookmark in the stash, held-by and the Party Stash logic. `npm run verify`
-is green (60 tests); `tools/live-check.mjs --walk` GREEN on the sandbox (50 checks); the sandbox's ten Session 02
-documents are Clues built from the world originals and collected on the Party with their readers kept. The name is
+is green (61 tests); `tools/live-check.mjs --walk` GREEN on the sandbox (50 checks); unreleased on `main` and on the
+sandbox: square cards, each picture framed by its shape (`frameShape`, tagged on load), as in Scroll Case; the
+sandbox's ten Session 02 documents are Clues built from the world originals and collected on the Party with their
+readers kept. The name is
 free: the setup-screen `getPackages` list (7,076 modules) has no Clue Board and no `fvtt-mod-clueboard`; "Mysteries"
 appears only inside adventure titles. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
@@ -84,7 +86,7 @@ appears only inside adventure titles. Phase 2 (the board, the export; no GM secr
 
 - `scripts/decide/clue.js` (`// @ts-check`, pure, no Foundry): `CLUE_TYPE`, `KINDS`, `isClue`, `snapshotOf`,
   `changesSnapshot`, `partyFor`, `defaultParty`, `entryList`, `readerList`, `sortAndFilter`, `unreadCount`,
-  `THREAD_COLOURS`, `threadList`, `nextColour`, `pinnedTo`, `unsorted`, `reorder`. Tested in `tests/clue.test.js`.
+  `THREAD_COLOURS`, `threadList`, `nextColour`, `pinnedTo`, `unsorted`, `reorder`, `frameShape`. Tested in `tests/clue.test.js`.
 - `scripts/common.js`: the id, the logger, `t`, `setting`; imported by every other file, imports none of them.
 - `scripts/clueboard.js`: the entry point; the setting and the type at `init`; the drop and create hooks; the
   record and window refreshes; the strip's button on `renderSidebar`; the stylesheet probe; `module.api`.

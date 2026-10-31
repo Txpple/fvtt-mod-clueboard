@@ -221,3 +221,20 @@ export function reorder(ids, movedId, beforeId) {
   if (at < 0) return [...rest, movedId];
   return [...rest.slice(0, at), movedId, ...rest.slice(at)];
 }
+
+
+/**
+ * How a picture sits in its frame, from its pixel size: "tall" is cropped from the top (a
+ * portrait keeps its head), "wide" and "square" from the centre, "odd" (a scroll, a panorama) is
+ * shown whole; "" while the size is unknown.
+ * @param {number} width
+ * @param {number} height
+ */
+export function frameShape(width, height) {
+  if (!(width > 0 && height > 0)) return "";
+  const ratio = width / height;
+  if (ratio < 0.55 || ratio > 2) return "odd";
+  if (ratio < 0.9) return "tall";
+  if (ratio > 1.1) return "wide";
+  return "square";
+}

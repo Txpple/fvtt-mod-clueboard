@@ -5,6 +5,7 @@ import {
   CLUE_TYPE,
   defaultParty,
   entryList,
+  frameShape,
   isClue,
   KINDS,
   nextColour,
@@ -191,5 +192,16 @@ describe("threads", () => {
     expect(reorder(ids, "b", "b")).toEqual(["a", "b", "c", "d"]);
     expect(reorder(ids, "q", "b")).toEqual(ids);
     expect(ids).toEqual(["a", "b", "c", "d"]);
+  });
+});
+
+describe("frameShape", () => {
+  it("names a picture's shape from its size, and nothing before it loads", () => {
+    expect(frameShape(1536, 2048)).toBe("tall");
+    expect(frameShape(2560, 1600)).toBe("wide");
+    expect(frameShape(512, 512)).toBe("square");
+    expect(frameShape(1000, 2400)).toBe("odd");
+    expect(frameShape(3000, 1000)).toBe("odd");
+    expect(frameShape(0, 0)).toBe("");
   });
 });

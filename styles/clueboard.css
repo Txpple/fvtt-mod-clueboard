@@ -626,7 +626,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background: #181513;
 }
@@ -637,6 +637,18 @@
   height: 100%;
   object-fit: cover;
   border: 0;
+}
+
+/* A picture's shape, tagged once it loads: a tall one is cropped from the top, so a portrait
+   keeps its head; a scroll or a panorama is shown whole. */
+.clueboard-thumb img[data-shape="tall"],
+.clueboard-clue-image[data-shape="tall"] {
+  object-position: top center;
+}
+
+.clueboard-thumb img[data-shape="odd"],
+.clueboard-clue-image[data-shape="odd"] {
+  object-fit: contain;
 }
 
 .clueboard-excerpt {
@@ -949,6 +961,15 @@
   border: 1px solid var(--cb-line);
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* The sheet's picture takes its shape's frame: a portrait stands, a scene lies. */
+.clueboard-clue-image[data-shape="tall"] {
+  height: 96px;
+}
+
+.clueboard-clue-image[data-shape="wide"] {
+  width: 96px;
 }
 
 .clueboard-clue-names {
