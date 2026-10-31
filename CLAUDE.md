@@ -59,10 +59,10 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   thread's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
   `scrollable`s, so a redraw keeps their scroll, and the query is reapplied after each render; the live check
   asserts the view, the scroll and the search survive a pin.
-- **Scroll Case's look** (the user's ruling): the palette is Scroll Case's, copied as `--cb-*` on the module's
-  three windows (dark in Foundry's light theme too), and the bar, rail, head, cards, buttons and Reader follow its
-  patterns. Gold means selected, new or the main action; a thread's colour lives only in its dot. A change to
-  either module's look is made in both; the copy is kept by hand until a third window wants it in the kit.
+- **Card Catalogue's look** (the user's ruling; Scroll Case's, which Card Catalogue carried over when it replaced
+  Scroll Case): the palette copied as `--cb-*` on the module's three windows (dark in Foundry's light theme too), and
+  the bar, rail, head, cards, buttons and Reader follow its patterns. Gold means selected, new or the main action; a
+  thread's colour lives only in its dot. A change to either module's look is made in both, by hand.
 - **The export is what the party has** (`exportData`, `exportToFile`): the record as plain data, every clue's text
   as plain words and HTML, readers, note, threads, and the threads with their theories (the file keeps the key `mysteries`); nothing of the DM's.
   A button in the section head; anyone who can open the window can export.
