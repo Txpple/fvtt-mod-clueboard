@@ -7,25 +7,28 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-29).** 1.2.0 is released and on prod (`collect` takes `stamp: false`, which the MCP's `manage-clues` passes for a clue found earlier), after 1.1.0 (the rail, the JSON export, the solved/unsolved marks), after
-1.0.0, released and put on prod (Echoes of Halruaa: installed and
-enabled through the installer; the ten Session 02 documents migrated to Clues from their world originals, all kind
-Document for the user's audit, collected on the Party with no scene stamp, the stash copies and then, on the user's
-word, the originals deleted). It is the third shape of the day on the
-user's rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on
-the party, a member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory),
-the read marked when a player opens the card, the Mysteries window off a spy button on the sidebar's strip
-after Journal, the record on the Group actor, and threads (a *mystery* in every word a player reads): the party's
-own sorting, a pill per named question a clue can be pinned to many of (the user's pick over lanes and a
-corkboard), Unsolved or Solved, with a *Where we stand* line. The window: All Clues and Unassigned Clues above the
-search, the labelled Mysteries band below it, cards one height with Kind, Found, Read, Note and the mystery dots;
-the Reader with Kind, Found, Read by, Mysteries, Note. The user's word at the day's end: the data elements are
-all there; what follows is UI work. Gone the same day: the sidebar tab (it stuck the sidebar), the
-journal per party (messy, leaky in the UI), the Clue loot subtype, the Read column and bookmark in the stash,
-held-by and the Party Stash logic. `npm run verify` is green (59 tests). Deployed to the sandbox and walked GREEN by
-`tools/live-check.mjs --walk` (45 checks); the sandbox's ten Session 02 documents are Clues built from the world
-originals and collected on the Party with their readers kept. The name is free: the setup-screen `getPackages` list (7,076 modules) has no
-Clue Board and no `fvtt-mod-clueboard`; "Mysteries" appears only inside adventure titles. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
+**State (2026-10-31).** 1.2.1 is released and on prod (the installer; every released file served byte-identical; a
+prod GM page reads 1.2.1, 24 cards in the new look): Scroll Case's look, on the user's word ("clue board has to look
+more like scroll case"), its palette copied as `--cb-*`, its framed search, full-height rail (the selected row always
+gold, a mystery's colour in its dot), a head naming the view, cards with the picture on top (the clue's words for a
+stock icon, `pictureOf`), a kind badge, the mystery dots, where found and the eye's count of readers; the Reader a
+plain dark page with the record beneath; a player's unread a static glow and a New chip, the DM's the eye's 0 (the
+breathing edge and the parchment gone). After 1.2.0 (`collect` takes `stamp: false`, which the MCP's `manage-clues`
+passes for a clue found earlier), 1.1.0 (the rail, the JSON export, the solved/unsolved marks) and 1.0.0, released and
+put on prod (Echoes of Halruaa: installed and enabled through the installer; the ten Session 02 documents migrated to
+Clues from their world originals, all kind Document for the user's audit, collected on the Party with no scene stamp,
+the stash copies and then, on the user's word, the originals deleted). It is the third shape of the day on the user's
+rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on the party, a
+member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory), the read marked
+when a player opens the card, the Mysteries window off a spy button on the sidebar's strip after Journal, the record
+on the Group actor, and threads (a *mystery* in every word a player reads): the party's own sorting, a pill per named
+question a clue can be pinned to many of (the user's pick over lanes and a corkboard), Unsolved or Solved, with a
+*Where we stand* line. Gone: the sidebar tab (it stuck the sidebar), the journal per party (messy, leaky in the UI),
+the Clue loot subtype, the Read column and bookmark in the stash, held-by and the Party Stash logic. `npm run verify`
+is green (60 tests); `tools/live-check.mjs --walk` GREEN on the sandbox (50 checks); the sandbox's ten Session 02
+documents are Clues built from the world originals and collected on the Party with their readers kept. The name is
+free: the setup-screen `getPackages` list (7,076 modules) has no Clue Board and no `fvtt-mod-clueboard`; "Mysteries"
+appears only inside adventure titles. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
 ## The rules this module keeps
 
@@ -60,6 +63,10 @@ Clue Board and no `fvtt-mod-clueboard`; "Mysteries" appears only inside adventur
   mystery's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
   `scrollable`s, so a redraw keeps their scroll, and the query is reapplied after each render; the live check
   asserts the view, the scroll and the search survive a pin.
+- **Scroll Case's look** (the user's ruling): the palette is Scroll Case's, copied as `--cb-*` on the module's
+  three windows (dark in Foundry's light theme too), and the bar, rail, head, cards, buttons and Reader follow its
+  patterns. Gold means selected, new or the main action; a mystery's colour lives only in its dot. A change to
+  either module's look is made in both; the copy is kept by hand until a third window wants it in the kit.
 - **The export is what the party has** (`exportData`, `exportToFile`): the record as plain data, every clue's text
   as plain words and HTML, readers, note, mysteries, and the mysteries with their theories; nothing of the DM's.
   A button in the section head; anyone who can open the window can export.
