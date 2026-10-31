@@ -1,36 +1,30 @@
 # fvtt-mod-clueboard — working notes for sessions in this repo
 
-**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's Mysteries, the Clues the DM has
+**What this is.** Open Roll 5e: Clue Board, a Foundry VTT module: the party's Clue Board, the Clues the DM has
 collected for them, each stamped with where it was found and who has read it. A Clue is an item type of the
-module's own, never carried; collecting puts it on the party's record, and a player's opening of it in Mysteries
+module's own, never carried; collecting puts it on the party's record, and a player's opening of it on the board
 marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has the family's conventions; the plan
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-31).** 1.2.1 is released and on prod (the installer; every released file served byte-identical; a
-prod GM page reads 1.2.1, 24 cards in the new look): Scroll Case's look, on the user's word ("clue board has to look
-more like scroll case"), its palette copied as `--cb-*`, its framed search, full-height rail (the selected row always
-gold, a mystery's colour in its dot), a head naming the view, cards with the picture on top (the clue's words for a
-stock icon, `pictureOf`), a kind badge, the mystery dots, where found and the eye's count of readers; the Reader a
-plain dark page with the record beneath; a player's unread a static glow and a New chip, the DM's the eye's 0 (the
-breathing edge and the parchment gone). After 1.2.0 (`collect` takes `stamp: false`, which the MCP's `manage-clues`
-passes for a clue found earlier), 1.1.0 (the rail, the JSON export, the solved/unsolved marks) and 1.0.0, released and
-put on prod (Echoes of Halruaa: installed and enabled through the installer; the ten Session 02 documents migrated to
-Clues from their world originals, all kind Document for the user's audit, collected on the Party with no scene stamp,
-the stash copies and then, on the user's word, the originals deleted). It is the third shape of the day on the user's
-rulings: the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on the party, a
-member or the Mysteries window, Collect on the sheet or in the window's GM strip; never an inventory), the read marked
-when a player opens the card, the Mysteries window off a spy button on the sidebar's strip after Journal, the record
-on the Group actor, and threads (a *mystery* in every word a player reads): the party's own sorting, a pill per named
-question a clue can be pinned to many of (the user's pick over lanes and a corkboard), Unsolved or Solved, with a
-*Where we stand* line. Gone: the sidebar tab (it stuck the sidebar), the journal per party (messy, leaky in the UI),
-the Clue loot subtype, the Read column and bookmark in the stash, held-by and the Party Stash logic. `npm run verify`
-is green (61 tests); `tools/live-check.mjs --walk` GREEN on the sandbox (50 checks); unreleased on `main` and on the
-sandbox: square cards, each picture framed by its shape (`frameShape`, tagged on load), as in Scroll Case; the
-sandbox's ten Session 02 documents are Clues built from the world originals and collected on the Party with their
-readers kept. The name is
-free: the setup-screen `getPackages` list (7,076 modules) has no Clue Board and no `fvtt-mod-clueboard`; "Mysteries"
-appears only inside adventure titles. Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
+**State (2026-10-31).** 1.2.2 is released and on prod (the installer): the window and its sidebar button are
+*Clue Board* and the party's questions *Threads* (*New Thread*) in every word a player reads, on the user's word
+(the export's `format` and `mysteries` field, the API's `openMysteries` and the code's names unchanged; the export
+file is `<party>-clues-<date>.json`); square cards, each picture framed by its shape (`frameShape`, tagged on load:
+a tall one cropped from the top, a scroll or a panorama shown whole), as in Scroll Case. 1.2.1 Scroll Case's look
+(its palette copied as `--cb-*`, the framed search, the full-height rail, cards with the picture on top, a kind
+badge, the thread dots, where found and the eye's count of readers; the Reader a plain dark page; a player's unread a
+static glow and a New chip). 1.2.0 `collect` takes `stamp: false`, which the MCP's `manage-clues` passes for a clue
+found earlier; 1.1.0 the rail, the JSON export, the solved/unsolved marks; 1.0.0 put on prod (Echoes of Halruaa: the
+ten Session 02 documents migrated to Clues from their world originals, all kind Document, collected on the Party with
+no scene stamp, the stash copies and then, on the user's word, the originals deleted). Built on the user's rulings:
+the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), collecting (a drop on the party, a member
+or the window, Collect on the sheet or in the window's GM strip; never an inventory), the read marked when a player
+opens the card, the window off a spy button on the sidebar's strip after Journal, the record on the Group actor, and
+threads: the party's own sorting, a pill per named question a clue can be pinned to many of, Unsolved or Solved, with
+a *Where we stand* line. `npm run verify` is green (61 tests); `tools/live-check.mjs --walk` GREEN on the sandbox.
+The name is free: the setup-screen `getPackages` list (7,076 modules) has no Clue Board and no `fvtt-mod-clueboard`.
+Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
 ## The rules this module keeps
 
@@ -53,7 +47,7 @@ appears only inside adventure titles. Phase 2 (the board, the export; no GM secr
   snapshot, the note) with `render: false`; a removal is a `ForcedDeletion` on the entry's key. No elect anywhere.
 - **No GM secrets.** Anyone who can see the party can read its flags; nothing the module stores is hidden from
   players: the user's ruling, phase 2 included.
-- **Threads are the party's, on the party** (a *mystery* in every word a player reads; *thread* in the code). `flags.<id>.threads.<threadId>` (`Thread`: name, colour, question,
+- **Threads are the party's, on the party** (*Threads* in every word a player reads, on the user's word; *Mysteries* before 1.2.2). `flags.<id>.threads.<threadId>` (`Thread`: name, colour, question,
   status open/answered, stand, order) and an entry's pins at `entries.<clueId>.threads.<threadId>` (`{ at, order }`),
   so removing an entry removes its pins and deleting a thread is one write that forces its pins away. Any owner of
   the party organises, the GM included; a clue sits in as many threads as the party likes. A card dragged onto a
@@ -61,19 +55,19 @@ appears only inside adventure titles. Phase 2 (the board, the export; no GM secr
   card inside a thread it goes before it; the whole order is rewritten in one write. The active tab is window state,
   per party.
 - **Layout A, the rail** (the user's pick of three, `prototypes/mysteries-layouts.html`): the search across the
-  top; per party a rail (the clue views, the mysteries, New mystery) beside `.clueboard-main` (the count, the open
-  mystery's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
+  top; per party a rail (the clue views, the threads, New Thread) beside `.clueboard-main` (the count, the open
+  thread's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
   `scrollable`s, so a redraw keeps their scroll, and the query is reapplied after each render; the live check
   asserts the view, the scroll and the search survive a pin.
 - **Scroll Case's look** (the user's ruling): the palette is Scroll Case's, copied as `--cb-*` on the module's
   three windows (dark in Foundry's light theme too), and the bar, rail, head, cards, buttons and Reader follow its
-  patterns. Gold means selected, new or the main action; a mystery's colour lives only in its dot. A change to
+  patterns. Gold means selected, new or the main action; a thread's colour lives only in its dot. A change to
   either module's look is made in both; the copy is kept by hand until a third window wants it in the kit.
 - **The export is what the party has** (`exportData`, `exportToFile`): the record as plain data, every clue's text
-  as plain words and HTML, readers, note, mysteries, and the mysteries with their theories; nothing of the DM's.
+  as plain words and HTML, readers, note, threads, and the threads with their theories (the file keeps the key `mysteries`); nothing of the DM's.
   A button in the section head; anyone who can open the window can export.
 - **Read never posts.** The Reader writes nothing to chat, ever. A GM's opening marks nothing.
-- **Mysteries is a window, never a sidebar panel.** A spy button (`fa-user-secret`) is added to the sidebar's strip directly after
+- **Clue Board is a window, never a sidebar panel.** A spy button (`fa-user-secret`) is added to the sidebar's strip directly after
   Journal on `renderSidebar` (no `data-tab`, no `data-action`, so the sidebar never switches or expands for it);
   it opens `MysteriesWindow`, one per client, centred. Nothing is registered on `Sidebar.TABS` or `CONFIG.ui`: a
   tab's panel lives inside the sidebar's layout, and one there stuck the sidebar. For the GM the window carries the

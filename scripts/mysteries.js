@@ -458,11 +458,11 @@ export function exportData(group) {
   };
 }
 
-/** The export written to a file the browser saves: `<party>-mysteries-<date>.json`. */
+/** The export written to a file the browser saves: `<party>-clues-<date>.json`. */
 export function exportToFile(group) {
   const data = exportData(group);
   const slug = (group.name || "party").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const name = `${slug}-mysteries-${data.exportedAt.slice(0, 10)}.json`;
+  const name = `${slug}-clues-${data.exportedAt.slice(0, 10)}.json`;
   foundry.utils.saveDataToFile(JSON.stringify(data, null, 2), "application/json", name);
   ui.notifications.info(t("mysteries.exported", { name, count: data.clues.length }));
   return name;

@@ -1,9 +1,9 @@
 # Open Roll 5e: Clue Board
 
-A Foundry VTT module for the dnd5e system that keeps the party's **Mysteries**: the clues the DM has handed them,
+A Foundry VTT module for the dnd5e system that keeps the party's **Clue Board**: the clues the DM has handed them,
 each stamped with where it was found and who has read it. A **Clue** is an item type of the module's own, never
 gear: it has no price, no weight and no place in anyone's inventory. The DM collects a Clue for the party, it
-appears in Mysteries at once, and a player's opening of it there marks the read.
+appears on its Clue Board at once, and a player's opening of it there marks the read.
 
 **1.2.1**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
 it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.html`.
@@ -15,40 +15,41 @@ Phase 1 is four things.
 - **The Clue.** A new item type, Clue, in the Create Item dialog beside dnd5e's own. Its sheet is plain: name,
   image, the text, an optional *Found at* line in the DM's words, and the kind: Document, Object, Statement,
   Location, Body, Rumour or Vision. The DM makes Clues in the Items directory or keeps them in a compendium. A Clue cannot
-  be carried: dropped on a character it goes to the party's Mysteries instead, and dnd5e refuses it on a party's
+  be carried: dropped on a character it goes to the party's Clue Board instead, and dnd5e refuses it on a party's
   stash.
-- **Collecting.** The DM drags a Clue onto the Party sheet, onto a member's sheet or onto the Mysteries window, or
-  presses *Collect* on the Clue's sheet or in the GM strip at the top of Mysteries. Collecting stamps the scene the
+- **Collecting.** The DM drags a Clue onto the Party sheet, onto a member's sheet or onto the Clue Board window, or
+  presses *Collect* on the Clue's sheet or in the GM strip at the top of Clue Board. Collecting stamps the scene the
   table is viewing and the calendar date when the world has one, and copies the text as it reads. The Clue stays in
   the Items directory as the DM's master; an edit there updates the party's copy and marks the revision. *Take
   back* (on the sheet, or the ✕ on a card) takes it out again.
-- **Mysteries.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Mysteries as its own window
+- **Clue Board.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Clue Board as its own window
   in the middle of the screen (the sidebar itself never changes): the party's Clues as cards, newest first, with a
   search and a count of what the player has not read yet. A click opens the Reader, which shows the text, the stamp
   and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
   their character; a GM's opening marks nothing. Nothing goes to chat, ever.
 - **The window's layout.** The search runs across the top. Below it, a rail on the left lists *All Clues* and
-  *Unassigned Clues*, then the party's mysteries with their counts and *New mystery*; the cards fill the right
-  and scroll on their own. Dropping a card on a mystery in the rail pins it without leaving the view, so a player
+  *Unassigned Clues*, then the party's *Threads* with their counts and *New Thread*; the cards fill the right
+  and scroll on their own. Dropping a card on a thread in the rail pins it without leaving the view, so a player
   can work down the list pinning clue after clue; the scroll and the search stay put.
-- **Mysteries the party names.** The party's own sorting. A mystery (a *thread* in the code) is a question or a
+- **Threads the party names.** The party's own sorting. A thread is a question or a
   line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All*
   and *Unassigned*. Drag a card onto
-  a mystery's tab to pin it there, onto another card inside it to order it; a clue can sit in as many mysteries as
+  a thread's tab to pin it there, onto another card inside it to order it; a clue can sit in as many threads as
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
   included; deleting one unpins its clues and loses nothing else.
 
-**Export.** The file icon beside the count in Mysteries saves the party's clues as a JSON file, every clue with
+**Export.** The file icon beside the count in Clue Board saves the party's clues as a JSON file, every clue with
 its text (as plain words and as HTML), where and when it was found, who has read it, the party's note and the
-mysteries it sits in, then the mysteries themselves with their questions and theories: something to hand to a
-player who wants to feed the case to an AI, or to keep. Anyone who can open Mysteries can export.
+threads it sits in, then the threads themselves (the file's `mysteries`) with their questions and theories:
+something to hand to a player who wants to feed the case to an AI, or to keep. Anyone who can open Clue Board can
+export.
 
 The record is kept on the party's Group actor itself, out of sight: no journal, no folder, nothing in a directory
 or on a sheet. The players write their reads from their own clients (they own the party, as Party Stash needs),
 so a read is marked with no GM online. A world with several parties keeps one record per party; with none, there
 is nowhere to collect to.
 
-Phase 2: the board (cards, strings, leads, mysteries the players name, a timeline); the export of the session's documents found. There are no GM secrets in Mysteries, in any phase.
+Phase 2: the board (cards, strings, leads, threads the players name, a timeline); the export of the session's documents found. There are no GM secrets in Clue Board, in any phase.
 
 ## Installation
 
@@ -96,7 +97,7 @@ scripts/
   common.js                    the id, the logger, the strings
   clue-item.js                 the Clue's data model, its sheet, its icon
   store.js                     the party's record on its Group actor: the entry's and the thread's schema, the writes
-  mysteries.js                 collecting, the read marks, the threads, the Mysteries window
+  mysteries.js                 collecting, the read marks, the threads, the Clue Board window
   reader.js                    the Reader window
   decide/clue.js               the decisions that need no Foundry (tested)
   kit/                         the Open Roll 5e kit: elect.js, receipt.js, log.js, the same

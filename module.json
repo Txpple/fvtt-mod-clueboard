@@ -1,7 +1,7 @@
 {
   "id": "fvtt-mod-clueboard",
   "title": "Open Roll 5e: Clue Board",
-  "description": "The party's Mysteries, built from the Clues the DM collects for them: a Clue is an item type of its own, never carried, and a player's opening of it in Mysteries marks the read.",
+  "description": "The party's Clue Board, built from the Clues the DM collects for them: a Clue is an item type of its own, never carried, and a player's opening of it on the board marks the read.",
   "version": "1.2.1",
   "authors": [
     {

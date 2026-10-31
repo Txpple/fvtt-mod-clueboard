@@ -170,7 +170,7 @@ Hooks.on("renderSidebar", app => {
     if (journal) journal.after(li);
     else menu.lastElementChild?.before(li);
   } catch (err) {
-    log.error("adding the Mysteries button failed", err);
+    log.error("adding the Clue Board button failed", err);
   }
 });
 
