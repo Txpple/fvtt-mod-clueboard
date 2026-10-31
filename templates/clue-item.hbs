@@ -35,11 +35,11 @@
             <i class="fa-solid fa-check" inert></i>
             {{ localize "fvtt-mod-clueboard.sheetFields.collectedBy" group=groupName }}
             <span class="clueboard-chips">{{#each readers}}<span class="clueboard-chip">{{ this }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}</span>
-            <button type="button" class="clueboard-clue-uncollect" data-action="uncollect" data-group="{{ groupId }}">{{ localize "fvtt-mod-clueboard.sheetFields.takeBack" }}</button>
+            <button type="button" class="clueboard-btn clueboard-clue-uncollect" data-action="uncollect" data-group="{{ groupId }}">{{ localize "fvtt-mod-clueboard.sheetFields.takeBack" }}</button>
         </span>
         {{/each}}
         {{#each parties}}
-        <button type="button" class="clueboard-clue-collect" data-action="collect" data-group="{{ id }}"><i class="fa-solid fa-users" inert></i> {{ localize "fvtt-mod-clueboard.sheetFields.collectFor" group=name }}</button>
+        <button type="button" class="clueboard-btn pri clueboard-clue-collect" data-action="collect" data-group="{{ id }}"><i class="fa-solid fa-users" inert></i> {{ localize "fvtt-mod-clueboard.sheetFields.collectFor" group=name }}</button>
         {{/each}}
         {{#unless holders.length}}{{#unless parties.length}}<span class="clueboard-clue-hint">{{ localize "fvtt-mod-clueboard.collect.noParty" }}</span>{{/unless}}{{/unless}}
     {{else}}

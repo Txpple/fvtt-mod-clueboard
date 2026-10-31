@@ -432,7 +432,7 @@ try {
         win.showTab(group.id, thread.id);
         await new Promise(r => setTimeout(r, 500));
         const tabs = [...win.element.querySelectorAll(".clueboard-tab[data-tab]")].map(b => b.dataset.tab);
-        const head = win.element.querySelector(".clueboard-thread-head h4")?.textContent?.trim() ?? null;
+        const head = win.element.querySelector(".clueboard-section-head h2")?.textContent?.trim() ?? null;
         const cardsBefore = [...win.element.querySelectorAll(".clueboard-card[data-id]")].map(c => c.dataset.id);
         await api.movePin(group, thread.id, other.id, clueId);
         await new Promise(r => setTimeout(r, 500));

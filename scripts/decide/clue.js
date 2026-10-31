@@ -11,6 +11,20 @@ export const CLUE_TYPE = "fvtt-mod-clueboard.clue";
 /** The kinds a Clue can be: what the party found, read or heard. More are one line each. */
 export const KINDS = ["document", "object", "statement", "location", "body", "rumour", "vision"];
 
+/** A new Clue's icon (dnd5e's default artwork for the type). */
+export const CLUE_ICON = "icons/sundries/documents/document-sealed-red-tan.webp";
+
+/** The icons no one chose: the type's own and Foundry's fallbacks. A card shows its words instead. */
+const STOCK_ICONS = new Set([CLUE_ICON, "icons/svg/item-bag.svg", "icons/svg/mystery-man.svg"]);
+
+/**
+ * The picture a card shows: the Clue's image, or null when it is only a stock icon.
+ * @param {string | null | undefined} img
+ */
+export function pictureOf(img) {
+  return img && !STOCK_ICONS.has(img) ? img : null;
+}
+
 /**
  * A Clue is an item of the module's own type. Nothing else is one.
  * @param {{ type?: string } | null | undefined} item

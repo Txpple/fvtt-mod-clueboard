@@ -6,7 +6,7 @@
  */
 
 import { log, MODULE_ID, t } from "./common.js";
-import { KINDS } from "./decide/clue.js";
+import { CLUE_ICON, KINDS } from "./decide/clue.js";
 import { collect, holdersOf, partiesForCollect, uncollect } from "./mysteries.js";
 
 const { fields } = foundry.data;
@@ -90,6 +90,6 @@ export function registerClueItem(type) {
   });
   // dnd5e's Create Item dialog and a new Clue take their icon from this table.
   const artwork = CONFIG.DND5E?.defaultArtwork?.Item;
-  if (artwork) artwork[type] = "icons/sundries/documents/document-sealed-red-tan.webp";
+  if (artwork) artwork[type] = CLUE_ICON;
   else log.warn("CONFIG.DND5E.defaultArtwork not found: a new Clue takes Foundry's default icon.");
 }

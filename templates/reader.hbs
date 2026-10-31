@@ -3,45 +3,41 @@
 <p class="clueboard-empty">{{ localize "fvtt-mod-clueboard.read.entryGone" }}</p>
 {{else}}
 <div class="clueboard-doc">
+    <h2 class="clueboard-doc-title" dir="auto">{{ name }}</h2>
     {{#if img}}
-    <img class="clueboard-doc-image" src="{{ img }}" alt="{{ name }}">
+    <figure class="clueboard-doc-figure"><img class="clueboard-doc-image" src="{{ img }}" alt="{{ name }}"></figure>
     {{/if}}
-    <h2 class="clueboard-doc-title">{{ name }}</h2>
     <div class="clueboard-doc-text">{{{ html }}}</div>
     {{#if revision}}
     <p class="clueboard-doc-revision">{{ revision }}</p>
     {{/if}}
-</div>
 
-<div class="clueboard-stamp">
-    <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.kind" }}</span>
-        <span class="clueboard-stamp-value"><span>{{ stamp.kind }}</span></span>
-    </div>
-    <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.foundIn" }}</span>
-        <span class="clueboard-stamp-value">
+    <div class="clueboard-stamp">
+        <div class="clueboard-field">
+            <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.kind" }}</span>
+            <span>{{ stamp.kind }}</span>
+        </div>
+        <div class="clueboard-field">
+            <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.foundIn" }}</span>
             {{#if stamp.foundAt}}<span>{{ stamp.foundAt }}</span>{{/if}}
-            <small>{{ stamp.foundIn }}{{#if stamp.calendarDate}} · {{ stamp.calendarDate }}{{/if}}{{#if stamp.realDate}} · {{ stamp.realDate }}{{/if}}</small>
-        </span>
-    </div>
-    <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.readBy" }}</span>
-        <span class="clueboard-stamp-value clueboard-chips">
-            {{#each stamp.readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
-        </span>
-    </div>
-    <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.mysteries" }}</span>
-        <span class="clueboard-stamp-value clueboard-chips">
-            {{#each stamp.threads}}<span class="clueboard-chip clueboard-thread-{{ colour }}{{#if answered}} answered{{/if}}"><span class="clueboard-dot"></span>{{ name }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noMysteries" }}</span>{{/each}}
-        </span>
-    </div>
-    <div class="clueboard-stamp-cell">
-        <span class="clueboard-stamp-key">{{ localize "fvtt-mod-clueboard.stamp.notesLabel" }}</span>
-        <span class="clueboard-stamp-value">
-            {{#if stamp.notes}}<span class="clueboard-notes">{{ stamp.notes }}</span>{{else}}<span class="clueboard-chip none">{{ localize "fvtt-mod-clueboard.stamp.noNote" }}</span>{{/if}}
-        </span>
+            <span class="clueboard-note">{{ stamp.foundIn }}{{#if stamp.calendarDate}} · {{ stamp.calendarDate }}{{/if}}{{#if stamp.realDate}} · {{ stamp.realDate }}{{/if}}</span>
+        </div>
+        <div class="clueboard-field">
+            <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.readBy" }}</span>
+            <span class="clueboard-chips">
+                {{#each stamp.readers}}<span class="clueboard-chip{{#if me}} me{{/if}}">{{ name }}</span>{{else}}<span class="clueboard-note">{{ localize "fvtt-mod-clueboard.mysteries.nobody" }}</span>{{/each}}
+            </span>
+        </div>
+        <div class="clueboard-field">
+            <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.mysteries" }}</span>
+            <span class="clueboard-chips">
+                {{#each stamp.threads}}<span class="clueboard-chip clueboard-thread-{{ colour }}{{#if answered}} answered{{/if}}"><span class="clueboard-dot"></span>{{ name }}</span>{{else}}<span class="clueboard-note">{{ localize "fvtt-mod-clueboard.stamp.noMysteries" }}</span>{{/each}}
+            </span>
+        </div>
+        <div class="clueboard-field">
+            <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.notesLabel" }}</span>
+            {{#if stamp.notes}}<span class="clueboard-notes">{{ stamp.notes }}</span>{{else}}<span class="clueboard-note">{{ localize "fvtt-mod-clueboard.stamp.noNote" }}</span>{{/if}}
+        </div>
     </div>
 </div>
 
@@ -50,10 +46,10 @@
         {{#if gmSilent}}{{ localize "fvtt-mod-clueboard.read.gmRead" }}{{/if}}
     </span>
     {{#if canNote}}
-    <button type="button" data-action="note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.read.note" }}</button>
+    <button type="button" class="clueboard-btn" data-action="note"><i class="fa-solid fa-pen" inert></i> {{ localize "fvtt-mod-clueboard.read.note" }}</button>
     {{/if}}
     {{#if canOpenItem}}
-    <button type="button" data-action="openItem"><i class="fa-solid fa-arrow-up-right-from-square" inert></i> {{ localize "fvtt-mod-clueboard.read.openItem" }}</button>
+    <button type="button" class="clueboard-btn" data-action="openItem"><i class="fa-solid fa-arrow-up-right-from-square" inert></i> {{ localize "fvtt-mod-clueboard.read.openItem" }}</button>
     {{/if}}
 </footer>
 {{/if}}

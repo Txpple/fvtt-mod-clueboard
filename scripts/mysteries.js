@@ -14,6 +14,7 @@ import {
   isClue,
   nextColour,
   partyFor,
+  pictureOf,
   pinnedTo,
   readerList,
   reorder,
@@ -399,6 +400,17 @@ const plainText = html => {
 
 const excerpt = html => plainText(html).slice(0, 180);
 
+/** Each kind's icon: on a card's badge, and on its words when it has no picture. */
+const KIND_ICONS = {
+  document: "fa-file-lines",
+  object: "fa-key",
+  statement: "fa-comment-dots",
+  location: "fa-location-dot",
+  body: "fa-skull",
+  rumour: "fa-ear-listen",
+  vision: "fa-eye"
+};
+
 /* -------------------------------------------------- */
 /*  The export                                        */
 /* -------------------------------------------------- */
@@ -479,17 +491,20 @@ export function sectionFor(group, query = "", tab = "all") {
   const shown = active === "thread" ? pinnedTo(all, thread.id) : active === "unsorted" ? unsorted(all) : all;
   const ordered = active === "thread" ? shown.filter(e => sortAndFilter([e], query).length) : sortAndFilter(shown, query);
   const byId = Object.fromEntries(threads.map(th => [th.id, th]));
-  const entries = ordered.map(e => ({
+  const entries = ordered.map(e => {
+    const kind = e.kind ?? e.snapshot.kind ?? "document";
+    const readers = readerList(e.readers).map(r => ({ name: r.actorName, me: me ? r.actorId === me.id : false }));
+    return {
     group: group.id,
     id: e.id,
     name: e.snapshot.name,
-    img: e.snapshot.img,
-    kind: t(`kinds.${e.kind ?? e.snapshot.kind ?? "document"}`),
+    picture: pictureOf(e.snapshot.img),
+    kind: t(`kinds.${kind}`),
+    kindIcon: KIND_ICONS[kind] ?? KIND_ICONS.document,
     excerpt: excerpt(e.snapshot.html),
-    foundAt: e.snapshot.foundAt,
-    foundIn: e.foundIn.sceneName,
-    calendarDate: e.foundIn.calendarDate,
-    readers: readerList(e.readers).map(r => ({ name: r.actorName, me: me ? r.actorId === me.id : false })),
+    where: [e.snapshot.foundAt, e.foundIn.sceneName, e.foundIn.calendarDate].filter(Boolean).join(" · "),
+    readers,
+    readText: readers.length ? t("mysteries.readBy", { names: readers.map(r => r.name).join(", ") }) : t("mysteries.readByNone"),
     unread: me ? !e.readers?.[me.id] : !Object.keys(e.readers ?? {}).length,
     notes: e.notes,
     threads: Object.keys(e.threads ?? {})
@@ -497,7 +512,8 @@ export function sectionFor(group, query = "", tab = "all") {
       .filter(Boolean)
       .map(th => ({ id: th.id, name: th.name, colour: th.colour })),
     search: `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase()
-  }));
+    };
+  });
   const unread = unreadCount(all, me?.id ?? null);
   const views = [
     { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all" },
@@ -518,6 +534,7 @@ export function sectionFor(group, query = "", tab = "all") {
     views,
     mysteries,
     active,
+    heading: thread ? thread.name : (views.find(v => v.active)?.name ?? ""),
     thread: thread
       ? { ...thread, answered: thread.status === "answered", count: pinnedTo(all, thread.id).length }
       : null,
@@ -543,7 +560,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     id: "clueboard-mysteries",
     classes: ["clueboard-mysteries"],
     window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-user-secret", resizable: true },
-    position: { width: 960, height: 760 },
+    position: { width: 1100, height: 800 },
     actions: {
       open: MysteriesWindow.#onOpen,
       collect: MysteriesWindow.#onCollect,

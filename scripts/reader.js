@@ -6,7 +6,7 @@
  */
 
 import { log, MODULE_ID, t } from "./common.js";
-import { readerList } from "./decide/clue.js";
+import { pictureOf, readerList } from "./decide/clue.js";
 import { entryOf, markRead, threadOf } from "./mysteries.js";
 import * as store from "./store.js";
 
@@ -16,8 +16,8 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
   static DEFAULT_OPTIONS = {
     id: "clueboard-reader-{id}",
     classes: ["clueboard-reader"],
-    window: { icon: "fa-solid fa-book-open", resizable: true, contentClasses: ["standard-form"] },
-    position: { width: 560, height: "auto" },
+    window: { icon: "fa-solid fa-book-open", resizable: true },
+    position: { width: 640, height: "auto" },
     actions: {
       note: Reader.#onNote,
       openItem: Reader.#onOpenItem
@@ -60,7 +60,7 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
     const TextEditor = foundry.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
     const source = entry.source.uuid ? fromUuidSync(entry.source.uuid) : null;
     context.name = entry.snapshot.name;
-    context.img = entry.snapshot.img;
+    context.img = pictureOf(entry.snapshot.img);
     context.html = await TextEditor.enrichHTML(entry.snapshot.html ?? "", { secrets: game.user.isGM, relativeTo: source ?? this.group });
     context.revision = entry.snapshot.revision > 1 ? t("read.revision", { n: entry.snapshot.revision }) : "";
     context.stamp = {

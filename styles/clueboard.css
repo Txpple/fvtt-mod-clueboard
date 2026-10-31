@@ -1,6 +1,7 @@
 /*
- * Clue Board: the Reader, the Mysteries window and the Clue's sheet. Scoped to the module's own
- * classes; no bare element or dnd5e class selector, so the system's sheets are untouched.
+ * Clue Board: the Mysteries window, the Reader and the Clue's sheet. Scoped to the module's own
+ * classes; no bare element or dnd5e class selector, so the system's sheets are untouched. The
+ * look is Scroll Case's (its palette, bar, rail, cards and buttons), so the two read as one family.
  */
 
 /* The `ready` hook appends one of these, reads its computed flex-direction and removes it: the
@@ -10,111 +11,108 @@
   flex-direction: column;
 }
 
+.clueboard-mysteries,
+.clueboard-reader,
+.clueboard-clue-sheet {
+  --cb-ground: #1e1b18;
+  --cb-panel: #26221e;
+  --cb-card: #2b2723;
+  --cb-line: #3d3a35;
+  --cb-ink: #ece6d8;
+  --cb-ink-2: #c9c3b6;
+  --cb-ink-3: #a39d90;
+  --cb-gold: #c9a24a;
+  --cb-gold-ink: #1b1813;
+  --cb-green: #62ad72;
+  --cb-red: #e7a89c;
+}
+
+.clueboard-mysteries .window-content,
+.clueboard-reader .window-content,
+.clueboard-clue-sheet .window-content {
+  padding: 0;
+  background: var(--cb-ground);
+  color: var(--cb-ink);
+  overflow: hidden;
+}
+
 /* -------------------------------------------------- */
-/*  The Reader                                        */
+/*  The shared pieces: the key, the buttons, the chips */
 /* -------------------------------------------------- */
 
-.clueboard-reader .window-content {
-  padding: 0.75rem;
-}
-
-.clueboard-reader-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.clueboard-doc {
-  padding: 1.5rem 1.75rem;
-  background:
-    radial-gradient(ellipse at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%),
-    linear-gradient(#e9dcc0, #d9c9a4);
-  color: #2b2217;
-  border-radius: 2px;
-  box-shadow: inset 0 0 40px rgba(90, 60, 20, 0.25);
-  min-height: 8rem;
-  max-height: 60vh;
-  overflow: auto;
-  font-size: var(--font-size-14, 0.875rem);
-  line-height: 1.5;
-}
-
-.clueboard-doc .clueboard-doc-image {
-  float: right;
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  margin: 0 0 0.5rem 1rem;
-  border: 1px solid #a08a5c;
-  border-radius: 2px;
-}
-
-.clueboard-doc .clueboard-doc-title {
-  margin: 0 0 0.5rem;
-  font-size: var(--font-size-18, 1.125rem);
-  border: none;
-  color: #2b2217;
-}
-
-.clueboard-doc .clueboard-doc-text p {
-  margin: 0 0 0.6rem;
-}
-
-.clueboard-doc .clueboard-doc-revision {
-  margin: 0.75rem 0 0;
-  padding-top: 0.5rem;
-  border-top: 1px dashed #a08a5c;
-  font-size: var(--font-size-12, 0.75rem);
-  color: #5a4a2e;
-}
-
-.clueboard-stamp {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: var(--font-size-12, 0.75rem);
-}
-
-.clueboard-stamp-cell {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.4rem 0.6rem;
-  background: rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--color-border-light-2, #444);
-  border-radius: 4px;
-}
-
-.clueboard-stamp-value {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-}
-
-.clueboard-stamp-value.clueboard-chips {
-  flex-direction: row;
-  flex-wrap: wrap;
-}
-
-.clueboard-stamp-cell small {
-  opacity: 0.7;
-}
-
-.clueboard-stamp-key,
-.clueboard-card-meta b {
-  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
-  font-size: var(--font-size-10, 0.625rem);
-  letter-spacing: 0.1em;
+.clueboard-key {
+  font-family: var(--font-sans-condensed, "Roboto Condensed", sans-serif);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  opacity: 0.7;
+  color: var(--cb-ink-3);
 }
 
-.clueboard-stamp-cell .clueboard-stamp-key {
+.clueboard-btn,
+.clueboard-tog,
+.clueboard-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
   flex: none;
-  width: 4.5rem;
+  width: auto;
+  height: auto;
+  min-height: 1.85rem;
+  margin: 0;
+  padding: 0.2rem 0.65rem;
+  background: #2f3238;
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink);
+  font-family: inherit;
+  font-size: var(--font-size-12, 0.75rem);
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.clueboard-btn:hover,
+.clueboard-tog:hover,
+.clueboard-icon:hover {
+  border-color: #8a7a55;
+  color: var(--cb-ink);
+}
+
+.clueboard-btn.pri {
+  background: var(--cb-gold);
+  border-color: var(--cb-gold);
+  color: var(--cb-gold-ink);
+  font-weight: 700;
+}
+
+.clueboard-btn.pri:hover {
+  background: #e0b95c;
+}
+
+.clueboard-tog {
+  border-radius: 1rem;
+  background: var(--cb-panel);
+  color: var(--cb-ink-2);
+}
+
+.clueboard-tog.on {
+  border-color: var(--cb-green);
+  background: rgba(98, 173, 114, 0.18);
+  color: var(--cb-ink);
+}
+
+.clueboard-tog.on i {
+  color: var(--cb-green);
+}
+
+.clueboard-icon {
+  min-height: 1.6rem;
+  min-width: 1.85rem;
+  padding: 0.1rem 0.45rem;
+  background: var(--cb-panel);
+  color: var(--cb-ink-2);
 }
 
 .clueboard-chips {
@@ -125,548 +123,38 @@
 }
 
 .clueboard-chip {
-  display: inline-block;
-  padding: 0 0.5rem;
-  border: 1px solid var(--color-border-light-2, #555);
-  border-radius: 10px;
-  font-size: var(--font-size-11, 0.6875rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.05rem 0.55rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 1rem;
+  color: var(--cb-ink-2);
+  font-size: var(--font-size-12, 0.75rem);
   line-height: 1.4;
 }
 
 .clueboard-chip.me {
-  border-color: var(--clueboard-mark, #c9a24a);
+  border-color: var(--cb-gold);
+  color: var(--cb-ink);
 }
 
-.clueboard-chip.note {
-  font-style: italic;
-  opacity: 0.85;
+.clueboard-chip.answered {
+  text-decoration: line-through;
 }
 
-.clueboard-left {
-  color: var(--color-level-error, #c66);
-}
-
-.clueboard-notes {
-  font-style: italic;
-  white-space: pre-wrap;
-}
-
-.clueboard-reader-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.clueboard-reader-footer .clueboard-reader-hint {
-  flex: 1;
-  font-size: var(--font-size-12, 0.75rem);
-  opacity: 0.7;
-}
-
-.clueboard-reader-footer button {
-  flex: none;
-  width: auto;
-}
-
-/* -------------------------------------------------- */
-/*  The Mysteries window                              */
-/* -------------------------------------------------- */
-
-.clueboard-mysteries .window-content {
-  padding: 0;
-  overflow: hidden;
-}
-
-.clueboard-mysteries-body {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
-.clueboard-window-header {
-  flex: none;
-  padding: 0.75rem 0.75rem 0.5rem;
-}
-
-.clueboard-window-header search input {
-  width: 100%;
-}
-
-/* The body below the search: one section per party, each a rail beside its cards. */
-.clueboard-entries {
-  flex: 1;
-  min-height: 0;
-  padding: 0 0.75rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+.clueboard-note {
+  font-size: 0.72rem;
+  color: var(--cb-ink-3);
 }
 
 .clueboard-empty {
-  padding: 1rem 0.5rem;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 2.5rem 1rem;
   text-align: center;
-  opacity: 0.7;
-  font-size: var(--font-size-12, 0.75rem);
-}
-
-.clueboard-section {
-  flex: 1;
-  min-height: 18rem;
-  display: flex;
-  gap: 0.75rem;
-}
-
-/* The cards side: the count, the open mystery's head, the cards; it scrolls on its own. */
-.clueboard-main {
-  flex: 1;
-  min-width: 0;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-inline-end: 0.25rem;
-}
-
-/* The cards' own grid: every card the height of the tallest. */
-.clueboard-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 0.5rem;
-}
-
-.clueboard-section-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: var(--font-size-11, 0.6875rem);
-  opacity: 0.8;
-}
-
-.clueboard-section-head h4 {
-  flex: 1;
-  margin: 0;
-  border: none;
-  font-size: var(--font-size-13, 0.8125rem);
-}
-
-.clueboard-section-head .clueboard-count {
-  margin-inline-start: auto;
-}
-
-/* Every card the height of the tallest in the grid (grid-auto-rows), its content kept to the top. */
-.clueboard-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.4rem;
-  border: 1px solid var(--color-border-light-2, #555);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-}
-
-.clueboard-card[hidden] {
-  display: none;
-}
-
-.clueboard-card:hover,
-.clueboard-card:focus-visible {
-  border-color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-card-image {
-  flex: none;
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
-  border-radius: 3px;
-  border: 1px solid var(--color-border-light-2, #555);
-}
-
-.clueboard-card-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.clueboard-card-title {
-  margin: 0;
-  border: none;
-  font-size: var(--font-size-13, 0.8125rem);
-  font-weight: 600;
-}
-
-.clueboard-card-excerpt {
-  margin: 0;
-  font-size: var(--font-size-12, 0.75rem);
-  line-height: 1.35;
-  opacity: 0.85;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.clueboard-card-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  font-size: var(--font-size-11, 0.6875rem);
-  opacity: 0.85;
-}
-
-/* -------------------------------------------------- */
-/*  The GM strip and the drop target                  */
-/* -------------------------------------------------- */
-
-.clueboard-gm-strip {
-  flex: none;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  padding: 0.4rem 0.75rem;
-  border-top: 1px solid var(--color-border-light-2, #444);
-  border-bottom: 1px solid var(--color-border-light-2, #444);
-  background: rgba(201, 162, 74, 0.08);
-  font-size: var(--font-size-12, 0.75rem);
-}
-
-.clueboard-strip-key {
-  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
-  font-size: var(--font-size-10, 0.625rem);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-strip-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.1rem 0.2rem 0.1rem 0.4rem;
-  border: 1px solid var(--color-border-light-2, #555);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.2);
-}
-
-.clueboard-strip-item img {
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
-  border-radius: 2px;
-  border: none;
-}
-
-.clueboard-strip-name {
-  cursor: pointer;
-}
-
-.clueboard-strip-name:hover {
-  text-decoration: underline;
-}
-
-.clueboard-gm-strip button.clueboard-strip-collect {
-  flex: none;
-  width: auto;
-  padding: 0.1rem 0.5rem;
-  font-size: var(--font-size-11, 0.6875rem);
-  border-color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-strip-none,
-.clueboard-strip-hint {
-  opacity: 0.6;
-  font-style: italic;
-}
-
-.clueboard-strip-hint {
-  margin-inline-start: auto;
-}
-
-.clueboard-drop-ok .clueboard-mysteries-body {
-  outline: 2px dashed var(--clueboard-mark, #c9a24a);
-  outline-offset: -6px;
-}
-
-.clueboard-card {
-  position: relative;
-}
-
-.clueboard-card.unread {
-  border-inline-start: 3px solid var(--clueboard-mark, #c9a24a);
-}
-
-/* A player's unread card: the whole edge glows gold and breathes, slow and soft, never a flash;
-   the inside stays as it is. The DM's "unread by anyone" keeps the quiet bar above, since a
-   board of ten would all be breathing. */
-.clueboard-player .clueboard-card.unread {
-  border-color: var(--clueboard-mark, #c9a24a);
-  animation: clueboard-breathe 3.6s ease-in-out infinite;
-}
-
-.clueboard-player .clueboard-card.unread:hover,
-.clueboard-player .clueboard-card.unread:focus-visible {
-  animation-play-state: paused;
-}
-
-@keyframes clueboard-breathe {
-  0%,
-  100% {
-    border-color: rgba(201, 162, 74, 0.45);
-    box-shadow: 0 0 0 0 rgba(201, 162, 74, 0);
-  }
-  50% {
-    border-color: rgba(201, 162, 74, 1);
-    box-shadow:
-      0 0 0 1px rgba(201, 162, 74, 0.5),
-      0 0 12px rgba(201, 162, 74, 0.45);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .clueboard-player .clueboard-card.unread {
-    animation: none;
-  }
-}
-
-.clueboard-card .clueboard-card-remove {
-  position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
-  opacity: 0.5;
-}
-
-.clueboard-card .clueboard-card-remove:hover {
-  opacity: 1;
-  color: var(--color-level-error, #c66);
-}
-
-/* -------------------------------------------------- */
-/*  The Clue's sheet                                  */
-/* -------------------------------------------------- */
-
-.clueboard-clue-sheet .window-content {
-  padding: 0.75rem;
-}
-
-.clueboard-clue-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.clueboard-clue-header {
-  display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
-}
-
-.clueboard-clue-image {
-  flex: none;
-  width: 72px;
-  height: 72px;
-  object-fit: cover;
-  border-radius: 4px;
-  border: 1px solid var(--color-border-light-2, #555);
-  cursor: pointer;
-}
-
-.clueboard-clue-names {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.clueboard-clue-names input[name="name"] {
-  font-size: var(--font-size-18, 1.125rem);
-}
-
-.clueboard-clue-type {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
-  font-size: var(--font-size-11, 0.6875rem);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-clue-type select {
-  width: auto;
-}
-
-.clueboard-clue-text prose-mirror {
-  min-height: 10rem;
-}
-
-.clueboard-doc-plain {
-  padding: 1rem 1.25rem;
-}
-
-.clueboard-clue-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--color-border-light-2, #444);
-  font-size: var(--font-size-12, 0.75rem);
-}
-
-.clueboard-clue-holder {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.clueboard-clue-holder i {
-  color: var(--color-level-success, #6a6);
-}
-
-.clueboard-clue-footer button {
-  flex: none;
-  width: auto;
-}
-
-.clueboard-clue-footer .clueboard-clue-collect {
-  border-color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-clue-hint {
-  opacity: 0.7;
-  font-style: italic;
-}
-
-/* -------------------------------------------------- */
-/*  The rail: the clue views and the mysteries        */
-/* -------------------------------------------------- */
-
-.clueboard-rail {
-  flex: none;
-  width: 14rem;
-  min-height: 0;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding-inline-end: 0.6rem;
-  border-inline-end: 1px solid var(--color-border-light-2, #444);
-}
-
-.clueboard-rail .clueboard-rail-party {
-  margin: 0 0 0.25rem;
-  border: none;
-  font-size: var(--font-size-13, 0.8125rem);
-}
-
-.clueboard-rail .clueboard-rail-key {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0.6rem 0 0.15rem;
-  font-family: var(--dnd5e-font-roboto-condensed, var(--font-primary));
-  font-size: var(--font-size-10, 0.625rem);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--clueboard-mark, #c9a24a);
-}
-
-.clueboard-rail .clueboard-rail-key:first-of-type {
-  margin-top: 0;
-}
-
-.clueboard-rail .clueboard-rail-row {
-  flex: none;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  font-size: var(--font-size-13, 0.8125rem);
-  line-height: 1.3;
-  text-align: start;
-  opacity: 0.8;
-}
-
-.clueboard-rail .clueboard-rail-row:hover,
-.clueboard-rail .clueboard-rail-row.drop-ok {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.clueboard-rail .clueboard-rail-row.drop-ok {
-  outline: 2px dashed var(--clueboard-thread, #c9a24a);
-  outline-offset: -2px;
-}
-
-.clueboard-rail .clueboard-rail-row.active {
-  opacity: 1;
-  font-weight: 600;
-  border-color: var(--clueboard-thread, #c9a24a);
-  background: color-mix(in srgb, var(--clueboard-thread, #c9a24a) 22%, transparent);
-}
-
-.clueboard-rail .clueboard-rail-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.clueboard-rail .clueboard-rail-row.answered .clueboard-rail-name {
-  opacity: 0.7;
-}
-
-/* Solved or unsolved, at the row's end: a green check, or a hollow circle. */
-.clueboard-rail .clueboard-rail-status {
-  flex: none;
-  font-size: var(--font-size-11, 0.6875rem);
-  opacity: 0.5;
-}
-
-.clueboard-rail .clueboard-rail-status.solved {
-  opacity: 1;
-  color: var(--color-level-success, #5aa36a);
-}
-
-.clueboard-rail .clueboard-tab-count {
-  flex: none;
-  font-size: var(--font-size-11, 0.6875rem);
-  opacity: 0.6;
-}
-
-.clueboard-rail .clueboard-rail-none {
-  padding: 0.2rem 0.5rem;
-  font-style: italic;
-  opacity: 0.6;
-  font-size: var(--font-size-12, 0.75rem);
-}
-
-.clueboard-rail .clueboard-tab-new {
-  flex: none;
-  width: auto;
-  align-self: flex-start;
-  margin-top: 0.4rem;
-  padding: 0.2rem 0.7rem;
-  border: 1px dashed var(--clueboard-mark, #c9a24a);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--clueboard-mark, #c9a24a);
-  font-size: var(--font-size-12, 0.75rem);
+  color: var(--cb-ink-3);
 }
 
 .clueboard-dot {
@@ -704,124 +192,917 @@
   --clueboard-thread: #d06f9a;
 }
 
-.clueboard-thread-head {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.25rem 0.75rem;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid var(--color-border-light-2, #444);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.15);
-  border-inline-start: 3px solid var(--clueboard-thread, #c9a24a);
+/* -------------------------------------------------- */
+/*  The Mysteries window: the bar, the GM strip        */
+/* -------------------------------------------------- */
+
+.clueboard-mysteries-body {
+  container: clueboard / inline-size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  font-size: var(--font-size-13, 0.8125rem);
 }
 
-.clueboard-thread-head h4 {
-  margin: 0;
-  border: none;
-  font-size: var(--font-size-14, 0.875rem);
+.clueboard-bar {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--cb-line);
 }
 
-.clueboard-thread-head .clueboard-thread-question {
-  grid-column: 1;
-  font-style: italic;
-  opacity: 0.85;
+.clueboard-search {
+  flex: 1 1 18rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.1rem;
+  padding: 0 0.6rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink-3);
+}
+
+.clueboard-search:focus-within {
+  border-color: var(--cb-gold);
+}
+
+.clueboard-search input {
+  flex: 1;
+  min-width: 0;
+  height: auto;
+  padding: 0.4rem 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  color: var(--cb-ink);
+  font-size: var(--font-size-13, 0.8125rem);
+}
+
+.clueboard-search input::placeholder {
+  color: var(--cb-ink-3);
+}
+
+/* The GM's strip of uncollected Clues, drawn as Scroll Case draws its reveal strip. */
+.clueboard-gm-strip {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0.5rem 0.75rem 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid #6b5a33;
+  border-radius: 4px;
+  background: rgba(201, 162, 74, 0.12);
   font-size: var(--font-size-12, 0.75rem);
 }
 
-.clueboard-thread-head .clueboard-thread-tools {
-  grid-column: 2;
-  grid-row: 1 / span 2;
+.clueboard-gm-strip .clueboard-key {
+  color: var(--cb-gold);
+}
+
+.clueboard-strip-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.2rem 0.15rem 0.3rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+}
+
+.clueboard-strip-item img {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  border: none;
+  border-radius: 2px;
+}
+
+.clueboard-strip-name {
+  cursor: pointer;
+}
+
+.clueboard-strip-name:hover {
+  text-decoration: underline;
+}
+
+.clueboard-gm-strip .clueboard-strip-collect {
+  min-height: 1.45rem;
+  padding: 0 0.5rem;
+  font-size: 0.7rem;
+}
+
+.clueboard-strip-none,
+.clueboard-strip-hint {
+  color: var(--cb-ink-3);
+  font-style: italic;
+}
+
+.clueboard-strip-hint {
+  margin-inline-start: auto;
+}
+
+.clueboard-drop-ok .clueboard-mysteries-body {
+  outline: 2px dashed var(--cb-gold);
+  outline-offset: -6px;
+}
+
+/* -------------------------------------------------- */
+/*  The body: one section per party, a rail and cards  */
+/* -------------------------------------------------- */
+
+.clueboard-entries {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.clueboard-section {
+  flex: 1;
+  min-height: 18rem;
+  display: flex;
+}
+
+.clueboard-section + .clueboard-section {
+  border-top: 1px solid var(--cb-line);
+}
+
+.clueboard-rail {
+  flex: 0 0 15rem;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0.5rem;
+  border-right: 1px solid var(--cb-line);
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.clueboard-rail .clueboard-rail-party {
+  margin: 0.1rem 0.35rem 0.2rem;
+  padding: 0;
+  border: none;
+  font-size: var(--font-size-13, 0.8125rem);
+  font-weight: 600;
+  color: var(--cb-ink);
+}
+
+.clueboard-rail > .clueboard-key {
+  margin: 0.6rem 0 0.2rem 0.35rem;
+}
+
+.clueboard-rail > .clueboard-key:first-child,
+.clueboard-rail > .clueboard-rail-party + .clueboard-key {
+  margin-top: 0.1rem;
+}
+
+.clueboard-rail .clueboard-rail-row {
+  flex: none;
   display: flex;
   align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  height: auto;
+  min-height: 1.9rem;
+  margin: 0;
+  padding: 0.3rem 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--cb-ink-2);
+  font-family: inherit;
+  font-size: var(--font-size-13, 0.8125rem);
+  text-align: left;
+  line-height: 1.25;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.clueboard-rail .clueboard-rail-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--cb-ink);
+}
+
+/* Selected is gold for every row; a mystery's own colour stays in its dot. */
+.clueboard-rail .clueboard-rail-row.active {
+  background: rgba(201, 162, 74, 0.16);
+  border-color: var(--cb-gold);
+  color: var(--cb-ink);
+  font-weight: 600;
+}
+
+.clueboard-rail .clueboard-rail-row.drop-ok {
+  outline: 2px dashed var(--cb-gold);
+  outline-offset: -2px;
+  background: rgba(201, 162, 74, 0.12);
+}
+
+.clueboard-rail .clueboard-rail-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clueboard-rail .clueboard-rail-row.answered .clueboard-rail-name {
+  color: var(--cb-ink-3);
+}
+
+.clueboard-rail .clueboard-rail-status {
+  flex: none;
+  font-size: 0.7rem;
+  color: var(--cb-ink-3);
+}
+
+.clueboard-rail .clueboard-rail-status.solved {
+  color: var(--cb-green);
+}
+
+.clueboard-rail .clueboard-tab-count {
+  flex: none;
+  color: var(--cb-ink-3);
+  font-size: 0.7rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.clueboard-rail .clueboard-rail-none {
+  padding: 0.2rem 0.5rem;
+  color: var(--cb-ink-3);
+  font-style: italic;
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.clueboard-rail .clueboard-tab-new {
+  flex: none;
+  width: auto;
+  height: auto;
+  align-self: flex-start;
+  margin: 0.5rem 0 0 0.25rem;
+  padding: 0.3rem 0.8rem;
+  background: transparent;
+  border: 1px dashed var(--cb-gold);
+  border-radius: 1rem;
+  color: var(--cb-gold);
+  font-family: inherit;
+  font-size: var(--font-size-12, 0.75rem);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.clueboard-rail .clueboard-tab-new:hover {
+  background: rgba(201, 162, 74, 0.12);
+}
+
+/* The cards side: the head, the open mystery's question and stand, the cards. */
+.clueboard-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem 0.6rem;
+}
+
+.clueboard-section-head {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2rem;
+}
+
+.clueboard-section-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  font-size: var(--font-size-16, 1rem);
+  font-weight: 600;
+  color: var(--cb-ink);
+}
+
+.clueboard-section-head .clueboard-count {
+  font-size: var(--font-size-12, 0.75rem);
+  color: var(--cb-ink-3);
+}
+
+.clueboard-thread-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.clueboard-section-head .clueboard-export {
+  margin-left: auto;
+}
+
+.clueboard-thread-tools + .clueboard-export {
+  margin-left: 0;
+}
+
+.clueboard-thread-head {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.5rem 0.65rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-left: 3px solid var(--clueboard-thread, #c9a24a);
+  border-radius: 4px;
+}
+
+.clueboard-thread-question {
+  font-style: italic;
+  color: var(--cb-ink-2);
+}
+
+.clueboard-thread-stand {
+  display: flex;
+  flex-direction: column;
   gap: 0.25rem;
 }
 
-.clueboard-thread-head .clueboard-thread-tools button {
-  flex: none;
-  width: auto;
-  font-size: var(--font-size-11, 0.6875rem);
-  padding: 0.1rem 0.5rem;
-}
-
-.clueboard-thread-head .clueboard-thread-status.answered {
-  border-color: var(--color-level-success, #6a6);
-}
-
-.clueboard-thread-head .clueboard-thread-stand {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.clueboard-thread-head .clueboard-thread-stand textarea {
+.clueboard-thread-stand textarea {
   width: 100%;
   min-height: 3.2rem;
+  padding: 0.35rem 0.5rem;
+  background: var(--cb-ground);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink);
   font-family: inherit;
   font-size: var(--font-size-12, 0.75rem);
   resize: vertical;
 }
 
-.clueboard-thread-head .clueboard-thread-stand .clueboard-thread-stand-text {
+.clueboard-thread-stand textarea:focus {
+  border-color: var(--cb-gold);
+  box-shadow: none;
+  outline: none;
+}
+
+.clueboard-thread-stand-text {
   font-size: var(--font-size-12, 0.75rem);
-  white-space: pre-wrap;
   font-style: italic;
-  opacity: 0.9;
+  white-space: pre-wrap;
+  color: var(--cb-ink-2);
 }
 
-.clueboard-card .clueboard-card-threads {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  align-items: center;
+/* -------------------------------------------------- */
+/*  The cards                                          */
+/* -------------------------------------------------- */
+
+.clueboard-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+  grid-auto-rows: max-content;
+  gap: 0.6rem;
+  align-content: start;
+  padding: 2px 4px 4px 2px;
 }
 
-.clueboard-card .clueboard-card-threads .clueboard-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+.clueboard-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--cb-card);
+  border: 1px solid var(--cb-line);
+  border-radius: 5px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.clueboard-card[hidden] {
+  display: none;
+}
+
+.clueboard-card:hover {
+  border-color: #9f9275;
+}
+
+.clueboard-card:focus-visible {
+  outline: 2px solid var(--cb-gold);
+  outline-offset: -2px;
+}
+
+/* A player's unread: a soft glow and the New chip, never the solid gold edge of a picked row. */
+.clueboard-player .clueboard-card.unread {
+  border-color: #7d6a3f;
+  box-shadow: 0 0 14px rgba(201, 162, 74, 0.28);
 }
 
 .clueboard-card.dragging {
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
 .clueboard-card.drop-before {
-  box-shadow: -3px 0 0 0 var(--clueboard-mark, #c9a24a);
+  box-shadow: -3px 0 0 0 var(--cb-gold);
 }
 
-.clueboard-card .clueboard-card-unpin {
+.clueboard-thumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #181513;
+}
+
+.clueboard-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: 0;
+}
+
+.clueboard-excerpt {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 2rem 0.7rem 0;
+  overflow: hidden;
+  background: linear-gradient(#27231f, #1f1c19);
+  color: var(--cb-ink-2);
+  font-size: var(--font-size-12, 0.75rem);
+  line-height: 1.4;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent);
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+
+/* The kind's icon sits top right on the words, as on Scroll Case's text cards. */
+.clueboard-thumb .clueboard-excerpt > i {
   position: absolute;
-  top: 0.25rem;
-  right: 1.6rem;
-  opacity: 0.5;
+  top: 0.45rem;
+  right: 0.55rem;
+  font-size: 1rem;
+  color: var(--cb-ink-3);
 }
 
-.clueboard-player .clueboard-card .clueboard-card-unpin {
-  right: 0.25rem;
+.clueboard-badge,
+.clueboard-new {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: calc(100% - 3.5rem);
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.7rem;
+  background: rgba(12, 11, 10, 0.85);
+  color: var(--cb-ink);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.clueboard-card .clueboard-card-unpin:hover {
-  opacity: 1;
+.clueboard-new {
+  background: var(--cb-gold);
+  color: var(--cb-gold-ink);
+  font-weight: 700;
 }
 
-/* The Reader's rows, after the chip and dot rules they refine, lowest specificity first. */
-.clueboard-stamp .clueboard-chip.answered {
-  text-decoration: line-through;
+/* The mysteries a card is pinned to: their dots, bottom right on the picture. */
+.clueboard-card-threads {
+  position: absolute;
+  right: 0.4rem;
+  bottom: 0.4rem;
+  display: flex;
+  gap: 0.2rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 0.7rem;
+  background: rgba(12, 11, 10, 0.85);
 }
 
-.clueboard-stamp .clueboard-chip .clueboard-dot {
-  margin-inline-end: 0.3rem;
+.clueboard-cb {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.4rem 0.55rem 0.5rem;
 }
 
-.clueboard-section-head .clueboard-export {
+.clueboard-card-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cb-ink);
+  font-weight: 600;
+  font-size: var(--font-size-13, 0.8125rem);
+}
+
+.clueboard-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  color: var(--cb-ink-3);
+  font-size: 0.7rem;
+}
+
+.clueboard-where {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clueboard-has-note {
   flex: none;
+  color: var(--cb-gold);
+}
+
+.clueboard-reads {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.clueboard-reads.none {
   opacity: 0.6;
 }
 
-.clueboard-section-head .clueboard-export:hover {
+/* The card's own buttons, top right on the picture: shown on hover or focus. */
+.clueboard-acts {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  display: flex;
+  gap: 0.2rem;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s,
+    visibility 0.12s;
+}
+
+.clueboard-card:hover .clueboard-acts,
+.clueboard-card:focus-within .clueboard-acts {
   opacity: 1;
+  visibility: visible;
+}
+
+.clueboard-acts button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  padding: 0;
+  background: rgba(12, 11, 10, 0.85);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink-2);
+  font-size: 0.75rem;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.clueboard-acts button:hover {
+  border-color: #8a7a55;
+  color: var(--cb-ink);
+}
+
+.clueboard-acts .clueboard-card-remove:hover {
+  border-color: var(--cb-red);
+  color: var(--cb-red);
+}
+
+/* -------------------------------------------------- */
+/*  The Reader                                         */
+/* -------------------------------------------------- */
+
+.clueboard-reader-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+}
+
+.clueboard-doc {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.25rem;
+  font-size: var(--font-size-14, 0.875rem);
+  line-height: 1.6;
+  color: var(--cb-ink);
+}
+
+.clueboard-doc .clueboard-doc-title {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+  font-family: inherit;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cb-ink);
+}
+
+.clueboard-doc-figure {
+  margin: 0 0 0.75rem;
+}
+
+.clueboard-doc .clueboard-doc-image {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+  border: 0;
+  border-radius: 4px;
+  background: #121010;
+}
+
+.clueboard-doc-text p {
+  margin: 0 0 0.7rem;
+}
+
+.clueboard-doc-text img {
+  display: block;
+  max-width: 100%;
+  max-height: 46vh;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 4px;
+}
+
+.clueboard-doc-text :is(h1, h2, h3, h4) {
+  margin: 1rem 0 0.5rem;
+  border: 0;
+  font-family: inherit;
+  color: var(--cb-ink);
+}
+
+.clueboard-doc-text :is(aside, blockquote) {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--cb-gold);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0 4px 4px 0;
+}
+
+.clueboard-doc-text a {
+  color: var(--cb-gold);
+}
+
+.clueboard-doc-revision {
+  margin: 0.75rem 0 0;
+  font-size: var(--font-size-12, 0.75rem);
+  color: var(--cb-ink-3);
+}
+
+/* The record under the words, laid out as Scroll Case's detail panel: a key above each value. */
+.clueboard-stamp {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--cb-line);
+  border-radius: 5px;
+  font-size: var(--font-size-12, 0.75rem);
+  line-height: 1.4;
+}
+
+.clueboard-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.clueboard-notes {
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.clueboard-reader-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--cb-line);
+}
+
+.clueboard-reader-hint {
+  flex: 1;
+  font-size: var(--font-size-12, 0.75rem);
+  color: var(--cb-ink-3);
+}
+
+/* -------------------------------------------------- */
+/*  The Clue's sheet                                   */
+/* -------------------------------------------------- */
+
+.clueboard-clue-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  height: 100%;
+  padding: 0.75rem;
+  overflow-y: auto;
+}
+
+.clueboard-clue-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.clueboard-clue-image {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.clueboard-clue-names {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.clueboard-clue-sheet :is(input[type="text"], select) {
+  height: auto;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink);
+  box-shadow: none;
+}
+
+.clueboard-clue-sheet :is(input[type="text"], select):focus {
+  border-color: var(--cb-gold);
+  outline: none;
+}
+
+.clueboard-clue-sheet select option {
+  background: var(--cb-panel);
+  color: var(--cb-ink);
+}
+
+.clueboard-clue-names input[name="name"] {
+  font-size: var(--font-size-18, 1.125rem);
+}
+
+.clueboard-clue-type {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans-condensed, "Roboto Condensed", sans-serif);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cb-ink-3);
+}
+
+.clueboard-clue-type select {
+  width: auto;
+  font-family: var(--font-body, inherit);
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 400;
+}
+
+.clueboard-clue-found {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.clueboard-clue-found label {
+  align-self: flex-start;
+  text-align: start;
+  font-family: var(--font-sans-condensed, "Roboto Condensed", sans-serif);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cb-ink-3);
+}
+
+.clueboard-clue-found input {
+  width: 100%;
+}
+
+.clueboard-clue-text {
+  flex: 1;
+  min-height: 0;
+}
+
+.clueboard-clue-text prose-mirror {
+  min-height: 10rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+  color: var(--cb-ink);
+}
+
+.clueboard-doc-plain {
+  padding: 1rem 1.25rem;
+  background: var(--cb-panel);
+  border: 1px solid var(--cb-line);
+  border-radius: 4px;
+}
+
+.clueboard-clue-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--cb-line);
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.clueboard-clue-holder {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.clueboard-clue-footer .clueboard-clue-holder > i {
+  color: var(--cb-green);
+}
+
+.clueboard-clue-hint {
+  color: var(--cb-ink-3);
+  font-style: italic;
+}
+
+/* -------------------------------------------------- */
+/*  A narrow window: the rail narrower, then the badge  */
+/*  to its icon                                         */
+/* -------------------------------------------------- */
+
+@container clueboard (max-width: 760px) {
+  .clueboard-rail {
+    flex-basis: 11.5rem;
+  }
+  .clueboard-cards {
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  }
+  .clueboard-badge-text {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------- */
+/*  Focus                                              */
+/* -------------------------------------------------- */
+
+.clueboard-rail-row:focus-visible,
+.clueboard-tab-new:focus-visible,
+.clueboard-btn:focus-visible,
+.clueboard-tog:focus-visible,
+.clueboard-icon:focus-visible,
+.clueboard-acts button:focus-visible {
+  outline: 2px solid var(--cb-gold);
+  outline-offset: 1px;
+}
+
+/* While a card is New, the chip takes the badge's place. */
+.clueboard-thumb .clueboard-new + .clueboard-badge {
+  display: none;
 }

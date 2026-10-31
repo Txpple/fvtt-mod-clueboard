@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   changesSnapshot,
+  CLUE_ICON,
   CLUE_TYPE,
   defaultParty,
   entryList,
@@ -8,6 +9,7 @@ import {
   KINDS,
   nextColour,
   partyFor,
+  pictureOf,
   pinnedTo,
   readerList,
   reorder,
@@ -171,6 +173,14 @@ describe("threads", () => {
     expect(pinnedTo(entries, "t1").map(x => x.id)).toEqual(["y", "x"]);
     expect(pinnedTo(entries, "t2").map(x => x.id)).toEqual(["y"]);
     expect(unsorted(entries).map(x => x.id)).toEqual(["z", "w"]);
+  });
+
+  it("takes a chosen picture and passes over the stock icons", () => {
+    expect(pictureOf("worlds/x/letter.webp")).toBe("worlds/x/letter.webp");
+    expect(pictureOf(CLUE_ICON)).toBeNull();
+    expect(pictureOf("icons/svg/item-bag.svg")).toBeNull();
+    expect(pictureOf("")).toBeNull();
+    expect(pictureOf(undefined)).toBeNull();
   });
 
   it("moves an id before another, or to the end, without touching the list", () => {
