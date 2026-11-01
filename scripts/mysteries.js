@@ -72,9 +72,12 @@ export async function pickParty() {
 /*  The stamp                                         */
 /* -------------------------------------------------- */
 
-/** Where and when: the scene the table is viewing, the calendar date, the clock. */
+/**
+ * When: the calendar date and the clock. Never a scene: the one the collecting client views (a DM
+ * between scenes, the MCP's page) is no record of where the clue was found; the Clue's own Found
+ * at line is.
+ */
 export function stampNow() {
-  const scene = canvas?.scene ?? game.scenes.active ?? null;
   let calendarDate = "";
   try {
     // Foundry's stock calendar is the Simplified Gregorian counting from year 0: a world that
@@ -86,8 +89,6 @@ export function stampNow() {
     log.debug?.("no calendar date for the stamp", err);
   }
   return {
-    sceneId: scene?.id ?? "",
-    sceneName: scene?.name ?? "",
     calendarDate,
     realDate: new Date().toISOString()
   };
@@ -106,8 +107,8 @@ export const uncollectedFor = group => game.items.filter(i => isClue(i) && !entr
  * @param {Item} item
  * @param {Actor} group
  * @param {{ how?: string, stamp?: boolean }} [options]  Where the collect came from, for the log;
- *   `stamp: false` leaves the scene and the calendar date out of the stamp, for a clue found
- *   before it was collected (its Found at line says where).
+ *   `stamp: false` leaves the calendar date out of the stamp, for a clue found before it was
+ *   collected.
  */
 export async function collect(item, group, { how = "api", stamp = true } = {}) {
   if (!isClue(item) || group?.type !== "group") return null;
@@ -133,7 +134,7 @@ export async function collect(item, group, { how = "api", stamp = true } = {}) {
       kind: snapshot.kind,
       source: { uuid: source.uuid, name: source.name },
       snapshot,
-      foundIn: stamp ? stampNow() : { ...stampNow(), sceneId: "", sceneName: "", calendarDate: "" },
+      foundIn: stamp ? stampNow() : { ...stampNow(), calendarDate: "" },
       readers: {},
       notes: ""
     });
@@ -436,7 +437,7 @@ export function exportData(group) {
       name: e.snapshot.name,
       kind: kindLabel(e.kind ?? e.snapshot.kind),
       foundAt: e.snapshot.foundAt,
-      foundIn: { scene: e.foundIn.sceneName, calendarDate: e.foundIn.calendarDate, realDate: e.foundIn.realDate },
+      foundIn: { calendarDate: e.foundIn.calendarDate, realDate: e.foundIn.realDate },
       text: plainText(e.snapshot.html),
       html: e.snapshot.html,
       revision: e.snapshot.revision,
@@ -503,7 +504,7 @@ export function sectionFor(group, query = "", tab = "all") {
     kind: t(`kinds.${kind}`),
     kindIcon: KIND_ICONS[kind] ?? KIND_ICONS.document,
     excerpt: excerpt(e.snapshot.html),
-    where: [e.snapshot.foundAt, e.foundIn.sceneName, e.foundIn.calendarDate].filter(Boolean).join(" · "),
+    where: [e.snapshot.foundAt, e.foundIn.calendarDate].filter(Boolean).join(" · "),
     readers,
     readText: readers.length ? t("mysteries.readBy", { names: readers.map(r => r.name).join(", ") }) : t("mysteries.readByNone"),
     unread: me ? !e.readers?.[me.id] : !Object.keys(e.readers ?? {}).length,

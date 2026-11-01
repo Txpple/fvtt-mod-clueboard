@@ -5,7 +5,7 @@ each stamped with where it was found and who has read it. A **Clue** is an item 
 gear: it has no price, no weight and no place in anyone's inventory. The DM collects a Clue for the party, it
 appears on its Clue Board at once, and a player's opening of it there marks the read.
 
-**1.2.3**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
+**1.2.4**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
 it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.html`.
 
 ## How it works
@@ -18,8 +18,9 @@ Phase 1 is four things.
   be carried: dropped on a character it goes to the party's Clue Board instead, and dnd5e refuses it on a party's
   stash.
 - **Collecting.** The DM drags a Clue onto the Party sheet, onto a member's sheet or onto the Clue Board window, or
-  presses *Collect* on the Clue's sheet or in the GM strip at the top of Clue Board. Collecting stamps the scene the
-  table is viewing and the calendar date when the world has one, and copies the text as it reads. The Clue stays in
+  presses *Collect* on the Clue's sheet or in the GM strip at the top of Clue Board. Collecting stamps the date, and the
+  calendar date when the world has one, and copies the text as it reads; where it was found is the Clue's own
+  *Found at* line, never the scene anyone happens to be viewing. The Clue stays in
   the Items directory as the DM's master; an edit there updates the party's copy and marks the revision. *Take
   back* (on the sheet, or *Take it off the Clue Board* in a card's chevron) takes it out again.
 - **Clue Board.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Clue Board as its own window
@@ -85,7 +86,7 @@ other dependencies; nothing of the family is required or detected.
   `threads` (keyed by thread, each `{ at, order }`).
 - `clueboard.thread(thread, what, group)` fires when a thread is `created`, `edited`, `reordered` or `removed`
   (then `thread` is null and a fourth argument is the thread as it was).
-- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group, { stamp })` (`stamp: false` leaves the scene and date out, for a clue found before it was collected), `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
+- `game.modules.get("fvtt-mod-clueboard").api`: `isClue(item)`, `collect(item, group, { stamp })` (`stamp: false` leaves the calendar date out, for a clue found before it was collected), `uncollect(group, id, { confirm })` (the GM is asked unless `confirm: false`),
   `markRead(group, id)`, `openReader({ group, id })`, `openMysteries()`, `entries(group)`, `entry(group, id)`,
   `findEntry(id)`, `parties()`, `threads(group)`, `createThread(group, { name, question })`,
   `updateThread(group, id, changes)`, `removeThread(group, id, { confirm })`, `pin(group, clueId, threadId)`,

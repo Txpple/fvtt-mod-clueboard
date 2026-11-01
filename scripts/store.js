@@ -38,6 +38,8 @@ export class MysteryEntry extends foundry.abstract.DataModel {
         revision: new fields.NumberField({ required: true, integer: true, min: 1, initial: 1 }),
         at: text()
       }),
+      // sceneId and sceneName are retired (1.2.4): an entry collected before keeps the scene its
+      // collecting client viewed, which nothing shows or exports.
       foundIn: new fields.SchemaField({ sceneId: text(), sceneName: text(), calendarDate: text(), realDate: text() }),
       readers: new fields.TypedObjectField(
         new fields.SchemaField({ actorId: text(), actorName: text(), userId: text(), at: text() })

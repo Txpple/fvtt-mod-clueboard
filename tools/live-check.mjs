@@ -172,7 +172,7 @@ try {
         groupName: group.name,
         members: Array.from(group.system.members).map(m => ({ id: m.actor?.id, name: m.actor?.name })),
         schema: group.flags?.[id]?.schema ?? null,
-        entries: entries.map(e => ({ name: e.snapshot.name, id: e.id, readers: Object.values(e.readers).map(r => r.actorName), foundAt: e.snapshot.foundAt, scene: e.foundIn.sceneName })),
+        entries: entries.map(e => ({ name: e.snapshot.name, id: e.id, readers: Object.values(e.readers).map(r => r.actorName), foundAt: e.snapshot.foundAt })),
         worldClues: game.items.filter(i => i.type === type).map(i => i.name),
         stashClues: group.items.filter(i => i.type === type || (i.type === "loot" && i.system.type?.value === "clue")).length,
         memberClues: Array.from(group.system.members).reduce((n, m) => n + (m.actor?.items.filter(i => i.type === type).length ?? 0), 0)
@@ -184,7 +184,7 @@ try {
   groupId = B.groupId;
   console.log(`  group "${B.groupName}" (${B.groupId}); members: ${B.members.map(m => m.name).join(", ")}`);
   console.log(`  world Clues: ${B.worldClues.length} (${B.worldClues.join(", ")})`);
-  for (const e of B.entries) console.log(`    entry: ${e.name}  readers=${e.readers.join(",")}  at="${e.foundAt.slice(0, 40)}"  scene=${e.scene}`);
+  for (const e of B.entries) console.log(`    entry: ${e.name}  readers=${e.readers.join(",")}  at="${e.foundAt.slice(0, 40)}"`);
   if (B.entries.length) assert(B.schema === 2, `the party's record carries its schema version (${B.schema})`);
   assert(B.stashClues === 0 && B.memberClues === 0, "no Clue sits in the stash or in a member's inventory");
 
@@ -292,7 +292,7 @@ try {
           clueId: clue.id,
           allowed1,
           byPartyDrop,
-          stamp: entry1 ? { scene: entry1.foundIn.sceneName, foundAt: entry1.snapshot.foundAt, kind: entry1.kind } : null,
+          stamp: entry1 ? { scene: entry1.foundIn.sceneName ?? "", realDate: entry1.foundIn.realDate, foundAt: entry1.snapshot.foundAt, kind: entry1.kind } : null,
           partyCarries,
           createdOnGroup,
           createdOnMember,
@@ -308,7 +308,7 @@ try {
     );
     scratchId = C.clueId;
     assert(C.allowed1 === false && C.byPartyDrop, "a Clue dropped on the party's sheet is collected, and the sheet is told no");
-    assert(C.stamp?.scene && C.stamp.foundAt === "the check's desk" && C.stamp.kind === "document", `the entry is stamped (scene "${C.stamp?.scene}", at "${C.stamp?.foundAt}", ${C.stamp?.kind})`);
+    assert(C.stamp && !C.stamp.scene && C.stamp.realDate && C.stamp.foundAt === "the check's desk" && C.stamp.kind === "document", `the entry is stamped with when, never a scene (at "${C.stamp?.foundAt}", ${C.stamp?.kind})`);
     assert(!C.partyCarries && !C.memberCarries, "no inventory holds the Clue");
     assert(C.createdOnGroup === 0 && C.createdOnMember === 0, `a direct create on the group and on a member makes nothing (${C.createdOnGroup}, ${C.createdOnMember})`);
     assert(C.gone, "Take back removes the entry (a forced deletion in the flags)");

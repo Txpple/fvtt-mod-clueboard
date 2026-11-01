@@ -20,7 +20,7 @@
         <div class="clueboard-field">
             <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.foundIn" }}</span>
             {{#if stamp.foundAt}}<span>{{ stamp.foundAt }}</span>{{/if}}
-            <span class="clueboard-note">{{ stamp.foundIn }}{{#if stamp.calendarDate}} · {{ stamp.calendarDate }}{{/if}}{{#if stamp.realDate}} · {{ stamp.realDate }}{{/if}}</span>
+            {{#if stamp.when}}<span class="clueboard-note">{{ stamp.when }}</span>{{/if}}
         </div>
         <div class="clueboard-field">
             <span class="clueboard-key">{{ localize "fvtt-mod-clueboard.stamp.readBy" }}</span>

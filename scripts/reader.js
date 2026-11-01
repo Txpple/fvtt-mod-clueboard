@@ -70,9 +70,9 @@ export class Reader extends HandlebarsApplicationMixin(ApplicationV2) {
         .filter(Boolean)
         .map(th => ({ name: th.name, colour: th.colour, answered: th.status === "answered" })),
       foundAt: entry.snapshot.foundAt,
-      foundIn: entry.foundIn.sceneName,
-      calendarDate: entry.foundIn.calendarDate,
-      realDate: entry.foundIn.realDate ? new Date(entry.foundIn.realDate).toLocaleDateString() : "",
+      when: [entry.foundIn.calendarDate, entry.foundIn.realDate ? new Date(entry.foundIn.realDate).toLocaleDateString() : ""]
+        .filter(Boolean)
+        .join(" · "),
       readers: readerList(entry.readers).map(r => ({ name: r.actorName, me: r.userId === game.user.id })),
       notes: entry.notes
     };
