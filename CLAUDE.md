@@ -8,7 +8,7 @@ this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build 
 MIT.
 
 **State (2026-10-31).** 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
-*Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries keep a scene nothing shows.
+*Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries had their stored scene cleared, on the user's word.
 1.2.3 Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
 search's count and its matches elsewhere, a thread row's right-click; deployed `--local`, the walk GREEN with its new
