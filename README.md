@@ -21,12 +21,17 @@ Phase 1 is four things.
   presses *Collect* on the Clue's sheet or in the GM strip at the top of Clue Board. Collecting stamps the scene the
   table is viewing and the calendar date when the world has one, and copies the text as it reads. The Clue stays in
   the Items directory as the DM's master; an edit there updates the party's copy and marks the revision. *Take
-  back* (on the sheet, or the ✕ on a card) takes it out again.
+  back* (on the sheet, or *Take it off the Clue Board* in a card's chevron) takes it out again.
 - **Clue Board.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Clue Board as its own window
   in the middle of the screen (the sidebar itself never changes): the party's Clues as cards, newest first, with a
-  search and a count of what the player has not read yet. A click opens the Reader, which shows the text, the stamp
-  and who has read it, and lets a player write the party's note. Opening a card as a player marks the read for
-  their character; a GM's opening marks nothing. Nothing goes to chat, ever.
+  search, a count of what the player has not read yet and the card size (S, M, L, remembered in each browser). As in
+  Card Catalogue, a click picks a card and a double click (or Enter, or the card's gold *Read*) opens the Reader,
+  which shows the text, the stamp and who has read it, and lets a player write the party's note. The card's chevron
+  holds the rest: *Read*; *Threads*, a toggle per thread the clue is pinned to or not, and *New Thread*, which makes
+  one and pins the clue to it (the party's owners); for the GM, *Show the picture to everyone*, *Edit the Clue* and
+  *Take it off the Clue Board*. Opening a card as a player marks the read for their character; a GM's opening marks
+  nothing. Nothing goes to chat, ever. A search counts its matches and, inside a thread, offers the ones elsewhere;
+  `/` goes to the search and Escape clears it.
 - **The window's layout.** The search runs across the top. Below it, a rail on the left lists *All Clues* and
   *Unassigned Clues*, then the party's *Threads* with their counts and *New Thread*; the cards fill the right
   and scroll on their own. Dropping a card on a thread in the rail pins it without leaving the view, so a player
@@ -36,7 +41,8 @@ Phase 1 is four things.
   and *Unassigned*. Drag a card onto
   a thread's tab to pin it there, onto another card inside it to order it; a clue can sit in as many threads as
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
-  included; deleting one unpins its clues and loses nothing else.
+  included (from the thread's head, or a right-click on its row in the rail: Edit, Mark Solved or Unsolved,
+  Delete); deleting one unpins its clues and loses nothing else.
 
 **Export.** The file icon beside the count in Clue Board saves the party's clues as a JSON file, every clue with
 its text (as plain words and as HTML), where and when it was found, who has read it, the party's note and the

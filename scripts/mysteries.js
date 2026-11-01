@@ -497,6 +497,7 @@ export function sectionFor(group, query = "", tab = "all") {
     return {
     group: group.id,
     id: e.id,
+    key: `${group.id}:${e.id}`,
     name: e.snapshot.name,
     picture: pictureOf(e.snapshot.img),
     kind: t(`kinds.${kind}`),
@@ -562,9 +563,14 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     window: { title: `${MODULE_ID}.mysteries.title`, icon: "fa-solid fa-user-secret", resizable: true },
     position: { width: 1100, height: 800 },
     actions: {
-      open: MysteriesWindow.#onOpen,
+      pick: MysteriesWindow.#onPick,
+      go: MysteriesWindow.#onGo,
+      openMenu: MysteriesWindow.#onOpenMenu,
+      closeMenu: MysteriesWindow.#onCloseMenu,
+      act: MysteriesWindow.#onAct,
+      size: MysteriesWindow.#onSize,
+      searchAll: MysteriesWindow.#onSearchAll,
       collect: MysteriesWindow.#onCollect,
-      remove: MysteriesWindow.#onRemove,
       openItem: MysteriesWindow.#onOpenItem,
       export: MysteriesWindow.#onExport,
       // Not "tab": ApplicationV2 handles that action itself, before any of ours, and throws.
@@ -572,8 +578,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       newThread: MysteriesWindow.#onNewThread,
       editThread: MysteriesWindow.#onEditThread,
       deleteThread: MysteriesWindow.#onDeleteThread,
-      toggleStatus: MysteriesWindow.#onToggleStatus,
-      unpin: MysteriesWindow.#onUnpin
+      toggleStatus: MysteriesWindow.#onToggleStatus
     }
   };
 
@@ -615,6 +620,27 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   /** The open mystery per party (a thread's id), or none: then the clue view shows. */
   #tabs = {};
 
+  /** The picked card's key (`<party>:<clue>`): marked in place, kept through a redraw. */
+  #selected = null;
+
+  /** The card whose chevron is open (`{ group, id }`), or none. */
+  #menu = null;
+
+  /** The chevron just opened: its first button takes the focus once. */
+  #menuFresh = false;
+
+  /** The chevron's toggle to focus again after its redraw (a thread pinned from it). */
+  #menuFocus = null;
+
+  /** The card whose chevron closed: its chevron takes the focus back. */
+  #returnTo = null;
+
+  /** What had the focus before a redraw (another client's write redraws too). */
+  #focus = null;
+
+  /** The card size, S, M or L, this browser's. */
+  #size = loadSize();
+
   /**
    * Show a party's mystery, or a clue view ("all", "unsorted"), which closes any open mystery
    * (the API's and the live check's way in).
@@ -637,8 +663,12 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
+    for (const s of context.sections) for (const e of s.entries) e.selected = e.key === this.#selected;
     context.query = this.#query;
     context.isGM = game.user.isGM;
+    context.size = this.#size;
+    context.sizes = SIZES.map(id => ({ id, label: t(`size.${id}`), aria: t(`size.${id}Aria`), on: id === this.#size }));
+    context.menu = this.#menuContext();
     if (context.isGM) {
       // The strip: every world Clue no party has. With several parties, Collect asks which.
       const held = new Set(list.flatMap(g => entriesOf(g).map(e => e.id)));
@@ -650,13 +680,81 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     return context;
   }
 
+  /** The open chevron's head and rows, or null (its card gone: the chevron closes). */
+  #menuContext() {
+    const group = this.#menu ? game.actors.get(this.#menu.group) : null;
+    const entry = group ? entryOf(group, this.#menu.id) : null;
+    if (!entry) {
+      this.#menu = null;
+      return null;
+    }
+    const kind = entry.kind ?? entry.snapshot.kind ?? "document";
+    return {
+      name: entry.snapshot.name,
+      picture: pictureOf(entry.snapshot.img),
+      kind: t(`kinds.${kind}`),
+      kindIcon: KIND_ICONS[kind] ?? KIND_ICONS.document,
+      rows: menuRows(group, entry).map(r => ({
+        ...r,
+        label: t(r.label),
+        hint: r.hint ? t(r.hint) : "",
+        choices: r.choices?.map(c => ({ ...c, act: r.act })) ?? null
+      }))
+    };
+  }
+
+  /** @override */
+  async _preRender(context, options) {
+    await super._preRender(context, options);
+    const active = this.element?.contains(document.activeElement) ? document.activeElement : null;
+    this.#focus = active
+      ? {
+          name: active.name || null,
+          action: active.dataset?.action ?? null,
+          key: active.closest("[data-key]")?.dataset.key ?? null,
+          tab: active.dataset?.tab ?? null,
+          start: active.selectionStart ?? null
+        }
+      : null;
+  }
+
+  /** @override */
+  _onFirstRender(context, options) {
+    super._onFirstRender(context, options);
+    this.#threadMenu();
+    this.element.addEventListener("keydown", ev => {
+      if (this.#menu && ev.key === "Escape") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        return this.#closeMenu();
+      }
+      const typing = ev.target.closest?.("input, textarea, select, [contenteditable]");
+      if (ev.key === "/" && !typing && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+        ev.preventDefault();
+        this.element.querySelector("input[name=search]")?.focus();
+      }
+    });
+  }
+
   /** @override */
   _onRender(context, options) {
     super._onRender(context, options);
     const input = this.element.querySelector("input[name=search]");
     input?.addEventListener("input", ev => this.#filter(ev.currentTarget.value));
-    if (this.#query) this.#filter(this.#query);
+    input?.addEventListener("keydown", ev => {
+      if (ev.key === "Escape" && this.#query) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        ev.currentTarget.value = "";
+        this.#filter("");
+      }
+    });
+    this.#filter(this.#query);
+    this.element.querySelector(".clueboard-veil")?.addEventListener("click", ev => {
+      if (ev.target === ev.currentTarget) this.#closeMenu();
+    });
     this.#wireThreads();
+    this.#restoreFocus(context);
     if (game.user.isGM) {
       const el = this.element;
       el.addEventListener("dragover", ev => {
@@ -808,41 +906,228 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     if (group && thread) await updateThread(group, thread.id, { status: thread.status === "answered" ? "open" : "answered" });
   }
 
-  static async #onUnpin(event, target) {
-    event.stopPropagation();
-    const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
-    if (group) await unpinClue(group, target.dataset.id, target.dataset.thread);
-  }
-
   async #dropped(uuid) {
     const item = await fromUuid(uuid);
     const group = await pickParty();
     if (item && group) await collect(item, group, { how: "window" });
   }
 
+  /**
+   * The search, applied to the drawn cards with no redraw: each party's count says how many match,
+   * an empty view says so, and the matches outside the view are a button away.
+   */
   #filter(query) {
     this.#query = query;
     const q = query.trim().toLowerCase();
-    for (const card of this.element.querySelectorAll("[data-search]")) {
-      card.hidden = Boolean(q) && !card.dataset.search.includes(q);
+    for (const section of this.element.querySelectorAll(".clueboard-section[data-group]")) {
+      let shown = 0;
+      for (const card of section.querySelectorAll(".clueboard-card[data-search]")) {
+        card.hidden = Boolean(q) && !card.dataset.search.includes(q);
+        if (!card.hidden) shown++;
+      }
+      const group = game.actors.get(section.dataset.group);
+      const view = section.querySelector(".clueboard-rail-row.active")?.dataset.tab ?? "all";
+      const everywhere = q && group && view !== "all" ? entriesOf(group).filter(e => matches(e, q)).length : shown;
+      const elsewhere = Math.max(0, everywhere - shown);
+      const count = section.querySelector(".clueboard-count");
+      if (count) count.textContent = q ? t("mysteries.matching", { n: shown, q: query.trim() }) : (count.dataset.base ?? "");
+      const none = section.querySelector(".clueboard-nomatch");
+      if (none) {
+        none.hidden = !q || shown > 0 || !section.querySelector(".clueboard-card");
+        none.textContent = q ? t(elsewhere ? "mysteries.searchHere" : "mysteries.searchNone", { q: query.trim() }) : "";
+      }
+      const more = section.querySelector(".clueboard-more");
+      if (more) {
+        more.hidden = !elsewhere;
+        more.textContent = elsewhere ? t("mysteries.searchMore", { n: elsewhere }) : "";
+      }
     }
   }
 
-  static async #onOpen(_event, target) {
-    const group = game.actors.get(target.dataset.group);
-    if (group) await openReaderFor(group, target.dataset.id);
+  /** After a redraw: the chevron's first button, its toggle, the card it closed from, or what had the focus. */
+  #restoreFocus(context) {
+    const root = this.element;
+    if (context.menu && this.#menuFresh) {
+      this.#menuFresh = false;
+      return root.querySelector(".clueboard-menu button:not([disabled])")?.focus();
+    }
+    if (context.menu && this.#menuFocus !== null) {
+      const arg = this.#menuFocus;
+      this.#menuFocus = null;
+      return root.querySelector(`.clueboard-menu [data-act="pin"][data-arg="${CSS.escape(arg)}"]`)?.focus();
+    }
+    const back = this.#returnTo;
+    this.#returnTo = null;
+    if (back) {
+      const el = root.querySelector(`.clueboard-card[data-key="${CSS.escape(back)}"] [data-action="openMenu"]`);
+      if (el && !el.closest("[hidden]")) return el.focus({ preventScroll: true });
+    }
+    const f = this.#focus;
+    this.#focus = null;
+    if (!f) return;
+    let el = null;
+    if (f.name) el = root.querySelector(`[name="${CSS.escape(f.name)}"]`);
+    else if (f.action) {
+      const scope = f.key ? root.querySelector(`[data-key="${CSS.escape(f.key)}"]`) : root;
+      el = scope?.querySelector(`[data-action="${CSS.escape(f.action)}"]${f.tab ? `[data-tab="${CSS.escape(f.tab)}"]` : ""}`);
+    }
+    if (!el || el.closest("[hidden]")) return;
+    el.focus({ preventScroll: true });
+    if (f.start !== null && typeof el.setSelectionRange === "function") {
+      try {
+        el.setSelectionRange(f.start, f.start);
+      } catch {
+        // Not a text field.
+      }
+    }
+  }
+
+  /**
+   * The right-click menu on a thread's row (its owners'): edit it, mark it Solved or Unsolved, delete
+   * it, as its head's buttons do. Bound once; Foundry's menu finds the row under the click.
+   */
+  #threadMenu() {
+    const Menu = foundry.applications.ux.ContextMenu.implementation ?? foundry.applications.ux.ContextMenu;
+    const of = row => {
+      const group = game.actors.get(row.closest("[data-group]")?.dataset.group);
+      return { group, thread: group ? threadOf(group, row.dataset.tab) : null };
+    };
+    const may = row => {
+      const { group, thread } = of(row);
+      return Boolean(thread) && mayOrganise(group, { tell: false });
+    };
+    const solved = row => of(row).thread?.status === "answered";
+    new Menu(
+      this.element,
+      ".clueboard-rail-row[data-droppable]",
+      [
+        {
+          label: `${MODULE_ID}.mysteries.threadEdit`,
+          icon: '<i class="fa-solid fa-pen"></i>',
+          condition: may,
+          onClick: (_ev, row) => {
+            const { group, thread } = of(row);
+            if (thread) return editThread(group, thread.id);
+          }
+        },
+        {
+          label: `${MODULE_ID}.mysteries.markSolved`,
+          icon: '<i class="fa-solid fa-circle-check"></i>',
+          condition: row => may(row) && !solved(row),
+          onClick: (_ev, row) => {
+            const { group, thread } = of(row);
+            if (thread) return updateThread(group, thread.id, { status: "answered" });
+          }
+        },
+        {
+          label: `${MODULE_ID}.mysteries.markUnsolved`,
+          icon: '<i class="fa-regular fa-circle"></i>',
+          condition: row => may(row) && solved(row),
+          onClick: (_ev, row) => {
+            const { group, thread } = of(row);
+            if (thread) return updateThread(group, thread.id, { status: "open" });
+          }
+        },
+        {
+          label: `${MODULE_ID}.mysteries.threadDelete`,
+          icon: '<i class="fa-solid fa-trash"></i>',
+          condition: may,
+          onClick: async (_ev, row) => {
+            const { group, thread } = of(row);
+            if (thread && (await removeThread(group, thread.id)) && this.#tabs[group.id] === thread.id) this.showTab(group.id, "all");
+          }
+        }
+      ],
+      { jQuery: false, fixed: true }
+    );
+  }
+
+  #closeMenu() {
+    if (!this.#menu) return;
+    this.#returnTo = `${this.#menu.group}:${this.#menu.id}`;
+    this.#menu = null;
+    this.render();
+  }
+
+  /** A chevron row by name. Pinning keeps the chevron open, so a clue goes to several threads at once. */
+  async #act(name, arg) {
+    const m = this.#menu;
+    const group = m ? game.actors.get(m.group) : null;
+    const entry = group ? entryOf(group, m.id) : null;
+    if (!entry) return this.#closeMenu();
+    const row = menuRows(group, entry).find(r => r.act === name);
+    if (!row || row.disabled) return;
+    if (name !== "pin") {
+      this.#returnTo = `${m.group}:${m.id}`;
+      this.#menu = null;
+      this.render();
+    }
+    try {
+      await row.run(group, entry, arg || null);
+    } catch (err) {
+      log.error(`the chevron's ${name} failed`, err);
+      ui.notifications.error(err?.message || t("menu.failed"));
+    }
+    if (name === "pin" && this.#menu) {
+      this.#menuFocus = arg ?? "";
+      this.render();
+    }
+  }
+
+  /** A click picks a card in place; a double click, or Enter, reads it (Card Catalogue's rule). */
+  static #onPick(event, target) {
+    const card = target.closest(".clueboard-card[data-key]");
+    if (!card) return;
+    this.#selected = card.dataset.key;
+    if ((event?.detail ?? 0) === 1) return markPicked(this.element, card.dataset.key);
+    const group = game.actors.get(card.dataset.group);
+    if (group) return openReaderFor(group, card.dataset.id);
+  }
+
+  /** The card's Read. */
+  static #onGo(event, target) {
+    event.stopPropagation();
+    if (event.detail > 1) return;
+    const card = target.closest(".clueboard-card[data-key]");
+    const group = game.actors.get(card?.dataset.group);
+    if (!group) return;
+    this.#selected = card.dataset.key;
+    markPicked(this.element, card.dataset.key);
+    return openReaderFor(group, card.dataset.id);
+  }
+
+  static #onOpenMenu(event, target) {
+    event.stopPropagation();
+    const card = target.closest(".clueboard-card[data-key]");
+    if (!card) return;
+    this.#selected = card.dataset.key;
+    this.#menu = { group: card.dataset.group, id: card.dataset.id };
+    this.#menuFresh = true;
+    this.render();
+  }
+
+  static #onCloseMenu() {
+    this.#closeMenu();
+  }
+
+  static #onAct(_event, target) {
+    return this.#act(target.dataset.act, target.dataset.arg ?? null);
+  }
+
+  static #onSize(_event, target) {
+    this.#size = saveSize(target.dataset.size);
+    this.render();
+  }
+
+  /** Nothing in this view matches: the same search in All. */
+  static #onSearchAll(_event, target) {
+    this.showTab(target.closest("[data-group]")?.dataset.group ?? null, "all");
   }
 
   static async #onCollect(_event, target) {
     const item = await fromUuid(target.dataset.uuid);
     const group = await pickParty();
     if (item && group) await collect(item, group, { how: "strip" });
-  }
-
-  static async #onRemove(event, target) {
-    event.stopPropagation();
-    const group = game.actors.get(target.dataset.group);
-    if (group) await uncollect(group, target.dataset.id);
   }
 
   static async #onExport(_event, target) {
@@ -861,4 +1146,118 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 async function openReaderFor(group, id) {
   const { openReader } = await import("./reader.js");
   return openReader({ group, id });
+}
+
+/** Whether an entry matches a lowercased search, by the words a card is searched on. */
+function matches(e, q) {
+  return `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase().includes(q);
+}
+
+/** A card picked in place: its edge and its pressed state, the others' cleared, with no redraw. */
+function markPicked(root, key) {
+  for (const card of root?.querySelectorAll(".clueboard-card[data-key]") ?? []) {
+    const on = card.dataset.key === key;
+    card.classList.toggle("on", on);
+    card.querySelector('[data-action="pick"]')?.setAttribute("aria-pressed", String(on));
+  }
+}
+
+/**
+ * A card's chevron: Read; the threads it is pinned to, each a toggle, and a new one (its party's
+ * owners); for the GM, the picture shown to everyone, the Clue's sheet, and taking it off the board.
+ */
+function menuRows(group, entry) {
+  const picture = pictureOf(entry.snapshot.img);
+  const rows = [
+    {
+      act: "read",
+      icon: "fa-book-open",
+      label: "menu.read",
+      hint: myReader(group) ? "menu.readMark" : "menu.readHint",
+      run: () => openReaderFor(group, entry.id)
+    }
+  ];
+  if (mayOrganise(group, { tell: false })) {
+    const pins = entry.threads ?? {};
+    rows.push({
+      act: "pin",
+      icon: "fa-thumbtack",
+      label: "menu.threads",
+      hint: "menu.threadsHint",
+      choices: [
+        ...threadsOf(group).map(th => ({ arg: th.id, label: th.name, colour: th.colour, on: Boolean(pins[th.id]) })),
+        { arg: "", label: t("mysteries.newThread"), icon: "fa-plus" }
+      ],
+      run: async (g, e, threadId) => {
+        if (!threadId) {
+          const thread = await createThread(g);
+          return thread ? pinClue(g, e.id, thread.id) : false;
+        }
+        return e.threads?.[threadId] ? unpinClue(g, e.id, threadId) : pinClue(g, e.id, threadId);
+      }
+    });
+  }
+  if (game.user.isGM) {
+    const item = game.items.get(entry.id);
+    rows.push(
+      {
+        act: "show",
+        icon: "fa-image",
+        label: "menu.show",
+        hint: picture ? "menu.showHint" : "menu.showNone",
+        disabled: !picture,
+        run: () => showPicture(picture, entry.snapshot.name)
+      },
+      {
+        act: "edit",
+        icon: "fa-pen-to-square",
+        label: "menu.edit",
+        hint: item ? "menu.editHint" : "menu.editGone",
+        disabled: !item,
+        run: () => item?.sheet?.render(true)
+      },
+      {
+        act: "remove",
+        icon: "fa-xmark",
+        label: "menu.remove",
+        hint: "menu.removeHint",
+        danger: true,
+        run: (g, e) => uncollect(g, e.id)
+      }
+    );
+  }
+  return rows;
+}
+
+/** The picture in Foundry's own popout, shown to everyone connected. */
+async function showPicture(src, name) {
+  const ImagePopout = foundry.applications?.apps?.ImagePopout;
+  if (!ImagePopout || !src) return false;
+  const popout = new ImagePopout({ src, window: { title: name } });
+  await popout.render({ force: true });
+  await popout.shareImage?.();
+  return true;
+}
+
+/** The card sizes; this browser's pick, under the world and the user. Blocked storage forgets. */
+const SIZES = ["s", "m", "l"];
+const sizeKey = () => `${MODULE_ID}.size.${game.world?.id ?? "world"}.${game.user?.id ?? "user"}`;
+
+function loadSize() {
+  try {
+    const size = globalThis.localStorage?.getItem(sizeKey());
+    return SIZES.includes(size) ? size : "m";
+  } catch {
+    return "m";
+  }
+}
+
+function saveSize(size) {
+  const pick = SIZES.includes(size) ? size : "m";
+  try {
+    globalThis.localStorage?.setItem(sizeKey(), pick);
+  } catch {
+    // Storage blocked: the pick lasts until the page reloads.
+  }
+  return pick;
 }

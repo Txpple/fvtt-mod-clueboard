@@ -69,7 +69,6 @@
       "collect": "Collect",
       "allCollected": "every Clue in the world is collected",
       "dropHint": "or drop a Clue anywhere on this window",
-      "remove": "Take it off the Clue Board",
       "all": "All Clues",
       "unsorted": "Unassigned Clues",
       "mysteriesLabel": "Threads",
@@ -92,7 +91,12 @@
       "threadStandHint": "The party's current theory on this thread, in a few lines.",
       "threadEmpty": "Nothing pinned yet. Drag a clue from another tab onto this one.",
       "unsortedEmpty": "Every clue is pinned to a thread.",
-      "unpin": "Unpin from this thread",
+      "markSolved": "Mark Solved",
+      "markUnsolved": "Mark Unsolved",
+      "matching": "{n} matching “{q}”",
+      "searchHere": "Nothing in this view matches “{q}”.",
+      "searchNone": "No clue matches “{q}”.",
+      "searchMore": "{n} more outside this view: search All Clues",
       "pinned": "{name} pinned to {thread}.",
       "notOwner": "You do not own {group}, so you cannot organise its threads.",
       "colours": {
@@ -105,6 +109,32 @@
         "orange": "Orange",
         "rose": "Rose"
       }
+    },
+    "menu": {
+      "label": "More",
+      "read": "Read",
+      "readHint": "Open it to read",
+      "readMark": "Open it to read; marks it read for you",
+      "threads": "Threads",
+      "threadsHint": "Pin it to a thread, or take it off one",
+      "show": "Show the picture to everyone",
+      "showHint": "In Foundry's own popout, on every screen",
+      "showNone": "This clue has no picture",
+      "edit": "Edit the Clue",
+      "editHint": "Its sheet: name, picture, kind, text",
+      "editGone": "The Clue is no longer in the world",
+      "remove": "Take it off the Clue Board",
+      "removeHint": "Its readers and note go with it; the Clue stays in the world",
+      "failed": "That did not work; the console says why."
+    },
+    "size": {
+      "label": "Card size",
+      "s": "S",
+      "m": "M",
+      "l": "L",
+      "sAria": "Small cards",
+      "mAria": "Medium cards",
+      "lAria": "Large cards"
     },
     "read": {
       "note": "Note",

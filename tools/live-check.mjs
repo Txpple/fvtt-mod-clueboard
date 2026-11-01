@@ -351,14 +351,25 @@ try {
         const win = api.openMysteries();
         for (let i = 0; i < 50 && !win.rendered; i++) await new Promise(r => setTimeout(r, 100));
         const strip = !!win.element.querySelector(".clueboard-gm-strip");
-        const removes = win.element.querySelectorAll('[data-action="remove"]').length;
         const cardsBefore = win.element.querySelectorAll(".clueboard-card").length;
         const unreadBefore = win.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
-        const card = win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
-        const wasUnread = card?.classList.contains("unread") ?? null;
-        card?.click();
+        const card = () => win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
+        const wasUnread = card()?.classList.contains("unread") ?? null;
+        const findReader = () => [...foundry.applications.instances.values()].find(a => a.constructor.name === "Reader");
+        // the chevron, the player's: no GM row in it
+        card()?.querySelector('[data-action="openMenu"]')?.click();
+        await new Promise(r => setTimeout(r, 400));
+        const rows = [...win.element.querySelectorAll(".clueboard-menu [data-act]")].map(b => b.dataset.act);
+        win.element.querySelector('[data-action="closeMenu"]')?.click();
+        await new Promise(r => setTimeout(r, 400));
+        // a single click picks the card and opens nothing
+        card()?.querySelector('[data-action="pick"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+        await new Promise(r => setTimeout(r, 400));
+        const picked = card()?.classList.contains("on") ?? false;
+        const openedOnPick = !!findReader();
+        card()?.querySelector('[data-action="go"]')?.click();
         await new Promise(r => setTimeout(r, 800));
-        const reader = [...foundry.applications.instances.values()].find(a => a.constructor.name === "Reader");
+        const reader = findReader();
         const text = reader?.element?.querySelector(".clueboard-doc-text")?.textContent?.trim() ?? null;
         const stamp = !!reader?.element?.querySelector(".clueboard-stamp");
         await reader?.close();
@@ -372,7 +383,9 @@ try {
           seesWorldClue: !!worldClue && worldClue.testUserPermission(game.user, "LIMITED"),
           anyClueVisible: game.items.some(i => i.type === type && i.testUserPermission(game.user, "LIMITED")),
           strip,
-          removes,
+          rows,
+          picked,
+          openedOnPick,
           cardsBefore,
           unreadBefore,
           wasUnread,
@@ -387,7 +400,9 @@ try {
     );
     assert(D.ownsGroup, "the player owns the group");
     assert(!D.seesWorldClue && !D.anyClueVisible, "the player sees no Clue item in the world");
-    assert(!D.strip && D.removes === 0, "the player sees no GM strip and no Remove");
+    assert(!D.strip, "the player sees no GM strip");
+    assert(D.rows.includes("read") && D.rows.includes("pin") && !D.rows.some(r => ["show", "edit", "remove"].includes(r)), `the player's chevron: Read and the threads, no GM row (${D.rows.join(", ")})`);
+    assert(D.picked && !D.openedOnPick, "a single click picks the card and opens nothing");
     assert(D.cardsBefore >= 1 && D.wasUnread === true, `the card is there and unread (${D.cardsBefore} cards; "${D.unreadBefore}")`);
     assert(D.text?.includes("A scrap for the check"), `opening it shows the text: "${D.text}"`);
     assert(D.stamp, "the Reader shows the stamp");
@@ -481,6 +496,42 @@ try {
     assert(!G1.unsortedHasPinned, "a pinned clue is not in Unsorted");
     assert(!G1.afterUnpin, "an unpin takes the clue off the thread");
 
+    const G3 = await fp.evaluate(
+      async ({ id, groupId, clueId, threadId }) => {
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        const api = game.modules.get(id).api;
+        const group = game.actors.get(groupId);
+        const pinnedNow = () => Boolean(api.entry(group, clueId)?.threads?.[threadId]);
+        const win = api.openMysteries();
+        for (let i = 0; i < 50 && !win.rendered; i++) await sleep(100);
+        await win.showTab(group.id, "all");
+        await sleep(400);
+        win.element.querySelector(`.clueboard-card[data-id="${clueId}"] [data-action="openMenu"]`)?.click();
+        await sleep(400);
+        const tog = () => win.element.querySelector(`.clueboard-menu [data-act="pin"][data-arg="${threadId}"]`);
+        const wasPinned = pinnedNow();
+        const wasOn = tog()?.classList.contains("on") ?? null;
+        tog()?.click();
+        for (let i = 0; i < 30 && pinnedNow() === wasPinned; i++) await sleep(100);
+        await sleep(400);
+        const flipped = pinnedNow() !== wasPinned;
+        const stillOpen = !!win.element.querySelector(".clueboard-opts");
+        const togFollowed = (tog()?.classList.contains("on") ?? null) === !wasPinned;
+        tog()?.click();
+        for (let i = 0; i < 30 && pinnedNow() !== wasPinned; i++) await sleep(100);
+        await sleep(400);
+        const back = pinnedNow() === wasPinned;
+        win.element.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        await sleep(400);
+        const closed = !win.element.querySelector(".clueboard-opts");
+        await win.close();
+        return { wasOn: wasOn === wasPinned, flipped, stillOpen, togFollowed, back, closed };
+      },
+      { id: MODULE_ID, groupId: B.groupId, clueId: C.clueId, threadId: G1.threadId }
+    );
+    assert(G3.wasOn && G3.flipped && G3.togFollowed && G3.back, "the chevron's thread toggle shows the pin and flips it, both ways");
+    assert(G3.stillOpen && G3.closed, "the chevron stays open through a pin and Escape closes it");
+
     const G2 = await f.evaluate(
       async ({ id, groupId, clueId, threadId }) => {
         const api = game.modules.get(id).api;
@@ -542,6 +593,14 @@ try {
       await new Promise(r => setTimeout(r, 900));
     });
     await f.page.screenshot({ path: `${shots}/1-mysteries.png` });
+    // the real mouse: a click picks the third card, then its chevron opens
+    const third = "#clueboard-mysteries .clueboard-card:nth-of-type(3)";
+    await f.page.click(`${third} [data-action="pick"]`);
+    await f.page.waitForTimeout(300);
+    await f.page.screenshot({ path: `${shots}/1a-picked.png` });
+    await f.page.click(`${third} [data-action="openMenu"]`);
+    await f.page.waitForTimeout(500);
+    await f.page.screenshot({ path: `${shots}/1b-chevron.png` });
     await f.evaluate(
       async ({ id, groupId }) => {
         await foundry.applications.instances.get("clueboard-mysteries")?.close();

@@ -6,6 +6,11 @@
                placeholder="{{ localize "fvtt-mod-clueboard.mysteries.search" }}"
                aria-label="{{ localize "fvtt-mod-clueboard.mysteries.search" }}">
     </label>
+    <div class="clueboard-pills" role="group" aria-label="{{ localize "fvtt-mod-clueboard.size.label" }}">
+        {{#each sizes}}
+        <button type="button" class="clueboard-pill{{#if on}} on{{/if}}" data-action="size" data-size="{{ id }}" aria-label="{{ aria }}" aria-pressed="{{#if on}}true{{else}}false{{/if}}">{{ label }}</button>
+        {{/each}}
+    </div>
 </header>
 
 {{#if isGM}}
@@ -69,7 +74,7 @@
         <div class="clueboard-main">
             <div class="clueboard-section-head{{#if thread}} clueboard-thread-{{ thread.colour }}{{/if}}">
                 <h2>{{#if thread}}<span class="clueboard-dot"></span>{{/if}}<span dir="auto">{{ heading }}</span></h2>
-                <span class="clueboard-count">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
+                <span class="clueboard-count" data-base="{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}" aria-live="polite">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
                 {{#if thread}}{{#if mayOrganise}}
                 <span class="clueboard-thread-tools">
                     <button type="button" class="clueboard-tog clueboard-thread-status{{#if thread.answered}} on answered{{/if}}" data-action="toggleStatus" data-thread="{{ thread.id }}"
@@ -109,42 +114,67 @@
             </p>
             {{/unless}}
 
-            <div class="clueboard-cards">
+            <div class="clueboard-cards clueboard-size-{{ ../size }}">
             {{#each entries}}
-            <article class="clueboard-card{{#if unread}} unread{{/if}}" data-action="open" data-group="{{ group }}" data-id="{{ id }}" data-search="{{ search }}" role="button" tabindex="0" aria-label="{{ name }}">
-                <span class="clueboard-thumb">
-                    {{#if picture}}<img src="{{ picture }}" alt="" loading="lazy" draggable="false">
-                    {{else}}<span class="clueboard-excerpt"><i class="fa-solid {{ kindIcon }}" inert></i><span>{{ excerpt }}</span></span>{{/if}}
-                    {{!-- New is the player's: the DM's "unread by anyone" is the eye's 0, or a board of ten would all be gold. --}}
-                    {{#if unread}}{{#unless ../../isGM}}<span class="clueboard-new">{{ localize "fvtt-mod-clueboard.mysteries.new" }}</span>{{/unless}}{{/if}}
-                    <span class="clueboard-badge" data-tooltip="{{ kind }}"><i class="fa-solid {{ kindIcon }}" inert></i><span class="clueboard-badge-text"> {{ kind }}</span></span>
-                    {{#if threads.length}}<span class="clueboard-card-threads">
-                        {{#each threads}}<span class="clueboard-dot clueboard-thread-{{ colour }}" data-tooltip="{{ name }}" aria-label="{{ name }}"></span>{{/each}}
-                    </span>{{/if}}
-                </span>
-                <span class="clueboard-cb">
-                    <span class="clueboard-card-title" dir="auto">{{ name }}</span>
-                    <span class="clueboard-sub">
-                        <span class="clueboard-where">{{#if where}}{{ where }}{{else}}{{ kind }}{{/if}}</span>
-                        {{#if notes}}<i class="fa-solid fa-pen clueboard-has-note" data-tooltip="{{ localize "fvtt-mod-clueboard.mysteries.hasNote" }}"></i>{{/if}}
-                        <span class="clueboard-reads{{#unless readers.length}} none{{/unless}}" data-tooltip="{{ readText }}"><i class="fa-solid fa-eye" inert></i> {{ readers.length }}</span>
+            <article class="clueboard-card{{#if unread}} unread{{/if}}{{#if selected}} on{{/if}}" data-group="{{ group }}" data-id="{{ id }}" data-key="{{ key }}" data-search="{{ search }}">
+                <button type="button" class="clueboard-pick" data-action="pick" aria-label="{{ name }}" aria-pressed="{{#if selected}}true{{else}}false{{/if}}">
+                    <span class="clueboard-thumb">
+                        {{#if picture}}<img src="{{ picture }}" alt="" loading="lazy" draggable="false">
+                        {{else}}<span class="clueboard-excerpt"><i class="fa-solid {{ kindIcon }}" inert></i><span>{{ excerpt }}</span></span>{{/if}}
+                        {{!-- New is the player's: the DM's "unread by anyone" is the eye's 0, or a board of ten would all be gold. --}}
+                        {{#if unread}}{{#unless ../../isGM}}<span class="clueboard-new">{{ localize "fvtt-mod-clueboard.mysteries.new" }}</span>{{/unless}}{{/if}}
+                        <span class="clueboard-badge" data-tooltip="{{ kind }}"><i class="fa-solid {{ kindIcon }}" inert></i><span class="clueboard-badge-text"> {{ kind }}</span></span>
+                        {{#if threads.length}}<span class="clueboard-card-threads">
+                            {{#each threads}}<span class="clueboard-dot clueboard-thread-{{ colour }}" data-tooltip="{{ name }}" aria-label="{{ name }}"></span>{{/each}}
+                        </span>{{/if}}
                     </span>
-                </span>
+                    <span class="clueboard-cb">
+                        <span class="clueboard-card-title" dir="auto">{{ name }}</span>
+                        <span class="clueboard-sub">
+                            <span class="clueboard-where">{{#if where}}{{ where }}{{else}}{{ kind }}{{/if}}</span>
+                            {{#if notes}}<i class="fa-solid fa-pen clueboard-has-note" data-tooltip="{{ localize "fvtt-mod-clueboard.mysteries.hasNote" }}"></i>{{/if}}
+                            <span class="clueboard-reads{{#unless readers.length}} none{{/unless}}" data-tooltip="{{ readText }}"><i class="fa-solid fa-eye" inert></i> {{ readers.length }}</span>
+                        </span>
+                    </span>
+                </button>
                 <span class="clueboard-acts">
-                    {{#if ../thread}}{{#if ../mayOrganise}}
-                    <button type="button" class="clueboard-card-unpin" data-action="unpin" data-id="{{ id }}" data-thread="{{ ../thread.id }}"
-                            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.unpin" }}"><i class="fa-solid fa-thumbtack-slash" inert></i></button>
-                    {{/if}}{{/if}}
-                    {{#if ../../isGM}}
-                    <button type="button" class="clueboard-card-remove" data-action="remove" data-group="{{ group }}" data-id="{{ id }}"
-                            data-tooltip aria-label="{{ localize "fvtt-mod-clueboard.mysteries.remove" }}"><i class="fa-solid fa-xmark" inert></i></button>
-                    {{/if}}
+                    <button type="button" class="go" data-action="go"><i class="fa-solid fa-book-open" inert></i> {{ localize "fvtt-mod-clueboard.mysteries.read" }}</button>
+                    <button type="button" class="more" data-action="openMenu" aria-label="{{ localize "fvtt-mod-clueboard.menu.label" }}" data-tooltip="{{ localize "fvtt-mod-clueboard.menu.label" }}"><i class="fa-solid fa-chevron-down" inert></i></button>
                 </span>
             </article>
             {{/each}}
+            <p class="clueboard-empty clueboard-nomatch" hidden></p>
+            <button type="button" class="clueboard-more" data-action="searchAll" hidden></button>
             </div>
         </div>
     </section>
     {{/each}}
 </div>
+{{#if menu}}
+<div class="clueboard-veil">
+    <div class="clueboard-opts" role="dialog" aria-modal="true" aria-label="{{ localize "fvtt-mod-clueboard.menu.label" }}">
+        <div class="clueboard-opts-head">
+            {{#if menu.picture}}<img src="{{ menu.picture }}" alt="">{{else}}<span class="clueboard-opts-icon"><i class="fa-solid {{ menu.kindIcon }}" inert></i></span>{{/if}}
+            <div><span class="clueboard-key">{{ menu.kind }}</span><strong dir="auto">{{ menu.name }}</strong></div>
+            <button type="button" class="clueboard-x" data-action="closeMenu" aria-label="{{ localize "Close" }}"><i class="fa-solid fa-xmark" inert></i></button>
+        </div>
+        <div class="clueboard-menu">
+            {{#each menu.rows}}
+            {{#if choices}}
+            <div class="clueboard-choices">
+                <div class="clueboard-choices-head"><i class="fa-solid {{ icon }} clueboard-micon" inert></i> <span class="clueboard-choice-text"><strong>{{ label }}</strong> <small>{{ hint }}</small></span></div>
+                <div class="clueboard-togs">
+                    {{#each choices}}
+                    <button type="button" class="clueboard-tog{{#if on}} on{{/if}}{{#if colour}} clueboard-thread-{{ colour }}{{/if}}" data-action="act" data-act="{{ act }}" data-arg="{{ arg }}" aria-pressed="{{#if on}}true{{else}}false{{/if}}">{{#if colour}}<span class="clueboard-dot"></span>{{/if}}{{#if icon}}<i class="fa-solid {{ icon }}" inert></i>{{/if}}<span dir="auto">{{ label }}</span></button>
+                    {{/each}}
+                </div>
+            </div>
+            {{else}}
+            <button type="button" class="clueboard-btn{{#if danger}} danger{{/if}}" data-action="act" data-act="{{ act }}" {{#if disabled}}disabled{{/if}}><i class="fa-solid {{ icon }} clueboard-micon" inert></i> <span><strong>{{ label }}</strong> <small>{{ hint }}</small></span></button>
+            {{/if}}
+            {{/each}}
+        </div>
+    </div>
+</div>
+{{/if}}
 </div>

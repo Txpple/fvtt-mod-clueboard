@@ -7,7 +7,10 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-31).** 1.2.2 is released and on prod (the installer): the window and its sidebar button are
+**State (2026-10-31).** On `main`, unreleased: Card Catalogue's card (a click picks, a
+double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
+search's count and its matches elsewhere, a thread row's right-click; deployed `--local`, the walk GREEN with its new
+steps. 1.2.2 is released and on prod (the installer): the window and its sidebar button are
 *Clue Board* and the party's questions *Threads* (*New Thread*) in every word a player reads, on the user's word
 (the export's `format` and `mysteries` field, the API's `openMysteries` and the code's names unchanged; the export
 file is `<party>-clues-<date>.json`); square cards, each picture framed by its shape (`frameShape`, tagged on load:
@@ -54,6 +57,15 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   thread's tab pins it (the window's own drag, a plain-text payload that is never a Foundry Item drop); dropped on a
   card inside a thread it goes before it; the whole order is rewritten in one write. The active tab is window state,
   per party.
+- **A card is Card Catalogue's** (the user's ask, "functionality that matches card catalogue"): a click picks it
+  (the gold edge, marked in place by `markPicked`, so the second click of a double click lands on it), a double
+  click, Enter or its gold *Read* opens the Reader; its chevron (`menuRows`, drawn in a veil over the window as Card
+  Catalogue's) holds Read, the Threads toggles with New Thread (the party's owners; a pin keeps the chevron open, so
+  a clue goes to several), and the GM's Show the picture to everyone, Edit the Clue and Take it off the Clue Board.
+  No action button sits on a card but Read and the chevron. A thread's row takes a right-click (Edit, Mark Solved or
+  Unsolved, Delete; `#threadMenu`, Foundry's ContextMenu), as Card Catalogue's folders do. The card size (S, M, L)
+  is the browser's (localStorage, per world and user); the search counts its matches and offers those outside the
+  view; `/` focuses it, Escape clears it or closes the chevron; the focus survives a redraw.
 - **Layout A, the rail** (the user's pick of three, `prototypes/mysteries-layouts.html`): the search across the
   top; per party a rail (the clue views, the threads, New Thread) beside `.clueboard-main` (the count, the open
   thread's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
