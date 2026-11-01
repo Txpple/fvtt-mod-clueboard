@@ -7,10 +7,10 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-31).** On `main`, unreleased: Card Catalogue's card (a click picks, a
+**State (2026-10-31).** 1.2.3 is released, not yet on prod: Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
 search's count and its matches elsewhere, a thread row's right-click; deployed `--local`, the walk GREEN with its new
-steps. 1.2.2 is released and on prod (the installer): the window and its sidebar button are
+steps. 1.2.2 is on prod (the installer): the window and its sidebar button are
 *Clue Board* and the party's questions *Threads* (*New Thread*) in every word a player reads, on the user's word
 (the export's `format` and `mysteries` field, the API's `openMysteries` and the code's names unchanged; the export
 file is `<party>-clues-<date>.json`); square cards, each picture framed by its shape (`frameShape`, tagged on load:
