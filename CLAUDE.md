@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-31).** 1.2.4 is released: the stamp is when, never a scene (the user, on the Lamp of 1391 showing
+**State (2026-10-31).** 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
 *Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries keep a scene nothing shows.
 1.2.3 Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
