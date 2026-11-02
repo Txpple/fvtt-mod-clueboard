@@ -24,6 +24,8 @@ import {
   unreadCount,
   unsorted
 } from "./decide/clue.js";
+import { dragged, pickWith } from "./decide/pick.js";
+import { watchHost } from "./host.js";
 import * as store from "./store.js";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -373,6 +375,22 @@ export async function unpinClue(group, clueId, threadId) {
   return true;
 }
 
+/** Several clues pinned to a thread, one after another (each pin is its own write). */
+export async function pinAll(group, clueIds, threadId) {
+  for (const id of clueIds) await pinClue(group, id, threadId);
+}
+
+/**
+ * Several clues moved, in their order, before a card in a thread (or to its end, `beforeId` null); a
+ * clue not yet in the thread is pinned to it first, as the drop asks.
+ */
+export async function moveAll(group, threadId, clueIds, beforeId) {
+  for (const id of clueIds) {
+    if (!pinnedTo(entriesOf(group), threadId).some(e => e.id === id)) await pinClue(group, id, threadId);
+    await movePin(group, threadId, id, beforeId);
+  }
+}
+
 /** A pinned clue moved before another in its thread (null: to the end); every place rewritten. */
 export async function movePin(group, threadId, clueId, beforeId) {
   if (!mayOrganise(group)) return false;
@@ -623,6 +641,9 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 
   /** The picked card's key (`<party>:<clue>`): marked in place, kept through a redraw. */
   #selected = null;
+  /** The cards picked together (Ctrl or Shift, to move several at once), and where a Shift run starts. */
+  #picked = new Set();
+  #anchor = null;
 
   /** The card whose chevron is open (`{ group, id }`), or none. */
   #menu = null;
@@ -664,7 +685,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     context.several = context.sections.length > 1;
     context.none = !context.sections.length;
     context.empty = context.sections.every(s => !s.entries.length);
-    for (const s of context.sections) for (const e of s.entries) e.selected = e.key === this.#selected;
+    for (const s of context.sections) for (const e of s.entries) e.selected = this.#picked.has(e.key) || e.key === this.#selected;
     context.query = this.#query;
     context.isGM = game.user.isGM;
     context.size = this.#size;
@@ -723,6 +744,8 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   _onFirstRender(context, options) {
     super._onFirstRender(context, options);
     this.#threadMenu();
+    // What this window opens (the Reader, a sheet, a dialog) follows it into a detached window.
+    watchHost(this);
     this.element.addEventListener("keydown", ev => {
       if (this.#menu && ev.key === "Escape") {
         ev.preventDefault();
@@ -807,7 +830,12 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       for (const card of section.querySelectorAll(".clueboard-card[data-id]")) {
         card.draggable = may;
         card.addEventListener("dragstart", ev => {
-          MysteriesWindow.#dragging = { group: group.id, id: card.dataset.id };
+          // A picked card carries every picked card of its party with it; one not picked moves alone.
+          const ids = dragged(this.#picked, card.dataset.key)
+            .map(k => root.querySelector(`.clueboard-card[data-key="${CSS.escape(k)}"]`))
+            .filter(c => c?.dataset.group === group.id)
+            .map(c => c.dataset.id);
+          MysteriesWindow.#dragging = { group: group.id, id: card.dataset.id, ids: ids.length ? ids : [card.dataset.id] };
           ev.dataTransfer.effectAllowed = "move";
           ev.dataTransfer.setData("text/plain", card.dataset.id);
           card.classList.add("dragging");
@@ -820,7 +848,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
         if (threadId) {
           card.addEventListener("dragover", ev => {
             const d = MysteriesWindow.#dragging;
-            if (!d || d.group !== group.id || d.id === card.dataset.id) return;
+            if (!d || d.group !== group.id || d.ids.includes(card.dataset.id)) return;
             ev.preventDefault();
             ev.stopPropagation();
             card.classList.add("drop-before");
@@ -831,7 +859,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
             if (!d || d.group !== group.id) return;
             ev.preventDefault();
             ev.stopPropagation();
-            void movePin(group, threadId, d.id, card.dataset.id);
+            void moveAll(group, threadId, d.ids, card.dataset.id);
           });
         }
       }
@@ -847,7 +875,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
           if (!d || d.group !== group.id || ev.target.closest(".clueboard-card")) return;
           ev.preventDefault();
           ev.stopPropagation();
-          void movePin(group, threadId, d.id, null);
+          void moveAll(group, threadId, d.ids, null);
         });
       }
       for (const tab of section.querySelectorAll(".clueboard-tab[data-droppable]")) {
@@ -865,7 +893,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
           ev.preventDefault();
           ev.stopPropagation();
           tab.classList.remove("drop-ok");
-          void pinClue(group, d.id, tab.dataset.tab);
+          void pinAll(group, d.ids, tab.dataset.tab);
         });
       }
       const stand = section.querySelector("textarea[name=stand]");
@@ -1075,10 +1103,24 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     }
   }
 
-  /** A click picks a card in place; a double click, or Enter, reads it (Card Catalogue's rule). */
+  /**
+   * A click picks a card in place; a double click, or Enter, reads it (Card Catalogue's rule). Ctrl
+   * or Shift adds to the pick instead, to drag several cards onto a thread at once.
+   */
   static #onPick(event, target) {
     const card = target.closest(".clueboard-card[data-key]");
     if (!card) return;
+    const key = card.dataset.key;
+    if (event?.ctrlKey || event?.metaKey || event?.shiftKey) {
+      const order = [...this.element.querySelectorAll(".clueboard-card[data-key]")].filter(c => !c.hidden).map(c => c.dataset.key);
+      const r = pickWith({ picked: this.#picked, anchor: this.#anchor, key, order, ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey });
+      this.#picked = r.picked;
+      this.#anchor = r.anchor;
+      this.#selected = key;
+      return markPicked(this.element, this.#picked);
+    }
+    this.#picked = new Set([key]);
+    this.#anchor = key;
     this.#selected = card.dataset.key;
     if ((event?.detail ?? 0) === 1) return markPicked(this.element, card.dataset.key);
     const group = game.actors.get(card.dataset.group);
@@ -1154,10 +1196,11 @@ function matches(e, q) {
   return `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase().includes(q);
 }
 
-/** A card picked in place: its edge and its pressed state, the others' cleared, with no redraw. */
+/** Cards picked in place (one key or a set): their edge and pressed state, the others' cleared, with no redraw. */
 function markPicked(root, key) {
+  const picked = key instanceof Set ? key : new Set([key]);
   for (const card of root?.querySelectorAll(".clueboard-card[data-key]") ?? []) {
-    const on = card.dataset.key === key;
+    const on = picked.has(card.dataset.key);
     card.classList.toggle("on", on);
     card.querySelector('[data-action="pick"]')?.setAttribute("aria-pressed", String(on));
   }

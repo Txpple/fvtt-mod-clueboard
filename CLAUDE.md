@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-11-01).** 1.2.5 released and on prod: the sidebar button's painted picture (`styles/icons/mysteries.webp`), shown only under Card Catalogue's `cardcatalogue-tab-icons` body class; the installer with no one connected, 19/19 served files byte-identical with the release, 1.2.5 active on a prod GM page. 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
+**State (2026-11-01).** 1.2.6 released and on prod: Ctrl/Shift multi-select with the picked clues dragged onto a thread together, and the window's dialogs, sheets and Reader following it into a detached window; the walk GREEN and both checked live with a scratch thread. 1.2.5 released and on prod: the sidebar button's painted picture (`styles/icons/mysteries.webp`), shown only under Card Catalogue's `cardcatalogue-tab-icons` body class; the installer with no one connected, 19/19 served files byte-identical with the release, 1.2.5 active on a prod GM page. 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
 *Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries had their stored scene cleared, on the user's word.
 1.2.3 Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
@@ -59,6 +59,12 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   thread's tab pins it (the window's own drag, a plain-text payload that is never a Foundry Item drop); dropped on a
   card inside a thread it goes before it; the whole order is rewritten in one write. The active tab is window state,
   per party.
+- **Several clues at once, and a detached window** (the user: "multi select should be in clue board too, as well as
+  clue board has the modal issues"): Ctrl or Shift picks several cards (`decide/pick.js`, Card Catalogue's rule
+  copied by hand); dragging a picked card carries every picked card of its party: on a thread's tab each is pinned
+  (`pinAll`), on a card or the end of a thread each is moved there in order, pinned first when it was not
+  (`moveAll`). What the window opens follows it into a detached window, centred (`scripts/host.js`, Card
+  Catalogue's copied by hand). A change to either copy is made in both.
 - **A card is Card Catalogue's** (the user's ask, "functionality that matches card catalogue"): a click picks it
   (the gold edge, marked in place by `markPicked`, so the second click of a double click lands on it), a double
   click, Enter or its gold *Read* opens the Reader; its chevron (`menuRows`, drawn in a veil over the window as Card
@@ -110,6 +116,7 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   `markRead`, the threads (`createThread`, `editThread`, `updateThread`, `removeThread`, `pinClue`, `unpinClue`,
   `movePin`), the window's context (`sectionFor`: tabs, the active thread, the cards), `MysteriesWindow` and its
   drag wiring.
+- `scripts/host.js`: where what the window opens appears (a detached window's own). `scripts/decide/pick.js`: the multi-pick rule, tested in `tests/pick.test.js`.
 - `scripts/reader.js`: `Reader` (on a party and a Clue id, read live), `openReader`, `refreshReaders`.
 - `templates/`: `clue-item.hbs`, `reader.hbs`, `mysteries.hbs`.
 - `tools/live-check.mjs`: the sandbox walk (`FOUNDRY_HOST=local`; `--walk`, `--reader`, `--shots`).
