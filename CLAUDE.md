@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-10-31).** 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
+**State (2026-11-01).** Unreleased on `main`: the sidebar button's painted picture (`styles/icons/mysteries.webp`), shown only under Card Catalogue's `cardcatalogue-tab-icons` body class; deployed `--local` and enabled on the sandbox, `verify` green. 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
 *Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries had their stored scene cleared, on the user's word.
 1.2.3 Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
@@ -85,7 +85,9 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   Journal on `renderSidebar` (no `data-tab`, no `data-action`, so the sidebar never switches or expands for it);
   it opens `MysteriesWindow`, one per client, centred. Nothing is registered on `Sidebar.TABS` or `CONFIG.ui`: a
   tab's panel lives inside the sidebar's layout, and one there stuck the sidebar. For the GM the window carries the
-  strip of uncollected world Clues and is a drop target.
+  strip of uncollected world Clues and is a drop target. Its painted picture (`styles/icons/mysteries.webp`, the
+  button's `--clueboard-tab-icon`) shows only while Card Catalogue paints the other tabs (its class on the body):
+  detection, never a dependency; alone, the glyph.
 - **No class patches.** The type is a Foundry declaration; the drops are hooks; the button is a DOM addition.
 - **The stamp is when, never where** (the user: the scene "may not always be relevant"): the collect's real date
   and, on a chosen calendar, the calendar date. Where is the Clue's own *Found at* line; the scene the collecting

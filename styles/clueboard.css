@@ -1396,3 +1396,16 @@
 .clueboard-thumb .clueboard-new + .clueboard-badge {
   display: none;
 }
+
+/* The sidebar button's painted picture, only while Card Catalogue paints the other tabs (its class on
+   the body): the glyph's ::before carries the picture, its URL the button's variable. */
+body.cardcatalogue-tab-icons #sidebar-tabs .clueboard-tab-icon {
+  position: relative;
+}
+
+body.cardcatalogue-tab-icons #sidebar-tabs .clueboard-tab-icon::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: var(--clueboard-tab-icon) center / contain no-repeat;
+}

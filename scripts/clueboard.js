@@ -146,7 +146,8 @@ for (const hook of ["createActor", "deleteActor"]) {
  * One button on the sidebar's strip, directly after Journal, that opens the Mysteries window in
  * the middle of the screen. It is not a tab: no `data-tab`, no `data-action`, so the sidebar
  * never switches, expands or draws anything for it. The strip is drawn on the sidebar's first
- * render; a later render finds the button already there.
+ * render; a later render finds the button already there. Its painted picture (styles/icons/)
+ * shows only while Card Catalogue paints the others (its class on the body); alone, the glyph.
  */
 Hooks.on("renderSidebar", app => {
   try {
@@ -157,7 +158,8 @@ Hooks.on("renderSidebar", app => {
     const button = document.createElement("button");
     button.type = "button";
     button.id = BUTTON_ID;
-    button.className = "ui-control plain icon fa-solid fa-user-secret";
+    button.className = "ui-control plain icon fa-solid fa-user-secret clueboard-tab-icon";
+    button.style.setProperty("--clueboard-tab-icon", `url("${foundry.utils.getRoute(`modules/${MODULE_ID}/styles/icons/mysteries.webp`)}")`);
     button.dataset.tooltip = "";
     button.setAttribute("aria-label", t("tab"));
     button.addEventListener("click", ev => {
