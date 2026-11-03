@@ -5,12 +5,12 @@ each stamped with where it was found and who has read it. A **Clue** is an item 
 gear: it has no price, no weight and no place in anyone's inventory. The DM collects a Clue for the party, it
 appears on its Clue Board at once, and a player's opening of it there marks the read.
 
-**1.2.4**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
+**1.2.8**, phase 1. The plan is `docs/plans/clueboard.md` in the suite repo; the clickable prototypes
 it was ruled on are `prototypes/phase-1.html` and `prototypes/clue-management.html`.
 
 ## How it works
 
-Phase 1 is four things.
+Phase 1 is five things.
 
 - **The Clue.** A new item type, Clue, in the Create Item dialog beside dnd5e's own. Its sheet is plain: name,
   image, the text, an optional *Found at* line in the DM's words, and the kind: Document, Object, Statement,
@@ -39,8 +39,8 @@ Phase 1 is four things.
   and scroll on their own. Dropping a card on a thread in the rail pins it without leaving the view, so a player
   can work down the list pinning clue after clue; the scroll and the search stay put.
 - **Threads the party names.** The party's own sorting. A thread is a question or a
-  line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All*
-  and *Unassigned*. Drag a card onto
+  line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All
+  Clues* and *Unassigned Clues*. Drag a card onto
   a thread's tab to pin it there, onto another card inside it to order it; a clue can sit in as many threads as
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
   included (from the thread's head, or a right-click on its row in the rail: Edit, Mark Solved or Unsolved,
@@ -57,7 +57,7 @@ or on a sheet. The players write their reads from their own clients (they own th
 so a read is marked with no GM online. A world with several parties keeps one record per party; with none, there
 is nowhere to collect to.
 
-Phase 2: the board (cards, strings, leads, threads the players name, a timeline); the export of the session's documents found. There are no GM secrets in Clue Board, in any phase.
+Phase 2: the board (cards, strings, leads, a timeline); the export of the session's documents found. There are no GM secrets in Clue Board, in any phase.
 
 ## Installation
 
