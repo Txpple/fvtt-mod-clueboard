@@ -1332,6 +1332,22 @@
   border-radius: 4px;
 }
 
+/* The sheet's text, read or toggled, draws the words the way the Reader does (1.2.8): the same
+   paragraph rhythm and the same gold-barred blockquote, so a Clue looks the same on its sheet as on
+   the board. */
+.clueboard-clue-text :is(prose-mirror, .clueboard-doc-plain) p {
+  margin: 0 0 0.7rem;
+}
+
+.clueboard-clue-text :is(prose-mirror, .clueboard-doc-plain) :is(aside, blockquote) {
+  margin: 0.75rem 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--cb-gold);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 0 4px 4px 0;
+  font-style: inherit;
+}
+
 .clueboard-clue-footer {
   display: flex;
   flex-wrap: wrap;
