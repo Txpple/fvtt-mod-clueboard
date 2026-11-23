@@ -25,7 +25,7 @@ Phase 1 is five things.
   back* (on the sheet, or *Take it off the Clue Board* in a card's chevron) takes it out again.
 - **Clue Board.** A spy button (`fa-user-secret`) on the sidebar's strip, directly after Journal, opens Clue Board as its own window
   in the middle of the screen (the sidebar itself never changes): the party's Clues as cards, newest first, with a
-  search, a count of what the player has not read yet and the card size (S, M, L, remembered in each browser). As in
+  search and a count of what the player has not read yet; the cards are one size, the small. As in
   Card Catalogue, a click picks a card (Ctrl or Shift picks several, to drag onto a thread together) and a double
   click (or Enter, or the card's gold *Read*) opens the Reader,
   which shows the text, the stamp and who has read it, and lets a player write the party's note. The card's chevron

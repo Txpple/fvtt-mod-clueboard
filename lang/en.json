@@ -127,15 +127,6 @@
       "removeHint": "Its readers and note go with it; the Clue stays in the world",
       "failed": "That did not work; the console says why."
     },
-    "size": {
-      "label": "Card size",
-      "s": "S",
-      "m": "M",
-      "l": "L",
-      "sAria": "Small cards",
-      "mAria": "Medium cards",
-      "lAria": "Large cards"
-    },
     "read": {
       "note": "Note",
       "notePrompt": "A note on {name}, in your words, for the whole party to see.",

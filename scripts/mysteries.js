@@ -535,7 +535,8 @@ export function sectionFor(group, query = "", tab = "unsorted") {
     search: `${e.snapshot.name} ${plainText(e.snapshot.html)} ${e.snapshot.foundAt} ${e.notes}`.toLowerCase()
     };
   });
-  const unread = unreadCount(all, me?.id ?? null);
+  // The head's count and its unread are the open view's, as the rail's count beside it.
+  const unread = unreadCount(shown, me?.id ?? null);
   const views = [
     { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted" },
     { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all" }
@@ -560,7 +561,7 @@ export function sectionFor(group, query = "", tab = "unsorted") {
       ? { ...thread, answered: thread.status === "answered", count: pinnedTo(all, thread.id).length }
       : null,
     mayOrganise: mayOrganise(group, { tell: false }),
-    total: all.length,
+    count: shown.length,
     // Unsorted and empty says every clue is pinned only when there are clues; with none, the plain empty text.
     allPinned: active === "unsorted" && all.length > 0,
     unread,
@@ -590,7 +591,6 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
       openMenu: MysteriesWindow.#onOpenMenu,
       closeMenu: MysteriesWindow.#onCloseMenu,
       act: MysteriesWindow.#onAct,
-      size: MysteriesWindow.#onSize,
       searchAll: MysteriesWindow.#onSearchAll,
       collect: MysteriesWindow.#onCollect,
       openItem: MysteriesWindow.#onOpenItem,
@@ -663,9 +663,6 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   /** What had the focus before a redraw (another client's write redraws too). */
   #focus = null;
 
-  /** The card size, S, M or L, this browser's. */
-  #size = loadSize();
-
   /**
    * Show a party's mystery, or a clue view ("unsorted", "all"), which closes any open mystery
    * (the API's and the live check's way in).
@@ -691,8 +688,6 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     for (const s of context.sections) for (const e of s.entries) e.selected = this.#picked.has(e.key) || e.key === this.#selected;
     context.query = this.#query;
     context.isGM = game.user.isGM;
-    context.size = this.#size;
-    context.sizes = SIZES.map(id => ({ id, label: t(`size.${id}`), aria: t(`size.${id}Aria`), on: id === this.#size }));
     context.menu = this.#menuContext();
     if (context.isGM) {
       // The strip: every world Clue no party has. With several parties, Collect asks which.
@@ -746,6 +741,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   /** @override */
   _onFirstRender(context, options) {
     super._onFirstRender(context, options);
+    forgetSize();
     this.#threadMenu();
     // What this window opens (the Reader, a sheet, a dialog) follows it into a detached window.
     watchHost(this);
@@ -1160,11 +1156,6 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
     return this.#act(target.dataset.act, target.dataset.arg ?? null);
   }
 
-  static #onSize(_event, target) {
-    this.#size = saveSize(target.dataset.size);
-    this.render();
-  }
-
   /** Nothing in this view matches: the same search in All. */
   static #onSearchAll(_event, target) {
     this.showTab(target.closest("[data-group]")?.dataset.group ?? null, "all");
@@ -1286,25 +1277,11 @@ async function showPicture(src, name) {
   return true;
 }
 
-/** The card sizes; this browser's pick, under the world and the user. Blocked storage forgets. */
-const SIZES = ["s", "m", "l"];
-const sizeKey = () => `${MODULE_ID}.size.${game.world?.id ?? "world"}.${game.user?.id ?? "user"}`;
-
-function loadSize() {
+/** The cards are one size; the card size a browser once kept, per world and user, goes. */
+function forgetSize() {
   try {
-    const size = globalThis.localStorage?.getItem(sizeKey());
-    return SIZES.includes(size) ? size : "m";
+    globalThis.localStorage?.removeItem(`${MODULE_ID}.size.${game.world?.id ?? "world"}.${game.user?.id ?? "user"}`);
   } catch {
-    return "m";
+    // Storage blocked: nothing was kept.
   }
-}
-
-function saveSize(size) {
-  const pick = SIZES.includes(size) ? size : "m";
-  try {
-    globalThis.localStorage?.setItem(sizeKey(), pick);
-  } catch {
-    // Storage blocked: the pick lasts until the page reloads.
-  }
-  return pick;
 }

@@ -354,6 +354,15 @@ try {
         // the player's first open of the window: Unassigned first in the rail, and the view it opens on
         const views = [...win.element.querySelectorAll(".clueboard-rail-view[data-tab]")].map(b => b.dataset.tab);
         const opensOn = win.element.querySelector(".clueboard-rail-row.active")?.dataset.tab ?? null;
+        // one card size: no size buttons on the bar, the kind badge its icon alone with its word in the tooltip
+        const sizeButtons = win.element.querySelectorAll('[data-action="size"]').length;
+        const badge = win.element.querySelector(`.clueboard-card[data-id="${clueId}"] .clueboard-badge`);
+        const badgeIconOnly = !!badge && !badge.textContent.trim() && !!badge.querySelector("i") && !!badge.dataset.tooltip;
+        // the head's count is the open view's: its rail row's count and its cards
+        const sec = win.element.querySelector(`.clueboard-section[data-group="${groupId}"]`);
+        const headCount = Number.parseInt(sec?.querySelector(".clueboard-count")?.dataset.base ?? "", 10);
+        const railCount = Number.parseInt(sec?.querySelector(".clueboard-rail-row.active .clueboard-tab-count")?.textContent ?? "", 10);
+        const viewCards = sec?.querySelectorAll(".clueboard-card[data-id]").length ?? -1;
         const cardsBefore = win.element.querySelectorAll(".clueboard-card").length;
         const unreadBefore = win.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
         const card = () => win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
@@ -388,6 +397,11 @@ try {
           strip,
           views,
           opensOn,
+          sizeButtons,
+          badgeIconOnly,
+          headCount,
+          railCount,
+          viewCards,
           rows,
           picked,
           openedOnPick,
@@ -407,6 +421,8 @@ try {
     assert(!D.seesWorldClue && !D.anyClueVisible, "the player sees no Clue item in the world");
     assert(!D.strip, "the player sees no GM strip");
     assert(D.views.join() === "unsorted,all" && D.opensOn === "unsorted", `the rail lists Unassigned, then All, and the window opens on Unassigned (${D.views.join(", ")}; on ${D.opensOn})`);
+    assert(D.sizeButtons === 0 && D.badgeIconOnly, `one card size: no size buttons (${D.sizeButtons}), the kind badge its icon with the word in its tooltip`);
+    assert(D.headCount === D.viewCards && D.railCount === D.viewCards, `the head's count is the view's (head ${D.headCount}, rail ${D.railCount}, ${D.viewCards} cards)`);
     assert(D.rows.includes("read") && D.rows.includes("pin") && !D.rows.some(r => ["show", "edit", "remove"].includes(r)), `the player's chevron: Read and the threads, no GM row (${D.rows.join(", ")})`);
     assert(D.picked && !D.openedOnPick, "a single click picks the card and opens nothing");
     assert(D.cardsBefore >= 1 && D.wasUnread === true, `the card is there and unread (${D.cardsBefore} cards; "${D.unreadBefore}")`);

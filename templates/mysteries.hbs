@@ -6,11 +6,6 @@
                placeholder="{{ localize "fvtt-mod-clueboard.mysteries.search" }}"
                aria-label="{{ localize "fvtt-mod-clueboard.mysteries.search" }}">
     </label>
-    <div class="clueboard-pills" role="group" aria-label="{{ localize "fvtt-mod-clueboard.size.label" }}">
-        {{#each sizes}}
-        <button type="button" class="clueboard-pill{{#if on}} on{{/if}}" data-action="size" data-size="{{ id }}" aria-label="{{ aria }}" aria-pressed="{{#if on}}true{{else}}false{{/if}}">{{ label }}</button>
-        {{/each}}
-    </div>
 </header>
 
 {{#if isGM}}
@@ -74,7 +69,7 @@
         <div class="clueboard-main">
             <div class="clueboard-section-head{{#if thread}} clueboard-thread-{{ thread.colour }}{{/if}}">
                 <h2>{{#if thread}}<span class="clueboard-dot"></span>{{/if}}<span dir="auto">{{ heading }}</span></h2>
-                <span class="clueboard-count" data-base="{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}" aria-live="polite">{{ total }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
+                <span class="clueboard-count" data-base="{{ count }}{{#if unread}} · {{ unreadText }}{{/if}}" aria-live="polite">{{ count }}{{#if unread}} · {{ unreadText }}{{/if}}</span>
                 {{#if thread}}{{#if mayOrganise}}
                 <span class="clueboard-thread-tools">
                     <button type="button" class="clueboard-tog clueboard-thread-status{{#if thread.answered}} on answered{{/if}}" data-action="toggleStatus" data-thread="{{ thread.id }}"
@@ -114,7 +109,7 @@
             </p>
             {{/unless}}
 
-            <div class="clueboard-cards clueboard-size-{{ ../size }}">
+            <div class="clueboard-cards">
             {{#each entries}}
             <article class="clueboard-card{{#if unread}} unread{{/if}}{{#if selected}} on{{/if}}" data-group="{{ group }}" data-id="{{ id }}" data-key="{{ key }}" data-search="{{ search }}">
                 <button type="button" class="clueboard-pick" data-action="pick" aria-label="{{ name }}" aria-pressed="{{#if selected}}true{{else}}false{{/if}}">
@@ -123,7 +118,7 @@
                         {{else}}<span class="clueboard-excerpt"><i class="fa-solid {{ kindIcon }}" inert></i><span>{{ excerpt }}</span></span>{{/if}}
                         {{!-- New is the player's: the DM's "unread by anyone" is the eye's 0, or a board of ten would all be gold. --}}
                         {{#if unread}}{{#unless ../../isGM}}<span class="clueboard-new">{{ localize "fvtt-mod-clueboard.mysteries.new" }}</span>{{/unless}}{{/if}}
-                        <span class="clueboard-badge" data-tooltip="{{ kind }}"><i class="fa-solid {{ kindIcon }}" inert></i><span class="clueboard-badge-text"> {{ kind }}</span></span>
+                        <span class="clueboard-badge" data-tooltip="{{ kind }}"><i class="fa-solid {{ kindIcon }}" inert></i></span>
                         {{#if threads.length}}<span class="clueboard-card-threads">
                             {{#each threads}}<span class="clueboard-dot clueboard-thread-{{ colour }}" data-tooltip="{{ name }}" aria-label="{{ name }}"></span>{{/each}}
                         </span>{{/if}}
