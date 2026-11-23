@@ -34,13 +34,13 @@ Phase 1 is five things.
   *Take it off the Clue Board*. Opening a card as a player marks the read for their character; a GM's opening marks
   nothing. Nothing goes to chat, ever. A search counts its matches and, inside a thread, offers the ones elsewhere;
   `/` goes to the search and Escape clears it.
-- **The window's layout.** The search runs across the top. Below it, a rail on the left lists *All Clues* and
-  *Unassigned Clues*, then the party's *Threads* with their counts and *New Thread*; the cards fill the right
+- **The window's layout.** The search runs across the top. Below it, a rail on the left lists *Unassigned Clues*,
+  where the window opens, and *All Clues*, then the party's *Threads* with their counts and *New Thread*; the cards fill the right
   and scroll on their own. Dropping a card on a thread in the rail pins it without leaving the view, so a player
   can work down the list pinning clue after clue; the scroll and the search stay put.
 - **Threads the party names.** The party's own sorting. A thread is a question or a
-  line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *All
-  Clues* and *Unassigned Clues*. Drag a card onto
+  line of inquiry with a name, a colour and a short *Where we stand*, unsolved or solved; it is a tab beside *Unassigned
+  Clues* and *All Clues*. Drag a card onto
   a thread's tab to pin it there, onto another card inside it to order it; a clue can sit in as many threads as
   the party likes, and wears a dot for each. Anyone who owns the party makes, edits and deletes them, the GM
   included (from the thread's head, or a right-click on its row in the rail: Edit, Mark Solved or Unsolved,

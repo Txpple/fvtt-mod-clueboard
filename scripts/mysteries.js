@@ -498,15 +498,16 @@ export function myReader(group) {
 }
 
 /**
- * One party's section of the window: its tabs (All, Unsorted, each thread), the active tab's
- * cards, the thread's head when one is active, and the count of the unread.
+ * One party's section of the window: its tabs (Unsorted, All, each thread), the active tab's
+ * cards, the thread's head when one is active, and the count of the unread. Unsorted is the
+ * default view, and where a thread that is gone falls back to.
  */
-export function sectionFor(group, query = "", tab = "all") {
+export function sectionFor(group, query = "", tab = "unsorted") {
   const all = entriesOf(group);
   const me = myReader(group);
   const threads = threadsOf(group);
   const thread = threadOf(group, tab);
-  const active = thread ? "thread" : tab === "unsorted" ? "unsorted" : "all";
+  const active = thread ? "thread" : tab === "all" ? "all" : "unsorted";
   const shown = active === "thread" ? pinnedTo(all, thread.id) : active === "unsorted" ? unsorted(all) : all;
   const ordered = active === "thread" ? shown.filter(e => sortAndFilter([e], query).length) : sortAndFilter(shown, query);
   const byId = Object.fromEntries(threads.map(th => [th.id, th]));
@@ -536,8 +537,8 @@ export function sectionFor(group, query = "", tab = "all") {
   });
   const unread = unreadCount(all, me?.id ?? null);
   const views = [
-    { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all" },
-    { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted" }
+    { id: "unsorted", name: t("mysteries.unsorted"), count: unsorted(all).length, active: active === "unsorted" },
+    { id: "all", name: t("mysteries.all"), count: all.length, active: active === "all" }
   ];
   const mysteries = threads.map(th => ({
     id: th.id,
@@ -560,6 +561,8 @@ export function sectionFor(group, query = "", tab = "all") {
       : null,
     mayOrganise: mayOrganise(group, { tell: false }),
     total: all.length,
+    // Unsorted and empty says every clue is pinned only when there are clues; with none, the plain empty text.
+    allPinned: active === "unsorted" && all.length > 0,
     unread,
     unreadText: me ? t("mysteries.unreadMine", { count: unread }) : t("mysteries.unreadAnyone", { count: unread })
   };
@@ -633,8 +636,8 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
 
   #query = "";
 
-  /** The clue view, "all" or "unsorted", for the whole window. */
-  #view = "all";
+  /** The clue view, "unsorted" (the default) or "all", for the whole window. */
+  #view = "unsorted";
 
   /** The open mystery per party (a thread's id), or none: then the clue view shows. */
   #tabs = {};
@@ -664,11 +667,11 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   #size = loadSize();
 
   /**
-   * Show a party's mystery, or a clue view ("all", "unsorted"), which closes any open mystery
+   * Show a party's mystery, or a clue view ("unsorted", "all"), which closes any open mystery
    * (the API's and the live check's way in).
    */
   showTab(groupId, tab) {
-    if (tab === "all" || tab === "unsorted") {
+    if (tab === "unsorted" || tab === "all") {
       this.#view = tab;
       this.#tabs = {};
     } else {
@@ -926,7 +929,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
   static async #onDeleteThread(_event, target) {
     const group = game.actors.get(target.closest("[data-group]")?.dataset.group);
     if (!group) return;
-    if (await removeThread(group, target.dataset.thread)) this.showTab(group.id, "all");
+    if (await removeThread(group, target.dataset.thread)) this.showTab(group.id, "unsorted");
   }
 
   static async #onToggleStatus(_event, target) {
@@ -1063,7 +1066,7 @@ export class MysteriesWindow extends HandlebarsApplicationMixin(ApplicationV2) {
           condition: may,
           onClick: async (_ev, row) => {
             const { group, thread } = of(row);
-            if (thread && (await removeThread(group, thread.id)) && this.#tabs[group.id] === thread.id) this.showTab(group.id, "all");
+            if (thread && (await removeThread(group, thread.id)) && this.#tabs[group.id] === thread.id) this.showTab(group.id, "unsorted");
           }
         }
       ],

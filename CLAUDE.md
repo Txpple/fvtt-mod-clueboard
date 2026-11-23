@@ -7,7 +7,7 @@ marks the read. Part of Open Roll 5e (the suite repo is `..`, its CLAUDE.md has 
 this is built from is `../docs/plans/clueboard.md`). Plain ES modules, no build step, no libWrapper, no socketlib,
 MIT.
 
-**State (2026-11-03).** 1.2.8 released and on prod: the Clue sheet's text draws the Reader's paragraph rhythm and gold-barred blockquote (the sheet's `prose-mirror` and `.clueboard-doc-plain`), so a Clue reads the same on its sheet as on the board (the user, Echoes of Halruaa, "match them"). 1.2.7 released and on prod: the sidebar button's picture lifted for a black background (its midtones raised, a soft warm rim behind the silhouette), with Card Catalogue 1.0.14's icons. 1.2.6 released and on prod: Ctrl/Shift multi-select with the picked clues dragged onto a thread together, and the window's dialogs, sheets and Reader following it into a detached window; the walk GREEN and both checked live with a scratch thread. 1.2.5 released and on prod: the sidebar button's painted picture (`styles/icons/mysteries.webp`), shown only under Card Catalogue's `cardcatalogue-tab-icons` body class; the installer with no one connected, 19/19 served files byte-identical with the release, 1.2.5 active on a prod GM page. 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
+**State (2026-11-23).** 1.2.9 released: the rail lists *Unassigned Clues* first and the window opens on it, *All Clues* second (the user: "swap the order here, making unassigned clues the default selection"); a thread deleted while open returns to Unassigned, and an empty Unassigned says "Every clue is pinned" only when the party has clues; the walk GREEN with a step for the order and the opening view. 1.2.8 released and on prod: the Clue sheet's text draws the Reader's paragraph rhythm and gold-barred blockquote (the sheet's `prose-mirror` and `.clueboard-doc-plain`), so a Clue reads the same on its sheet as on the board (the user, Echoes of Halruaa, "match them"). 1.2.7 released and on prod: the sidebar button's picture lifted for a black background (its midtones raised, a soft warm rim behind the silhouette), with Card Catalogue 1.0.14's icons. 1.2.6 released and on prod: Ctrl/Shift multi-select with the picked clues dragged onto a thread together, and the window's dialogs, sheets and Reader following it into a detached window; the walk GREEN and both checked live with a scratch thread. 1.2.5 released and on prod: the sidebar button's painted picture (`styles/icons/mysteries.webp`), shown only under Card Catalogue's `cardcatalogue-tab-icons` body class; the installer with no one connected, 19/19 served files byte-identical with the release, 1.2.5 active on a prod GM page. 1.2.4 is released and on prod (the installer, 16/16 served files byte-identical): the stamp is when, never a scene (the user, on the Lamp of 1391 showing
 *Townhouse 03 - Attic*, the MCP page's scene at the collect); prod's eight older entries had their stored scene cleared, on the user's word.
 1.2.3 Card Catalogue's card (a click picks, a
 double click or *Read* opens; the chevron of Read, the Threads toggles and the GM's rows), the S/M/L pills, the
@@ -27,7 +27,7 @@ the Clue item type (`fvtt-mod-clueboard.clue`, its model, sheet and icon), colle
 or the window, Collect on the sheet or in the window's GM strip; never an inventory), the read marked when a player
 opens the card, the window off a spy button on the sidebar's strip after Journal, the record on the Group actor, and
 threads: the party's own sorting, a pill per named question a clue can be pinned to many of, Unsolved or Solved, with
-a *Where we stand* line. `npm run verify` is green (61 tests); `tools/live-check.mjs --walk` GREEN on the sandbox.
+a *Where we stand* line. `npm run verify` is green (67 tests); `tools/live-check.mjs --walk` GREEN on the sandbox.
 The name is free: the setup-screen `getPackages` list (7,076 modules) has no Clue Board and no `fvtt-mod-clueboard`.
 Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
 
@@ -75,7 +75,7 @@ Phase 2 (the board, the export; no GM secrets, ever) waits on the plan.
   is the browser's (localStorage, per world and user); the search counts its matches and offers those outside the
   view; `/` focuses it, Escape clears it or closes the chevron; the focus survives a redraw.
 - **Layout A, the rail** (the user's pick of three, `prototypes/mysteries-layouts.html`): the search across the
-  top; per party a rail (the clue views, the threads, New Thread) beside `.clueboard-main` (the count, the open
+  top; per party a rail (the clue views, *Unassigned Clues* first and the window's default, then *All Clues*; the threads; New Thread) beside `.clueboard-main` (the count, the open
   thread's head, the cards). A pin never changes the view; `.clueboard-main` and `.clueboard-rail` are the part's
   `scrollable`s, so a redraw keeps their scroll, and the query is reapplied after each render; the live check
   asserts the view, the scroll and the search survive a pin.

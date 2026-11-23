@@ -109,7 +109,7 @@
             {{#unless entries.length}}
             <p class="clueboard-empty">
                 {{#if thread}}{{ localize "fvtt-mod-clueboard.mysteries.threadEmpty" }}
-                {{else if (eq active "unsorted")}}{{ localize "fvtt-mod-clueboard.mysteries.unsortedEmpty" }}
+                {{else if allPinned}}{{ localize "fvtt-mod-clueboard.mysteries.unsortedEmpty" }}
                 {{else}}{{ localize "fvtt-mod-clueboard.mysteries.empty" }}{{/if}}
             </p>
             {{/unless}}

@@ -351,6 +351,9 @@ try {
         const win = api.openMysteries();
         for (let i = 0; i < 50 && !win.rendered; i++) await new Promise(r => setTimeout(r, 100));
         const strip = !!win.element.querySelector(".clueboard-gm-strip");
+        // the player's first open of the window: Unassigned first in the rail, and the view it opens on
+        const views = [...win.element.querySelectorAll(".clueboard-rail-view[data-tab]")].map(b => b.dataset.tab);
+        const opensOn = win.element.querySelector(".clueboard-rail-row.active")?.dataset.tab ?? null;
         const cardsBefore = win.element.querySelectorAll(".clueboard-card").length;
         const unreadBefore = win.element.querySelector(".clueboard-count")?.textContent?.trim() ?? null;
         const card = () => win.element.querySelector(`.clueboard-card[data-id="${clueId}"]`);
@@ -383,6 +386,8 @@ try {
           seesWorldClue: !!worldClue && worldClue.testUserPermission(game.user, "LIMITED"),
           anyClueVisible: game.items.some(i => i.type === type && i.testUserPermission(game.user, "LIMITED")),
           strip,
+          views,
+          opensOn,
           rows,
           picked,
           openedOnPick,
@@ -401,6 +406,7 @@ try {
     assert(D.ownsGroup, "the player owns the group");
     assert(!D.seesWorldClue && !D.anyClueVisible, "the player sees no Clue item in the world");
     assert(!D.strip, "the player sees no GM strip");
+    assert(D.views.join() === "unsorted,all" && D.opensOn === "unsorted", `the rail lists Unassigned, then All, and the window opens on Unassigned (${D.views.join(", ")}; on ${D.opensOn})`);
     assert(D.rows.includes("read") && D.rows.includes("pin") && !D.rows.some(r => ["show", "edit", "remove"].includes(r)), `the player's chevron: Read and the threads, no GM row (${D.rows.join(", ")})`);
     assert(D.picked && !D.openedOnPick, "a single click picks the card and opens nothing");
     assert(D.cardsBefore >= 1 && D.wasUnread === true, `the card is there and unread (${D.cardsBefore} cards; "${D.unreadBefore}")`);
